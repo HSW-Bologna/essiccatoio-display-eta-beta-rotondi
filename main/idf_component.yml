@@ -1,5 +1,6 @@
 ## IDF Component Manager Manifest File
 dependencies:
+  joltwallet/littlefs: "==1.14.8"
   espressif/esp_lcd_touch_gt1151: "^1.0.5~1"
   espressif/esp_lcd_touch_gt911: "==1.0.0"
   atanisoft/esp_lcd_ili9488: "*"

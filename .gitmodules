@@ -19,3 +19,12 @@
 [submodule "components/c-page-manager"]
 	path = components/c-page-manager
 	url = https://github.com/Maldus512/c-page-manager.git
+[submodule "components/liblightmodbus-esp"]
+	path = components/liblightmodbus-esp
+	url = https://github.com/Jacajack/liblightmodbus-esp.git
+[submodule "components/c-watcher"]
+	path = components/c-watcher
+	url = https://github.com/Maldus512/c-watcher.git
+[submodule "components/c-parameter"]
+	path = components/c-parameter
+	url = https://github.com/Maldus512/c-parameter.git

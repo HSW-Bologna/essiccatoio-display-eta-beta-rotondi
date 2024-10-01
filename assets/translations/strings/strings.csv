@@ -1,2 +1,17 @@
 Identificatore, Italiano, Inglese
-HELLO_WORLD, Ciao mondo, Hello world
+IMPOSTAZIONI, Impostazioni, settings
+DIAGNOSI, Diagnosi, Test
+ARCHIVIAZIONE, Archiviazione, Archiving
+PARAMETRI, Parametri, Parameters
+INGRESSI, Ingressi, Inputs
+ERRORE_DI_COMUNICAZIONE, Errore di comunicazione, Communication error
+RIPROVA, Riprova, Try again
+USCITE, Uscite, Outputs
+TEMPERATURA, Temperatura, Temperature
+MOTORE_AVANTI, Motore avanti, Motor forward
+MOTORE_INDIETRO, Motore indietro, Motor backward
+SCELTA_PROGRAMMA, Scelta programma, Program choice
+ALLARME_EMERGENZA, Allarme emergenza!, Emergency alarm!
+CASSETTO_DEL_FILTRO_APERTO, Cassetto del filtro aperto, Filter drawer open
+OBLO_APERTO, Oblo' aperto, Porthole open
+ASCIUGATURA_IN_CORSO, Asciugatura in corso, Drying in progress

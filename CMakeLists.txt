@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.5)
 
 add_definitions(-DBUILD_CONFIG_DISPLAY_HORIZONTAL_RESOLUTION=320)
 add_definitions(-DBUILD_CONFIG_DISPLAY_VERTICAL_RESOLUTION=320)
+add_definitions(-DC_PARAMETER_MAX_SIZE=2)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(lavatrice-display-eta-beta-rotondi)
+project(essiccatoio-display-eta-beta-rotondi)

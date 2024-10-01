@@ -20,6 +20,8 @@
 #define BSP_HAP_RETRO   GPIO_NUM_10
 #define BSP_HAP_BUZ     GPIO_NUM_16
 #define BSP_HAP_RUN     GPIO_NUM_17
+#define BSP_HAP_TX      GPIO_NUM_38
+#define BSP_HAP_RX      GPIO_NUM_39
 #define BSP_HAP_SDA_CLK GPIO_NUM_40
 #define BSP_HAP_SCL_CLK GPIO_NUM_41
 
