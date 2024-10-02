@@ -38,6 +38,7 @@ view_title_t                view_common_create_title(lv_obj_t *root, const char 
 void                        view_common_image_set_src(lv_obj_t *img, const lv_image_dsc_t *img_dsc);
 communication_error_popup_t view_common_communication_error_popup(lv_obj_t *parent);
 void                        view_common_set_disabled(lv_obj_t *obj, uint8_t disabled);
+void                        view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t language);
 
 
 #endif

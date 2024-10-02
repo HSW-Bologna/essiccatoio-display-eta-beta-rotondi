@@ -80,7 +80,7 @@ void view_init(model_t *p_model, pman_user_msg_cb_t controller_cb, lv_display_fl
 
 
 void view_manage(model_t *model) {
-    view_common_set_hidden(state.popup_communication_error.blanket, !model->run.minion.communication_error);
+    //view_common_set_hidden(state.popup_communication_error.blanket, !model->run.minion.communication_error);
     lv_label_set_text(state.popup_communication_error.lbl_msg,
                       view_intl_get_string(model, STRINGS_ERRORE_DI_COMUNICAZIONE));
     lv_label_set_text(state.popup_communication_error.lbl_retry, view_intl_get_string(model, STRINGS_RIPROVA));

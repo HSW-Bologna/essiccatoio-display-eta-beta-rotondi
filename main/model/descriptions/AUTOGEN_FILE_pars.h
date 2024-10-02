@@ -2,12 +2,6 @@
 #define AUTOGEN_FILE_PARS_H_INCLUDED
 
 typedef enum {
-    PARS_NOSI_NO = 0,
-    PARS_NOSI_SI,
-} pars_nosi_t;
-
-extern const char *pars_nosi[2][2];
-typedef enum {
     PARS_DESCRIPTIONS_LINGUA = 0,
     PARS_DESCRIPTIONS_LIVELLO_ACCESSO,
     PARS_DESCRIPTIONS_VISUALIZZARE_TEMPERATURA,
@@ -15,9 +9,15 @@ typedef enum {
     PARS_DESCRIPTIONS_TEMPO_TASTO_PAUSA,
     PARS_DESCRIPTIONS_TEMPO_TASTO_STOP,
     PARS_DESCRIPTIONS_TEMPO_STOP_AUTOMATICO,
+    PARS_DESCRIPTIONS_DISABILITA_ALLARMI,
+    PARS_DESCRIPTIONS_TEMPO_ALLARME_TEMPERATURA,
+    PARS_DESCRIPTIONS_TEMPERATURA_DI_SICUREZZA,
+    PARS_DESCRIPTIONS_TIPO_MACCHINA_OCCUPATA,
+    PARS_DESCRIPTIONS_ALLARME_FILTRO,
+    PARS_DESCRIPTIONS_ALLARME_INVERTER,
 } pars_descriptions_t;
 
-extern const char *pars_descriptions[7][2];
+extern const char *pars_descriptions[13][2];
 typedef enum {
     PARS_LINGUE_ITALIANO = 0,
     PARS_LINGUE_INGLESE,
@@ -27,5 +27,21 @@ typedef enum {
 } pars_lingue_t;
 
 extern const char *pars_lingue[5][5];
+typedef enum {
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_0 = 0,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_1,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_2,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_3,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_4,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_5,
+} pars_tipo_macchina_occupata_t;
+
+extern const char *pars_tipo_macchina_occupata[6][2];
+typedef enum {
+    PARS_NOSI_NO = 0,
+    PARS_NOSI_SI,
+} pars_nosi_t;
+
+extern const char *pars_nosi[2][2];
 
 #endif

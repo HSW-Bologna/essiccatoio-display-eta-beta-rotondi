@@ -81,7 +81,7 @@ typedef struct {
     uint16_t posizione_sonda_temperatura;
     uint16_t temperatura_massima_ingresso;
     uint16_t temperatura_massima_uscita;
-    uint16_t temperatura_sicurezza_in;
+    uint16_t temperatura_sicurezza;
     uint16_t temperatura_sicurezza_out;
     uint16_t tempo_allarme_temperatura;     // se non arriva in temperatura in quel tempo
     uint16_t allarme_inverter_off_on;
@@ -90,7 +90,7 @@ typedef struct {
     uint16_t inverti_macchina_occupata;
     uint16_t tipo_riscaldamento;
     uint16_t autoavvio;
-    uint16_t abilita_allarmi;
+    uint16_t disabilita_allarmi;
 } parmac_t;
 
 
@@ -134,8 +134,8 @@ struct model {
             } write;
         } minion;
 
-        uint8_t    temporary_access_level;
         language_t temporary_language;
+        uint8_t    temporary_access_level;
         uint16_t   current_program_index;
         program_t  current_program;
         uint16_t   current_step_index;
@@ -163,6 +163,7 @@ uint8_t                     model_is_cycle_stopped(model_t *model);
 void                        model_select_program(mut_model_t *model, uint16_t program_index);
 void                        model_select_step(mut_model_t *model, uint16_t step_index);
 uint8_t                     model_is_drying(model_t *model);
+uint8_t                     model_is_program_done(model_t *model);
 
 
 #endif

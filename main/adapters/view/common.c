@@ -26,6 +26,17 @@ void view_common_set_disabled(lv_obj_t *obj, uint8_t disabled) {
 }
 
 
+void view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t language) {
+    if ((alarms & (1 << ALARM_EMERGENCY)) > 0) {
+        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_ALLARME_EMERGENZA));
+    } else if ((alarms & (1 << ALARM_FILTER)) > 0) {
+        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_CASSETTO_DEL_FILTRO_APERTO));
+    } else if ((alarms & (1 << ALARM_PORTHOLE)) > 0) {
+        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_OBLO_APERTO));
+    }
+}
+
+
 password_page_options_t *view_common_default_password_page_options(pman_stack_msg_t msg, const char *password) {
     password_page_options_t *fence = (password_page_options_t *)lv_malloc(sizeof(password_page_options_t));
     assert(fence != NULL);

@@ -25,8 +25,10 @@ LV_IMG_DECLARE(img_hot_off);
 LV_IMG_DECLARE(img_stop);
 LV_IMG_DECLARE(img_pause);
 LV_IMG_DECLARE(img_start);
-LV_IMG_DECLARE(img_language);
+LV_IMG_DECLARE(img_italiano);
+LV_IMG_DECLARE(img_english);
 LV_IMG_DECLARE(img_empty);
+LV_IMG_DECLARE(img_button_background);
 
 
 #define SETTINGS_DRAG_WIDTH    32
@@ -35,31 +37,40 @@ LV_IMG_DECLARE(img_empty);
 #define SETTINGS_DRAWER_HEIGHT 100
 #define SETTINGS_BTN_WIDTH     64
 
-#define SCALE_SMALL_ICON    160
-#define SCALE_SELECTED_ICON 280
-#define SCALE_CONTROL       180
-#define SCALE_EMPTY_CORNER  220
+#define SCALE_SMALL_ICON      160
+#define SCALE_SELECTED_ICON   280
+#define SCALE_CONTROL         180
+#define SCALE_EMPTY_CORNER    220
+#define SCALE_CLICK_ANIMATION 280
 
 
 enum {
     BTN_PROGRAM_ID,
     BTN_START_ID,
     BTN_STOP_ID,
+    BTN_LANGUAGE_ID,
     TIMER_CHANGE_PAGE_ID,
+    TIMER_RESTORE_LANGUAGE_ID,
     OBJ_SETTINGS_ID,
     WATCH_STATE_ID,
     WATCH_INFO_ID,
 };
 
 
+typedef struct {
+    lv_obj_t *image_background;
+    lv_obj_t *image_icon;
+} icon_button_t;
+
+
 static const char *TAG = "PageMain";
 
 
 struct page_data {
-    lv_obj_t *buttons[BASE_PROGRAMS_NUM];
-    lv_obj_t *image_stop;
-    lv_obj_t *image_start;
-    lv_obj_t *button_language;
+    lv_obj_t     *buttons[BASE_PROGRAMS_NUM];
+    lv_obj_t     *image_stop;
+    lv_obj_t     *image_start;
+    icon_button_t icon_button_language;
 
     lv_obj_t *label_time;
     lv_obj_t *label_temperature;
@@ -72,14 +83,17 @@ struct page_data {
     lv_obj_t *obj_drawer;
 
     pman_timer_t *timer_change_page;
+    pman_timer_t *timer_restore_language;
 };
 
 
-static void      hit_test_event_cb(lv_event_t *event);
-static void      update_programs(model_t *model, struct page_data *pdata);
-static void      update_info(model_t *model, struct page_data *pdata);
-static lv_obj_t *image_button_create(lv_obj_t *parent, const lv_image_dsc_t *img_dsc);
-static lv_obj_t *program_button_create(lv_obj_t *parent, base_program_t program);
+static void          hit_test_event_cb(lv_event_t *event);
+static void          update_programs(model_t *model, struct page_data *pdata);
+static void          update_info(model_t *model, struct page_data *pdata);
+static lv_obj_t     *old_icon_button_create(lv_obj_t *parent, const lv_image_dsc_t *img_dsc);
+static icon_button_t icon_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_dsc);
+static void          icon_button_scale(icon_button_t *icon_button, int32_t scale);
+static lv_obj_t     *program_button_create(lv_obj_t *parent, base_program_t program);
 
 static const lv_img_dsc_t *images_on[] = {
     &img_wool, &img_cold, &img_lukewarm, &img_warm, &img_hot,
@@ -96,7 +110,8 @@ static void *create_page(pman_handle_t handle, void *extra) {
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
 
-    pdata->timer_change_page = pman_timer_create(handle, 250, (void *)(uintptr_t)TIMER_CHANGE_PAGE_ID);
+    pdata->timer_change_page      = pman_timer_create(handle, 250, (void *)(uintptr_t)TIMER_CHANGE_PAGE_ID);
+    pdata->timer_restore_language = pman_timer_create(handle, 10000, (void *)(uintptr_t)TIMER_RESTORE_LANGUAGE_ID);
 
     return pdata;
 }
@@ -160,17 +175,17 @@ static void open_page(pman_handle_t handle, void *state) {
         pdata->buttons[i] = program_button_create(cont, i);
     }
 
-    pdata->image_stop = image_button_create(cont, &img_stop);
+    pdata->image_stop = old_icon_button_create(cont, &img_stop);
     lv_image_set_scale(pdata->image_stop, SCALE_CONTROL);
     view_register_object_default_callback(pdata->image_stop, BTN_STOP_ID);
 
-    pdata->image_start = image_button_create(cont, &img_start);
+    pdata->image_start = old_icon_button_create(cont, &img_start);
     lv_image_set_scale(pdata->image_start, SCALE_CONTROL);
     view_register_object_default_callback(pdata->image_start, BTN_START_ID);
 
-
-    pdata->button_language = image_button_create(cont, &img_language);
-    lv_image_set_scale(pdata->button_language, SCALE_SMALL_ICON);
+    pdata->icon_button_language = icon_button_create(cont, &img_italiano);
+    icon_button_scale(&pdata->icon_button_language, SCALE_SMALL_ICON);
+    view_register_object_default_callback(pdata->icon_button_language.image_background, BTN_LANGUAGE_ID);
 
     {
         lv_obj_t *obj = lv_obj_create(cont);
@@ -214,7 +229,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
     pman_msg_t msg = PMAN_MSG_NULL;
 
     struct page_data *pdata = state;
-    model_t          *model = pman_get_user_data(handle);
+    mut_model_t      *model = pman_get_user_data(handle);
 
     switch (event.tag) {
         case PMAN_EVENT_TAG_USER: {
@@ -223,11 +238,20 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case VIEW_EVENT_TAG_PAGE_WATCHER: {
                     switch (view_event->as.page_watcher.code) {
                         case WATCH_STATE_ID:
+                            if (model_is_cycle_active(model)) {
+                                pman_timer_reset(pdata->timer_restore_language);
+                                pman_timer_pause(pdata->timer_restore_language);
+                            } else {
+                                pman_timer_resume(pdata->timer_restore_language);
+                            }
                             update_programs(model, pdata);
                             break;
 
                         case WATCH_INFO_ID:
                             update_info(model, pdata);
+                            break;
+
+                        default:
                             break;
                     }
                     break;
@@ -240,23 +264,50 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
         }
 
         case PMAN_EVENT_TAG_TIMER: {
-            pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_menu);
-            password_page_options_t *opts =
-                view_common_default_password_page_options(pw_msg, (const char *)APP_CONFIG_PASSWORD);
-            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
+            switch ((int)(uintptr_t)event.as.timer->user_data) {
+                case TIMER_CHANGE_PAGE_ID: {
+                    pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_menu);
+                    password_page_options_t *opts =
+                        view_common_default_password_page_options(pw_msg, (const char *)APP_CONFIG_PASSWORD);
+                    msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
+                    break;
+                }
+
+                case TIMER_RESTORE_LANGUAGE_ID: {
+                    model_reset_temporary_language(model);
+                    update_info(model, pdata);
+                    break;
+                }
+
+                default:
+                    break;
+            }
             break;
         }
 
         case PMAN_EVENT_TAG_LVGL: {
-            lv_obj_t           *target   = lv_event_get_target_obj(event.as.lvgl);
+            lv_obj_t           *target   = lv_event_get_target(event.as.lvgl);
             view_object_data_t *obj_data = lv_obj_get_user_data(target);
+
+            if (obj_data == NULL) {
+                break;
+            }
 
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
+                    pman_timer_reset(pdata->timer_restore_language);
+
                     switch (obj_data->id) {
                         case BTN_PROGRAM_ID:
                             view_get_protocol(handle)->start_program(handle, obj_data->number);
                             break;
+
+                        case BTN_LANGUAGE_ID: {
+                            pman_timer_resume(pdata->timer_restore_language);
+                            model->run.temporary_language = (model->run.temporary_language + 1) % LANGUAGES_NUM;
+                            update_info(model, pdata);
+                            break;
+                        }
 
                         case BTN_STOP_ID:
                             if (model_is_cycle_paused(model)) {
@@ -325,7 +376,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 default:
                     break;
             }
-
             break;
         }
 
@@ -375,9 +425,10 @@ static void update_programs(model_t *model, struct page_data *pdata) {
             int delta_x = delta_xs[program];
             int delta_y = delta_ys[program];
 
-            const int shift =
-                60;     // If a program is selected all buttons should be shifted towards the opposing corner
-            int reduction = 22;     // If a program is selected all other buttons should stand closer to each other
+            const int shift = 60;     // If a program is selected all buttons should be shifted
+                                      // towards the opposing corner
+            int reduction = 22;       // If a program is selected all other buttons
+                                      // should stand closer to each other
             int reduction_center = 8;
 
             int shift_x = delta_xs[current_program_index] > 0 ? -shift : shift;
@@ -431,18 +482,19 @@ static void update_programs(model_t *model, struct page_data *pdata) {
         view_common_set_hidden(pdata->label_temperature, 0);
         view_common_set_hidden(pdata->label_time, 0);
 
-        const int32_t stop_shift_x     = 58;
-        const int32_t stop_shift_y     = 38;
-        const int32_t language_shift_x = 92;
-        const int32_t language_shift_y = 52;
+        const int32_t stop_shift_x     = 52;
+        const int32_t stop_shift_y     = 44;
+        const int32_t language_shift_x = 16;
+        const int32_t language_shift_y = 10;
         const int32_t sensors_shift_y  = 52;
-        const int32_t play_shift       = 56;
+        const int32_t play_shift       = 52;
 
         switch (current_program_index) {
             case BASE_PROGRAM_WOOL:
-                lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_LEFT_MID, 8, 20);
-                lv_obj_align(pdata->button_language, LV_ALIGN_TOP_LEFT, -4, -8);
+                lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_LEFT_MID, 9, 21);
                 lv_obj_align_to(pdata->image_start, pdata->image_stop, LV_ALIGN_CENTER, -play_shift, -play_shift);
+                lv_obj_align_to(pdata->icon_button_language.image_background, pdata->image_start, LV_ALIGN_CENTER, 0,
+                                -86);
 
                 lv_image_set_scale(pdata->image_empty_corner, SCALE_EMPTY_CORNER);
                 lv_image_set_rotation(pdata->image_empty_corner, 1800);
@@ -456,9 +508,9 @@ static void update_programs(model_t *model, struct page_data *pdata) {
 
             case BASE_PROGRAM_COLD:
                 lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_TOP_RIGHT, stop_shift_x, stop_shift_y);
-                lv_obj_align_to(pdata->button_language, img_selected, LV_ALIGN_BOTTOM_LEFT, -language_shift_x,
-                                language_shift_y);
                 lv_obj_align_to(pdata->image_start, pdata->image_stop, LV_ALIGN_CENTER, play_shift, play_shift);
+                lv_obj_align(pdata->icon_button_language.image_background, LV_ALIGN_TOP_RIGHT, language_shift_x,
+                             -language_shift_y);
 
                 lv_image_set_scale(pdata->image_empty_corner, SCALE_EMPTY_CORNER);
                 lv_image_set_rotation(pdata->image_empty_corner, 900);
@@ -472,9 +524,9 @@ static void update_programs(model_t *model, struct page_data *pdata) {
 
             case BASE_PROGRAM_LUKEWARM:
                 lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_TOP_LEFT, -stop_shift_x, stop_shift_y);
-                lv_obj_align_to(pdata->button_language, img_selected, LV_ALIGN_BOTTOM_RIGHT, language_shift_x,
-                                language_shift_y);
                 lv_obj_align_to(pdata->image_start, pdata->image_stop, LV_ALIGN_CENTER, -play_shift, play_shift);
+                lv_obj_align(pdata->icon_button_language.image_background, LV_ALIGN_TOP_LEFT, -language_shift_x,
+                             -language_shift_y);
 
                 lv_image_set_scale(pdata->image_empty_corner, SCALE_EMPTY_CORNER);
                 lv_image_set_rotation(pdata->image_empty_corner, 1800);
@@ -490,9 +542,9 @@ static void update_programs(model_t *model, struct page_data *pdata) {
             case BASE_PROGRAM_WARM:
                 lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_BOTTOM_RIGHT, stop_shift_x,
                                 -stop_shift_y);
-                lv_obj_align_to(pdata->button_language, img_selected, LV_ALIGN_TOP_LEFT, -language_shift_x,
-                                -language_shift_y);
                 lv_obj_align_to(pdata->image_start, pdata->image_stop, LV_ALIGN_CENTER, play_shift, -play_shift);
+                lv_obj_align(pdata->icon_button_language.image_background, LV_ALIGN_BOTTOM_RIGHT, language_shift_x,
+                             language_shift_y);
 
                 lv_image_set_scale(pdata->image_empty_corner, SCALE_EMPTY_CORNER);
                 lv_image_set_rotation(pdata->image_empty_corner, 0);
@@ -507,9 +559,9 @@ static void update_programs(model_t *model, struct page_data *pdata) {
             case BASE_PROGRAM_HOT:
                 lv_obj_align_to(pdata->image_stop, img_selected, LV_ALIGN_OUT_BOTTOM_LEFT, -stop_shift_x,
                                 -stop_shift_y);
-                lv_obj_align_to(pdata->button_language, img_selected, LV_ALIGN_TOP_RIGHT, language_shift_x,
-                                -language_shift_y);
                 lv_obj_align_to(pdata->image_start, pdata->image_stop, LV_ALIGN_CENTER, -play_shift, -play_shift);
+                lv_obj_align(pdata->icon_button_language.image_background, LV_ALIGN_BOTTOM_LEFT, -language_shift_x,
+                             language_shift_y);
 
                 lv_image_set_scale(pdata->image_empty_corner, SCALE_EMPTY_CORNER);
                 lv_image_set_rotation(pdata->image_empty_corner, 2700);
@@ -522,7 +574,9 @@ static void update_programs(model_t *model, struct page_data *pdata) {
                 break;
         }
     } else {
-        lv_obj_align(pdata->button_language, LV_ALIGN_LEFT_MID, -20, 0);
+        lv_obj_align_to(pdata->icon_button_language.image_background, pdata->buttons[BASE_PROGRAM_WOOL],
+                        LV_ALIGN_CENTER, -120, 0);
+
         lv_obj_align(pdata->obj_empty_side, LV_ALIGN_BOTTOM_MID, 0, 0);
 
         view_common_set_hidden(pdata->image_stop, 1);
@@ -531,8 +585,6 @@ static void update_programs(model_t *model, struct page_data *pdata) {
         view_common_set_hidden(pdata->label_temperature, 1);
         view_common_set_hidden(pdata->label_time, 1);
     }
-
-    view_common_set_hidden(pdata->button_language, 1);
 
     if (model_is_cycle_paused(model)) {
         lv_image_set_src(pdata->image_stop, &img_stop);
@@ -548,6 +600,11 @@ static void update_programs(model_t *model, struct page_data *pdata) {
 
 
 static void update_info(model_t *model, struct page_data *pdata) {
+    language_t language = model->run.temporary_language;
+
+    const lv_image_dsc_t *icons_language[LANGUAGES_NUM] = {&img_italiano, &img_english};
+    lv_image_set_src(pdata->icon_button_language.image_icon, icons_language[language]);
+
     if (model_is_drying(model)) {
         lv_label_set_text_fmt(pdata->label_temperature, "%i/%i °C", model->run.minion.read.default_temperature,
                               model_get_current_step(model).temperature);
@@ -561,22 +618,28 @@ static void update_info(model_t *model, struct page_data *pdata) {
 
     lv_label_set_text_fmt(pdata->label_time, "%02i:%02i", minutes, seconds);
 
-    if (model_is_cycle_active(model)) {
-        lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_ASCIUGATURA_IN_CORSO));
+    if (model->run.minion.read.alarms == 0) {
+        if (model_is_cycle_active(model)) {
+            lv_label_set_text(pdata->label_status,
+                              view_intl_get_string_in_language(language, STRINGS_ASCIUGATURA_IN_CORSO));
+        } else {
+            lv_label_set_text(pdata->label_status,
+                              view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
+        }
     } else {
-        lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_SCELTA_PROGRAMMA));
+        view_common_format_alarm(pdata->label_status, model->run.minion.read.alarms, language);
     }
 }
 
 
 static lv_obj_t *program_button_create(lv_obj_t *parent, base_program_t program) {
-    lv_obj_t *img = image_button_create(parent, images_off[program]);
+    lv_obj_t *img = old_icon_button_create(parent, images_off[program]);
     view_register_object_default_callback_with_number(img, BTN_PROGRAM_ID, program);
     return img;
 }
 
 
-static lv_obj_t *image_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_dsc) {
+static lv_obj_t *old_icon_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_dsc) {
     static lv_style_prop_t           tr_prop[] = {LV_STYLE_TRANSLATE_X,       LV_STYLE_TRANSLATE_Y,
                                                   LV_STYLE_TRANSFORM_SCALE_X, LV_STYLE_TRANSFORM_SCALE_Y,
                                                   LV_STYLE_IMAGE_RECOLOR_OPA, 0};
@@ -593,7 +656,7 @@ static lv_obj_t *image_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_d
     lv_style_init(&style_pr);
     lv_style_set_image_recolor_opa(&style_pr, 10);
     lv_style_set_image_recolor(&style_pr, lv_color_black());
-    lv_style_set_transform_scale(&style_pr, 280);
+    lv_style_set_transform_scale(&style_pr, SCALE_CLICK_ANIMATION);
     lv_style_set_transition(&style_pr, &tr);
 
     lv_obj_t *img = lv_image_create(parent);
@@ -611,6 +674,56 @@ static lv_obj_t *image_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_d
 }
 
 
+static void icon_button_scale(icon_button_t *icon_button, int32_t scale) {
+    lv_image_set_scale(icon_button->image_background, scale);
+    lv_image_set_scale(icon_button->image_icon, scale);
+}
+
+
+static icon_button_t icon_button_create(lv_obj_t *parent, const lv_img_dsc_t *img_dsc) {
+    static lv_style_prop_t           tr_prop[] = {LV_STYLE_TRANSLATE_X,       LV_STYLE_TRANSLATE_Y,
+                                                  LV_STYLE_TRANSFORM_SCALE_X, LV_STYLE_TRANSFORM_SCALE_Y,
+                                                  LV_STYLE_IMAGE_RECOLOR_OPA, 0};
+    static lv_style_transition_dsc_t tr;
+    lv_style_transition_dsc_init(&tr, tr_prop, lv_anim_path_linear, 100, 0, NULL);
+
+    static lv_style_t style_def;
+    lv_style_init(&style_def);
+    lv_style_set_transform_pivot_x(&style_def, LV_PCT(50));
+    lv_style_set_transform_pivot_y(&style_def, LV_PCT(50));
+
+    /*Darken the button when pressed and make it wider*/
+    static lv_style_t style_pr;
+    lv_style_init(&style_pr);
+    // lv_style_set_image_recolor_opa(&style_pr, 10);
+    lv_style_set_image_recolor(&style_pr, lv_color_darken(VIEW_STYLE_COLOR_WHITE, 10));
+    lv_style_set_transform_scale(&style_pr, SCALE_CLICK_ANIMATION);
+    lv_style_set_transition(&style_pr, &tr);
+
+    lv_obj_t *image_background = lv_image_create(parent);
+    lv_image_set_pivot(image_background, LV_PCT(50), LV_PCT(50));
+    lv_image_set_src(image_background, &img_button_background);
+    lv_obj_set_style_image_recolor(image_background, VIEW_STYLE_COLOR_WHITE, LV_STATE_DEFAULT);
+    lv_obj_set_style_image_recolor_opa(image_background, LV_OPA_COVER, LV_STATE_DEFAULT);
+
+    lv_obj_add_style(image_background, &style_def, LV_STATE_DEFAULT);
+    lv_obj_add_style(image_background, &style_pr, LV_STATE_PRESSED);
+    lv_image_set_inner_align(image_background, LV_IMAGE_ALIGN_CENTER);
+
+    lv_obj_add_flag(image_background, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(image_background, hit_test_event_cb, LV_EVENT_HIT_TEST, NULL);
+
+    lv_obj_t *image_icon = lv_image_create(image_background);
+    lv_image_set_src(image_icon, img_dsc);
+    lv_obj_add_flag(image_icon, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_center(image_icon);
+
+    return (icon_button_t){
+        .image_background = image_background,
+        .image_icon       = image_icon,
+    };
+}
+
 static void hit_test_event_cb(lv_event_t *event) {
     lv_hit_test_info_t *hit_test_info = lv_event_get_param(event);
 
@@ -622,15 +735,41 @@ static void hit_test_event_cb(lv_event_t *event) {
 
     lv_image_dsc_t *img_dsc = (lv_img_dsc_t *)lv_img_get_src(target);
 
-    int32_t width = img_dsc->header.w;
+    int32_t width        = img_dsc->header.w;
+    int32_t scale        = lv_image_get_scale(target);
+    int32_t scaled_width = (width * scale) / 255;
+    int32_t scale_shift  = width - scaled_width;
 
-    int32_t zeroed_x = vect.x - lv_obj_get_x(target);
-    int32_t zeroed_y = vect.y - lv_obj_get_y(target);
+    int32_t obj_x = lv_obj_get_x(target) + scale_shift / 2;
+    int32_t obj_y = lv_obj_get_y(target) + scale_shift / 2;
 
-    size_t pixel_index = zeroed_x + zeroed_y * width;
+    int32_t zeroed_x = vect.x - obj_x;
+    int32_t zeroed_y = vect.y - obj_y;
+
+    int32_t unscaled_zeroed_x = (zeroed_x * 255) / scale;
+    int32_t unscaled_zeroed_y = (zeroed_y * 255) / scale;
+
+    size_t pixel_index = unscaled_zeroed_x + unscaled_zeroed_y * width;
+    size_t pixel_size  = 1;
+    switch (img_dsc->header.cf) {
+        case LV_COLOR_FORMAT_RGB565A8:
+            pixel_size = 2;
+            break;
+        default:
+            pixel_size = 1;
+            break;
+    }
+
+    ESP_LOGD(TAG,
+             "%4" PRIiLEAST32 " %4" PRIiLEAST32 " %4" PRIiLEAST32 ", (%4" PRIiLEAST32 " %4" PRIiLEAST32
+             ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") (%4" PRIiLEAST32
+             " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") %4zu %4zu 0x%02X %4" PRIiLEAST32 ,
+             width, scale, scaled_width, vect.x, vect.y, obj_x, obj_y, lv_obj_get_x(target), lv_obj_get_y(target),
+             zeroed_x, zeroed_y, unscaled_zeroed_x, unscaled_zeroed_y, pixel_index, pixel_size,
+             img_dsc->data[pixel_index * pixel_size], img_dsc->data_size);
 
     if (pixel_index < img_dsc->data_size) {
-        uint8_t alpha      = img_dsc->data[pixel_index * 2 + 1];
+        uint8_t alpha      = img_dsc->data[pixel_index * pixel_size];
         hit_test_info->res = alpha > 0;
     } else {
         ESP_LOGW(TAG, "Out of bounds");
@@ -642,6 +781,7 @@ static void hit_test_event_cb(lv_event_t *event) {
 static void close_page(void *state) {
     struct page_data *pdata = state;
     pman_timer_pause(pdata->timer_change_page);
+    pman_timer_pause(pdata->timer_restore_language);
     lv_obj_clean(lv_scr_act());
 }
 
@@ -650,6 +790,7 @@ static void destroy_page(void *state, void *extra) {
     (void)extra;
     struct page_data *pdata = state;
     pman_timer_delete(pdata->timer_change_page);
+    pman_timer_delete(pdata->timer_restore_language);
     lv_free(state);
 }
 

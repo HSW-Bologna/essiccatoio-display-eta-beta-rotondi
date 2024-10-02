@@ -171,3 +171,10 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     // assert(i == PARMAC_SIZE);
     return i;
 }
+
+
+uint8_t model_is_program_done(model_t *model) {
+    assert(model != NULL);
+    return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE && model->run.minion.read.remaining_time_seconds == 0 &&
+           model->run.current_step_index + 1 >= model->run.current_program.num_steps;
+}

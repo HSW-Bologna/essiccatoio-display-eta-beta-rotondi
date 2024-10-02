@@ -130,23 +130,36 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
     ESP_LOGI(TAG, "Starting program %i", program_index);
     model_select_program(model, program_index);
     controller_sync_minion(model);
-    minion_resume_program();
+    if (model_is_cycle_stopped(model)) {
+        minion_resume_program();
+    }
+
+    model->run.minion.read.cycle_state = CYCLE_STATE_RUNNING;
 }
 
 
 static void resume_cycle(pman_handle_t handle) {
-    (void)handle;
+    mut_model_t *model = view_get_model(handle);
+    (void)model;
     minion_resume_program();
+
+    model->run.minion.read.cycle_state = CYCLE_STATE_RUNNING;
 }
 
 
 static void pause_cycle(pman_handle_t handle) {
-    (void)handle;
+    mut_model_t *model = view_get_model(handle);
+    (void)model;
     minion_pause_program();
+
+    model->run.minion.read.cycle_state = CYCLE_STATE_PAUSED;
 }
 
 
 static void stop_cycle(pman_handle_t handle) {
-    (void)handle;
+    mut_model_t *model = view_get_model(handle);
+    (void)model;
     minion_program_done();
+
+    model->run.minion.read.cycle_state = CYCLE_STATE_STOPPED;
 }

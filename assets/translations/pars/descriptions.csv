@@ -6,3 +6,9 @@ TASTO_MENU, Tasto menu, Menu button
 TEMPO_TASTO_PAUSA, Tempo tasto pausa, Pause button time
 TEMPO_TASTO_STOP, Tempo tasto stop, Stop button time
 TEMPO_STOP_AUTOMATICO, Tempo stop automatico, Automatic stop time
+DISABILITA_ALLARMI, Disabilita allarmi, Disable alarms
+TEMPO_ALLARME_TEMPERATURA, Tempo allarme temperatura, Temperature alarm delay
+TEMPERATURA_DI_SICUREZZA, Temperatura di sicurezza, Safety temperature
+TIPO_MACCHINA_OCCUPATA, Tipo macchina occupata, Busy signal type
+ALLARME_FILTRO, Allarme filtro, Filter alarm
+ALLARME_INVERTER, Allarme inverter, Inverter alarm

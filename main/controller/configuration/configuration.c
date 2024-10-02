@@ -370,9 +370,9 @@ void configuration_remove_program(program_t *programs, size_t len, size_t num) {
 
 
 int configuration_load_programs_preview(model_t *pmodel, program_t *programs, size_t len, uint16_t lingua) {
-    uint16_t num = list_saved_programs(programs, len);
-    char     path[PATH_MAX];
-    int      count = 0;
+    int16_t num = list_saved_programs(programs, len);
+    char    path[PATH_MAX];
+    int     count = 0;
 
     if (num < 0) {
         remove(PATH_FILE_INDICE);
@@ -491,7 +491,6 @@ int configuration_load_all_data(mut_model_t *pmodel) {
     pmodel->config.num_programs = configuration_load_programs_preview(pmodel, pmodel->config.programs, MAX_PROGRAMMI,
                                                                       pmodel->config.parmac.language);
     configuration_clear_orphan_programs(pmodel->config.programs, pmodel->config.num_programs);
-    model_reset_temporary_language(pmodel);
 
     return configuration_read_local_data_version();
 }

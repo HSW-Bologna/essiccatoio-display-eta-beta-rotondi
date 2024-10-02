@@ -43,7 +43,7 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.communication_error = 1;
                     break;
 
-                case MINION_RESPONSE_TAG_SYNC:
+                case MINION_RESPONSE_TAG_SYNC: {
                     model->run.minion.read.firmware_version_major = response.as.sync.firmware_version_major;
                     model->run.minion.read.firmware_version_minor = response.as.sync.firmware_version_minor;
                     model->run.minion.read.firmware_version_patch = response.as.sync.firmware_version_patch;
@@ -59,7 +59,12 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.default_temperature    = response.as.sync.default_temperature;
                     model->run.minion.read.remaining_time_seconds = response.as.sync.remaining_time_seconds;
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
+
+                    if (model_is_program_done(model)) {
+                        minion_program_done();
+                    }
                     break;
+                }
 
                 case MINION_RESPONSE_TAG_HANDSHAKE: {
                     if (response.as.handshake.cycle_state != CYCLE_STATE_STOPPED) {

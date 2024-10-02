@@ -147,8 +147,6 @@ void bsp_tft_display_init(void (*display_flush_ready_cb)(void), size_t buffer_si
 void bsp_tft_display_brightness_set(uint8_t brightness_percentage) {
     if (brightness_percentage > 100) {
         brightness_percentage = 100;
-    } else if (brightness_percentage < 0) {
-        brightness_percentage = 0;
     }
 
     // LEDC resolution set to 10bits, thus: 100% = 1023
