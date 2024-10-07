@@ -46,15 +46,20 @@ struct __attribute__((packed)) task_message {
     union {
         struct {
             uint8_t  test_mode;
-            uint16_t test_outputs;
+            uint8_t  busy_signal_type;
             uint8_t  test_pwm1;
             uint8_t  test_pwm2;
+            uint16_t test_outputs;
             uint16_t cycle_delay_time;
+            uint16_t safety_temperature;
+            uint16_t temperature_alarm_delay_seconds;
             uint16_t flags;
             uint16_t rotation_running_time;
             uint16_t rotation_pause_time;
             uint16_t rotation_speed;
             uint16_t drying_duration;
+            uint16_t drying_temperature;
+            uint16_t drying_humidity;
             uint16_t drying_type;
             uint16_t program_number;
             uint16_t step_number;
@@ -143,19 +148,25 @@ void minion_sync(model_t *model) {
             {
                 .sync =
                     {
-                        .test_mode             = model->run.minion.write.test_mode,
-                        .test_outputs          = model->run.minion.write.test_outputs,
-                        .test_pwm1             = model->run.minion.write.test_pwm1,
-                        .test_pwm2             = model->run.minion.write.test_pwm2,
-                        .cycle_delay_time      = model->config.parmac.tempo_attesa_partenza_ciclo,
-                        .flags                 = ((model->config.parmac.stop_tempo_ciclo > 0) << 0),
-                        .rotation_running_time = drying_step.rotation_time,
-                        .rotation_pause_time   = drying_step.pause_time,
-                        .rotation_speed        = drying_step.speed,
-                        .drying_duration       = drying_step.duration,
-                        .drying_type           = drying_step.type,
-                        .program_number        = model->run.current_program_index,
-                        .step_number           = model->run.current_step_index,
+                        .test_mode                       = model->run.minion.write.test_mode,
+                        .test_outputs                    = model->run.minion.write.test_outputs,
+                        .test_pwm1                       = model->run.minion.write.test_pwm1,
+                        .test_pwm2                       = model->run.minion.write.test_pwm2,
+                        .cycle_delay_time                = model->config.parmac.tempo_attesa_partenza_ciclo,
+                        .safety_temperature              = model->config.parmac.temperatura_sicurezza,
+                        .temperature_alarm_delay_seconds = model->config.parmac.tempo_allarme_temperatura,
+                        .flags                           = ((model->config.parmac.stop_tempo_ciclo > 0) << 0 |
+                                  (model->config.parmac.disabilita_allarmi > 0) << 1     //|
+                                  ),
+                        .rotation_running_time           = drying_step.rotation_time,
+                        .rotation_pause_time             = drying_step.pause_time,
+                        .rotation_speed                  = drying_step.speed,
+                        .drying_duration                 = drying_step.duration,
+                        .drying_type                     = drying_step.type,
+                        .drying_temperature              = drying_step.temperature,
+                        .drying_humidity                 = drying_step.humidity,
+                        .program_number                  = model->run.current_program_index,
+                        .step_number                     = model->run.current_step_index,
                     },
             },
     };
@@ -276,10 +287,13 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
             }
 
             if (!error) {
-                uint16_t values[12] = {
+                uint16_t values[17] = {
                     message.as.sync.test_mode,
                     message.as.sync.test_outputs,
                     message.as.sync.test_pwm1 | (message.as.sync.test_pwm2 << 8),
+                    message.as.sync.busy_signal_type,
+                    message.as.sync.safety_temperature,
+                    message.as.sync.temperature_alarm_delay_seconds,
                     message.as.sync.cycle_delay_time,
                     message.as.sync.flags,
                     message.as.sync.rotation_running_time,
@@ -287,6 +301,8 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
                     message.as.sync.rotation_speed,
                     message.as.sync.drying_duration,
                     message.as.sync.drying_type,
+                    message.as.sync.drying_temperature,
+                    message.as.sync.drying_humidity,
                     message.as.sync.program_number,
                     message.as.sync.step_number,
                 };

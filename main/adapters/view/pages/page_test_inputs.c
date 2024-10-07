@@ -139,9 +139,9 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 static void update_page(model_t *model, struct page_data *pdata) {
     for (size_t i = 0; i < NUM_INPUTS; i++) {
         if (model->run.minion.read.inputs & (1 << i)) {
-            lv_led_off(pdata->led_input[i]);
-        } else {
             lv_led_on(pdata->led_input[i]);
+        } else {
+            lv_led_off(pdata->led_input[i]);
         }
     }
 }

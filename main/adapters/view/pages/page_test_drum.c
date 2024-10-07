@@ -133,7 +133,7 @@ static void open_page(pman_handle_t handle, void *state) {
         alarm_led_create(bottom, &pdata->led_emergency, "EMER.");
     }
 
-    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.inputs, 0);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.alarms, 0);
 
     update_page(model, pdata);
 }
@@ -251,7 +251,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 static int test_cesto_in_sicurezza(model_t *model, struct page_data *data) {
     (void)data;
-    return (model->run.minion.read.inputs & 0x01) == 0;
+    return (model->run.minion.read.alarms & (1 << ALARM_EMERGENCY)) == 0;
 }
 
 
@@ -262,10 +262,10 @@ static void update_page(model_t *model, struct page_data *pdata) {
     lv_label_set_text_fmt(pdata->label_run, "[marcia] %s %s", pdata->run ? "on " : "off",
                           test_cesto_in_sicurezza(model, pdata) ? "ok" : "no");
 
-    if ((model->run.minion.read.inputs & 1) > 0) {
-        lv_led_off(pdata->led_emergency);
-    } else {
+    if ((model->run.minion.read.alarms & (1 << ALARM_EMERGENCY)) > 0) {
         lv_led_on(pdata->led_emergency);
+    } else {
+        lv_led_off(pdata->led_emergency);
     }
 
     if (pdata->run) {

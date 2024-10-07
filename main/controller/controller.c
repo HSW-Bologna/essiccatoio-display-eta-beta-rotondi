@@ -4,12 +4,16 @@
 #include "gui.h"
 #include "minion.h"
 #include "services/timestamp.h"
+#include "esp_log.h"
 
 
 static struct {
     timestamp_t minion_sync_ts;
     uint8_t     handshook;
 } state = {0};
+
+
+static const char *TAG = "Controller";
 
 
 void controller_init(mut_model_t *model) {
@@ -61,6 +65,7 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
 
                     if (model_is_program_done(model)) {
+                        ESP_LOGI(TAG, "Program done!");
                         minion_program_done();
                     }
                     break;

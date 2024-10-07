@@ -175,13 +175,13 @@ static void open_page(pman_handle_t handle, void *state) {
         pdata->buttons[i] = program_button_create(cont, i);
     }
 
-    pdata->image_stop = old_icon_button_create(cont, &img_stop);
-    lv_image_set_scale(pdata->image_stop, SCALE_CONTROL);
-    view_register_object_default_callback(pdata->image_stop, BTN_STOP_ID);
-
     pdata->image_start = old_icon_button_create(cont, &img_start);
     lv_image_set_scale(pdata->image_start, SCALE_CONTROL);
     view_register_object_default_callback(pdata->image_start, BTN_START_ID);
+
+    pdata->image_stop = old_icon_button_create(cont, &img_stop);
+    lv_image_set_scale(pdata->image_stop, SCALE_CONTROL);
+    view_register_object_default_callback(pdata->image_stop, BTN_STOP_ID);
 
     pdata->icon_button_language = icon_button_create(cont, &img_italiano);
     icon_button_scale(&pdata->icon_button_language, SCALE_SMALL_ICON);
@@ -217,6 +217,7 @@ static void open_page(pman_handle_t handle, void *state) {
     VIEW_ADD_WATCHED_VARIABLE(&model->run.current_step_index, WATCH_STATE_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.default_temperature, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.remaining_time_seconds, WATCH_INFO_ID);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.alarms, WATCH_INFO_ID);
 
     update_programs(model, pdata);
     update_info(model, pdata);
@@ -760,17 +761,28 @@ static void hit_test_event_cb(lv_event_t *event) {
             break;
     }
 
+    view_object_data_t *obj_data = lv_obj_get_user_data(target);
+
+    int32_t centered_x     = zeroed_x - scaled_width / 2;
+    int32_t centered_y     = zeroed_y - scaled_width / 2;
+    int32_t vector_squared = centered_x * centered_x + centered_y * centered_y;
+
     ESP_LOGD(TAG,
-             "%4" PRIiLEAST32 " %4" PRIiLEAST32 " %4" PRIiLEAST32 ", (%4" PRIiLEAST32 " %4" PRIiLEAST32
+             "%i %4" PRIiLEAST32 " %4" PRIiLEAST32 " %4" PRIiLEAST32 ", (%4" PRIiLEAST32 " %4" PRIiLEAST32
              ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") (%4" PRIiLEAST32
-             " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") %4zu %4zu 0x%02X %4" PRIiLEAST32 ,
-             width, scale, scaled_width, vect.x, vect.y, obj_x, obj_y, lv_obj_get_x(target), lv_obj_get_y(target),
-             zeroed_x, zeroed_y, unscaled_zeroed_x, unscaled_zeroed_y, pixel_index, pixel_size,
-             img_dsc->data[pixel_index * pixel_size], img_dsc->data_size);
+             " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32 ") (%4" PRIiLEAST32 " %4" PRIiLEAST32
+             ") %4zu %4zu 0x%02X %4" PRIiLEAST32,
+             obj_data->id, width, scale, scaled_width, vect.x, vect.y, obj_x, obj_y, lv_obj_get_x(target),
+             lv_obj_get_y(target), zeroed_x, zeroed_y, centered_x, centered_y, unscaled_zeroed_x, unscaled_zeroed_y,
+             pixel_index, pixel_size, img_dsc->data[pixel_index * pixel_size], img_dsc->data_size);
 
     if (pixel_index < img_dsc->data_size) {
-        uint8_t alpha      = img_dsc->data[pixel_index * pixel_size];
-        hit_test_info->res = alpha > 0;
+        if (vector_squared <= (scaled_width / 2) * (scaled_width / 2)) {
+            uint8_t alpha      = img_dsc->data[pixel_index * pixel_size + (pixel_size - 1)];
+            hit_test_info->res = alpha > 0;
+        } else {
+            hit_test_info->res = 0;
+        }
     } else {
         ESP_LOGW(TAG, "Out of bounds");
         hit_test_info->res = 0;
