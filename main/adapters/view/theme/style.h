@@ -6,8 +6,8 @@
 
 #define STYLE_FONT_SMALL  (&lv_font_montserrat_16)
 #define STYLE_FONT_MEDIUM (&lv_font_montserrat_24)
-#define STYLE_FONT_BIG    (&lv_font_montserrat_48)
-#define STYLE_FONT_HUGE   (&font_montserrat_48)
+#define STYLE_FONT_BIG    (&lv_font_montserrat_32)
+#define STYLE_FONT_HUGE   (&font_montserrat_32)
 
 #define VIEW_STYLE_PRIMARY          (lv_color_darken(((lv_color_t)lv_color_make(0x9e, 0xc1, 0xe7)), LV_OPA_30))
 #define VIEW_STYLE_SECONDARY        ((lv_color_t)LV_COLOR_MAKE(0x0, 0x0, 0x0))
@@ -24,6 +24,8 @@ extern const lv_style_t style_padless_cont;
 extern const lv_style_t style_borderless_cont;
 extern const lv_style_t style_black_border;
 extern const lv_style_t style_config_btn;
+extern lv_style_t       style_tall_button;
+extern lv_style_t       style_tall_button_checked;
 
 
 void style_init(void);

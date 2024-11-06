@@ -31,10 +31,10 @@ LV_IMG_DECLARE(img_empty);
 LV_IMG_DECLARE(img_button_background);
 
 
-#define SETTINGS_DRAG_WIDTH    32
-#define SETTINGS_DRAG_HEIGHT   100
-#define SETTINGS_DRAWER_WIDTH  128
-#define SETTINGS_DRAWER_HEIGHT 100
+#define SETTINGS_DRAG_WIDTH    96
+#define SETTINGS_DRAG_HEIGHT   16
+#define SETTINGS_DRAWER_WIDTH  96
+#define SETTINGS_DRAWER_HEIGHT 96
 #define SETTINGS_BTN_WIDTH     64
 
 #define SCALE_SMALL_ICON      160
@@ -190,16 +190,15 @@ static void open_page(pman_handle_t handle, void *state) {
     {
         lv_obj_t *obj = lv_obj_create(cont);
         lv_obj_set_size(obj, SETTINGS_DRAG_WIDTH, SETTINGS_DRAG_HEIGHT);
-        lv_obj_align(obj, LV_ALIGN_RIGHT_MID, 0, 0);
+        lv_obj_align(obj, LV_ALIGN_TOP_MID, 0, 0);
         lv_obj_add_style(obj, (lv_style_t *)&style_transparent_cont, LV_STATE_DEFAULT);
-        lv_obj_add_style(obj, (lv_style_t *)&style_padless_cont, LV_STATE_DEFAULT);
         lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         view_register_object_default_callback(obj, OBJ_SETTINGS_ID);
         pdata->obj_handle = obj;
 
         lv_obj_t *drawer = lv_obj_create(cont);
         lv_obj_set_size(drawer, SETTINGS_DRAWER_WIDTH, SETTINGS_DRAWER_HEIGHT);
-        lv_obj_align_to(drawer, obj, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+        lv_obj_align_to(drawer, obj, LV_ALIGN_OUT_TOP_MID, 0, 0);
         pdata->obj_drawer = drawer;
 
         lv_obj_t *btn = lv_btn_create(drawer);
@@ -336,11 +335,11 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 lv_point_t vect;
                                 lv_indev_get_vect(indev, &vect);
 
-                                lv_coord_t x = lv_obj_get_x_aligned(target) + vect.x;
+                                lv_coord_t y = lv_obj_get_y_aligned(target) + vect.y;
 
-                                if (x <= 0 && x >= -SETTINGS_DRAWER_WIDTH) {
-                                    lv_obj_set_x(target, x);
-                                    lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+                                if (y > 0 && y < SETTINGS_DRAWER_HEIGHT) {
+                                    lv_obj_set_y(target, y);
+                                    lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_TOP_MID, 0, 0);
                                 }
                             }
                             break;
@@ -355,16 +354,16 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_RELEASED: {
                     switch (obj_data->id) {
                         case OBJ_SETTINGS_ID: {
-                            lv_coord_t x = lv_obj_get_x_aligned(target);
+                            lv_coord_t y = lv_obj_get_y_aligned(target);
 
-                            if (x <= -SETTINGS_DRAWER_WIDTH / 2) {
-                                lv_obj_align(target, LV_ALIGN_RIGHT_MID, -SETTINGS_DRAWER_WIDTH, 0);
+                            if (y > SETTINGS_DRAWER_HEIGHT / 2) {
+                                lv_obj_align(target, LV_ALIGN_TOP_MID, 0, SETTINGS_DRAWER_HEIGHT);
                                 pman_timer_reset(pdata->timer_change_page);
                                 pman_timer_resume(pdata->timer_change_page);
                             } else {
-                                lv_obj_align(target, LV_ALIGN_RIGHT_MID, 0, 0);
+                                lv_obj_align(target, LV_ALIGN_TOP_MID, 0, 0);
                             }
-                            lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+                            lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_TOP_MID, 0, 0);
                             break;
                         }
 

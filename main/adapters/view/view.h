@@ -72,7 +72,7 @@ view_protocol_t *view_get_protocol(pman_handle_t handle);
 
 
 extern const pman_page_t page_main, page_password, page_menu, page_test_inputs, page_test_outputs,
-    page_test_temperature, page_parmac, page_test_drum;
+    page_test_temperature, page_parmac, page_test_drum, page_main_demo;
 
 
 #endif

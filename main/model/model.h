@@ -9,7 +9,6 @@
 
 #define USER_ACCESS_LEVEL       1
 #define TECHNICIAN_ACCESS_LEVEL 3
-#define NUM_BASE_PROGRAMS       5
 #define PARMAC_SIZE             279
 
 
@@ -51,6 +50,7 @@ typedef enum {
     ALARM_EMERGENCY = 0,
     ALARM_FILTER,
     ALARM_PORTHOLE,
+#define ALARMS_NUM 3
 } alarm_t;
 
 
@@ -164,6 +164,11 @@ void                        model_select_program(mut_model_t *model, uint16_t pr
 void                        model_select_step(mut_model_t *model, uint16_t step_index);
 uint8_t                     model_is_drying(model_t *model);
 uint8_t                     model_is_program_done(model_t *model);
+int16_t                     model_get_program_display_temperature(model_t *model, uint16_t program_index);
+uint8_t                     model_is_alarm_active(model_t *model, alarm_t alarm);
+uint8_t                     model_is_porthole_open(model_t *model);
+uint8_t                     model_is_cycle_running(model_t *model);
+uint8_t                     model_is_any_alarm_active(model_t *model);
 
 
 #endif

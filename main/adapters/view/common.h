@@ -32,6 +32,16 @@ typedef struct {
 } view_title_t;
 
 
+typedef struct {
+    lv_obj_t *blanket;
+
+    lv_obj_t *lbl_description;
+
+    lv_obj_t *btn_cancel;
+    lv_obj_t *btn_ok;
+} popup_t;
+
+
 void                        view_common_set_hidden(lv_obj_t *obj, uint8_t hidden);
 password_page_options_t    *view_common_default_password_page_options(pman_stack_msg_t msg, const char *password);
 view_title_t                view_common_create_title(lv_obj_t *root, const char *text, int back_id, int next_id);
@@ -39,6 +49,9 @@ void                        view_common_image_set_src(lv_obj_t *img, const lv_im
 communication_error_popup_t view_common_communication_error_popup(lv_obj_t *parent);
 void                        view_common_set_disabled(lv_obj_t *obj, uint8_t disabled);
 void                        view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t language);
+popup_t                     view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, int cancel_id);
+popup_t                     view_common_alarm_popup_create(lv_obj_t *parent, int id);
+void                        view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language);
 
 
 #endif

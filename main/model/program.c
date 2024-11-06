@@ -14,16 +14,62 @@
 static void init_names(name_t *names, uint16_t num);
 
 
-const program_drying_parameters_t program_default_drying_parameters = {
-    .type                           = PROGRAMS_MODE_MANUAL,
-    .duration                       = 60,
-    .enable_waiting_for_temperature = 1,
-    .enable_reverse                 = 0,
-    .rotation_time                  = 32,
-    .pause_time                     = 8,
-    .speed                          = 40,
-    .temperature                    = 40,
-    .humidity                       = 40,
+const program_drying_parameters_t program_default_drying_parameters[] = {
+    {
+        .type                           = PROGRAMS_MODE_MANUAL,
+        .duration                       = 60,
+        .enable_waiting_for_temperature = 1,
+        .enable_reverse                 = 0,
+        .rotation_time                  = 32,
+        .pause_time                     = 8,
+        .speed                          = 40,
+        .temperature                    = 80,
+        .humidity                       = 40,
+    },
+    {
+        .type                           = PROGRAMS_MODE_MANUAL,
+        .duration                       = 60,
+        .enable_waiting_for_temperature = 1,
+        .enable_reverse                 = 0,
+        .rotation_time                  = 32,
+        .pause_time                     = 8,
+        .speed                          = 40,
+        .temperature                    = 60,
+        .humidity                       = 40,
+    },
+    {
+        .type                           = PROGRAMS_MODE_MANUAL,
+        .duration                       = 60,
+        .enable_waiting_for_temperature = 1,
+        .enable_reverse                 = 0,
+        .rotation_time                  = 32,
+        .pause_time                     = 8,
+        .speed                          = 40,
+        .temperature                    = 40,
+        .humidity                       = 40,
+    },
+    {
+        .type                           = PROGRAMS_MODE_MANUAL,
+        .duration                       = 60,
+        .enable_waiting_for_temperature = 1,
+        .enable_reverse                 = 0,
+        .rotation_time                  = 32,
+        .pause_time                     = 8,
+        .speed                          = 40,
+        .temperature                    = 30,
+        .humidity                       = 40,
+    },
+    {
+        .type                           = PROGRAMS_MODE_MANUAL,
+        .duration                       = 60,
+        .enable_waiting_for_temperature = 1,
+        .enable_reverse                 = 0,
+        .rotation_time                  = 32,
+        .pause_time                     = 8,
+        .speed                          = 40,
+        .temperature                    = 20,
+        .humidity                       = 40,
+    },
 };
 
 
@@ -61,7 +107,7 @@ void program_insert_step(program_t *p, int tipo, size_t index) {
             p->steps[i + 1] = p->steps[i];
         }
 
-        p->steps[index] = program_default_drying_parameters;
+        p->steps[index] = program_default_drying_parameters[tipo];
         p->num_steps++;
     } else if (index > p->num_steps) {
         program_add_step(p, tipo);

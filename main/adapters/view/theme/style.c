@@ -39,5 +39,22 @@ static const lv_style_const_prop_t style_config_btn_props[] = {
 LV_STYLE_CONST_INIT(style_config_btn, (void *)style_config_btn_props);
 
 
+lv_style_t style_tall_button         = {0};
+lv_style_t style_tall_button_checked = {0};
 
-void style_init(void) {}
+
+void style_init(void) {
+    lv_style_init(&style_tall_button);
+    lv_style_set_radius(&style_tall_button, 0);
+    lv_style_set_text_color(&style_tall_button, VIEW_STYLE_COLOR_BLACK);
+    lv_style_set_bg_color(&style_tall_button, VIEW_STYLE_COLOR_WHITE);
+    lv_style_set_border_width(&style_tall_button, 2);
+    lv_style_set_border_color(&style_tall_button, lv_color_darken(VIEW_STYLE_COLOR_BACKGROUND, LV_OPA_20));
+
+    lv_style_init(&style_tall_button_checked);
+    lv_style_set_bg_color(&style_tall_button_checked, VIEW_STYLE_COLOR_WHITE);
+    lv_style_set_text_color(&style_tall_button_checked, VIEW_STYLE_COLOR_BLACK);
+    lv_style_set_bg_color(&style_tall_button_checked, lv_color_hex(0xbdbdbd));
+    lv_style_set_border_width(&style_tall_button_checked, 4);
+    lv_style_set_border_color(&style_tall_button_checked, lv_color_hex(0xf79410));
+}

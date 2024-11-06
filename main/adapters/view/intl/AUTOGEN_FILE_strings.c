@@ -1,4 +1,4 @@
-const char *strings[16][2] = {
+const char *strings[18][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -15,5 +15,7 @@ const char *strings[16][2] = {
     {"Cassetto del filtro aperto", "Filter drawer open", },
     {"Oblo' aperto", "Porthole open", },
     {"Asciugatura in corso", "Drying in progress", },
+    {"Codice", "Codice", },
+    {"Allarme", "Alarm", },
 };
 

@@ -18,8 +18,10 @@ typedef enum {
     STRINGS_CASSETTO_DEL_FILTRO_APERTO,
     STRINGS_OBLO_APERTO,
     STRINGS_ASCIUGATURA_IN_CORSO,
+    STRINGS_CODICE,
+    STRINGS_ALLARME,
 } strings_t;
 
-extern const char *strings[16][2];
+extern const char *strings[18][2];
 
 #endif

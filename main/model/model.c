@@ -19,11 +19,44 @@ void model_init(mut_model_t *model) {
 
     model->config.num_programs = BASE_PROGRAMS_NUM;
     for (size_t i = 0; i < BASE_PROGRAMS_NUM; i++) {
-        model->config.programs[i].steps[0]  = program_default_drying_parameters;
+        model->config.programs[i].steps[0]  = program_default_drying_parameters[i];
         model->config.programs[i].num_steps = 1;
     }
 
     parmac_init(model, 1);
+}
+
+
+uint8_t model_is_porthole_open(model_t *model) {
+    assert(model != NULL);
+    return model_is_alarm_active(model, ALARM_PORTHOLE);
+}
+
+
+uint8_t model_is_any_alarm_active(model_t *model) {
+    assert(model != NULL);
+    return model->run.minion.read.alarms > 0;
+}
+
+
+uint8_t model_is_alarm_active(model_t *model, alarm_t alarm) {
+    assert(model != NULL);
+    return model->run.minion.read.alarms & (1 << alarm);
+}
+
+
+int16_t model_get_program_display_temperature(model_t *model, uint16_t program_index) {
+    assert(model != NULL);
+    if (program_index < model->config.num_programs) {
+        const program_t *program = &model->config.programs[program_index];
+        if (program->num_steps > 0) {
+            return program->steps[0].temperature;
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
 }
 
 
@@ -75,6 +108,11 @@ uint8_t model_is_cycle_paused(model_t *model) {
     return model->run.minion.read.cycle_state == CYCLE_STATE_PAUSED;
 }
 
+
+uint8_t model_is_cycle_running(model_t *model) {
+    assert(model != NULL);
+    return model->run.minion.read.cycle_state == CYCLE_STATE_RUNNING;
+}
 
 uint8_t model_is_cycle_stopped(model_t *model) {
     assert(model != NULL);
@@ -175,6 +213,7 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
 
 uint8_t model_is_program_done(model_t *model) {
     assert(model != NULL);
-    return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE && model->run.minion.read.remaining_time_seconds == 0 &&
+    return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE &&
+           model->run.minion.read.remaining_time_seconds == 0 &&
            model->run.current_step_index + 1 >= model->run.current_program.num_steps;
 }

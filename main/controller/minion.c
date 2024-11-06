@@ -26,10 +26,11 @@
 
 #define MINION_ADDR 1
 
-#define COMMAND_REGISTER_NONE   0
-#define COMMAND_REGISTER_RESUME 1
-#define COMMAND_REGISTER_PAUSE  2
-#define COMMAND_REGISTER_DONE   3
+#define COMMAND_REGISTER_NONE         0
+#define COMMAND_REGISTER_RESUME       1
+#define COMMAND_REGISTER_PAUSE        2
+#define COMMAND_REGISTER_DONE         3
+#define COMMAND_REGISTER_CLEAR_ALARMS 4
 
 
 typedef enum {
@@ -116,8 +117,14 @@ void minion_retry_communication(void) {
 
 
 void minion_resume_program(void) {
-    struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_RESUME}};
-    xQueueSend(messageq, &msg, 0);
+    {
+        struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_CLEAR_ALARMS}};
+        xQueueSend(messageq, &msg, 0);
+    }
+    {
+        struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_RESUME}};
+        xQueueSend(messageq, &msg, 0);
+    }
 }
 
 

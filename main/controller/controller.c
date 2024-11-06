@@ -22,8 +22,8 @@ void controller_init(mut_model_t *model) {
     minion_init();
     minion_handshake();
 
-
-    view_change_page(&page_main);
+    //view_change_page(&page_main);
+    view_change_page(&page_main_demo);
 }
 
 

@@ -85,6 +85,6 @@ size_t program_serialize_empty(uint8_t *buffer, uint16_t num);
 program_drying_parameters_t default_step(void);
 
 
-extern const program_drying_parameters_t program_default_drying_parameters;
+extern const program_drying_parameters_t program_default_drying_parameters[];
 
 #endif

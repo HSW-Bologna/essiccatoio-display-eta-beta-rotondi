@@ -5,6 +5,9 @@
 #include "intl/intl.h"
 
 
+static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code);
+
+
 #define SQUARE_BUTTON_SIZE 48
 
 
@@ -130,4 +133,82 @@ communication_error_popup_t view_common_communication_error_popup(lv_obj_t *pare
         .lbl_msg   = lbl_msg,
         .lbl_retry = lbl_retry,
     };
+}
+
+
+void view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language) {
+    alarm_t     alarm_code  = 0;
+    const char *description = get_alarm_description(model, language, &alarm_code);
+    lv_label_set_text_fmt(alarm_popup->lbl_description, "%s\n\n%s: %i", description,
+                          view_intl_get_string_in_language(language, STRINGS_CODICE), alarm_code);
+}
+
+
+popup_t view_common_alarm_popup_create(lv_obj_t *parent, int id) {
+    return view_common_popup_create(parent, "", id, -1);
+}
+
+
+popup_t view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, int cancel_id) {
+    lv_obj_t *blanket = lv_obj_create(parent);
+    lv_obj_add_style(blanket, &style_transparent_cont, LV_STATE_DEFAULT);
+    lv_obj_set_size(blanket, LV_PCT(100), LV_PCT(100));
+
+    lv_obj_t *cont = lv_obj_create(blanket);
+    lv_obj_set_size(cont, LV_PCT(90), LV_PCT(90));
+    lv_obj_center(cont);
+    lv_obj_set_style_radius(cont, 48, LV_STATE_DEFAULT);
+
+    lv_obj_t *lbl_msg = lv_label_create(cont);
+    lv_obj_set_style_text_align(lbl_msg, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(lbl_msg, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+    lv_label_set_long_mode(lbl_msg, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(lbl_msg, LV_PCT(95));
+    lv_label_set_text(lbl_msg, text);
+    lv_obj_align(lbl_msg, LV_ALIGN_CENTER, 0, -32);
+
+    lv_obj_t *btn_cancel = NULL;
+    if (cancel_id >= 0) {
+        lv_obj_t *btn = lv_button_create(cont);
+        lv_obj_set_size(btn, 64, 48);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_label_set_text(lbl, LV_SYMBOL_CLOSE);
+        lv_obj_center(lbl);
+        lv_obj_align(btn, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+        view_register_object_default_callback(btn, cancel_id);
+        btn_cancel = btn;
+    }
+
+    lv_obj_t *btn = lv_button_create(cont);
+    lv_obj_set_size(btn, 64, 48);
+    lv_obj_t *lbl = lv_label_create(btn);
+    lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+    lv_label_set_text(lbl, LV_SYMBOL_OK);
+    lv_obj_center(lbl);
+    if (cancel_id >= 0) {
+        lv_obj_align(btn, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    } else {
+        lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, 0);
+    }
+    view_register_object_default_callback(btn, ok_id);
+
+    return (popup_t){
+        .blanket         = blanket,
+        .btn_ok          = btn,
+        .btn_cancel      = btn_cancel,
+        .lbl_description = lbl_msg,
+    };
+}
+
+
+static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code) {
+    strings_t string_codes[] = {STRINGS_ALLARME_EMERGENZA, STRINGS_CASSETTO_DEL_FILTRO_APERTO, STRINGS_OBLO_APERTO};
+    for (alarm_t alarm = 0; alarm < ALARMS_NUM; alarm++) {
+        if (model_is_alarm_active(model, alarm)) {
+            *alarm_code = alarm;
+            return view_intl_get_string_in_language(language, string_codes[alarm]);
+        }
+    }
+    return view_intl_get_string_in_language(language, STRINGS_ALLARME);
 }
