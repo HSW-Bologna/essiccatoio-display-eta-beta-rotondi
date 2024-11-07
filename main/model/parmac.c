@@ -9,8 +9,8 @@
 
 
 #define NUM_PARAMETERS 107
-#define USER_BITS      USER_ACCESS_LEVEL
-#define TECH_BITS      0x02
+#define USER_BITS      0x01
+#define TECH_BITS      0x03
 
 
 enum {
@@ -51,6 +51,7 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->allarme_inverter_off_on,                  0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_ALLARME_INVERTER, pars_nosi),                              USER_BITS);
     ps[i++] = PARAMETER(&p->allarme_filtro_off_on,                    0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_ALLARME_FILTRO, pars_nosi),                                USER_BITS);
     ps[i++] = PARAMETER(&p->disabilita_allarmi,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DISABILITA_ALLARMI, pars_nosi),                            TECH_BITS);
+    ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_LIVELLO_ACCESSO, pars_livello_accesso),                    TECH_BITS);
     // clang-format on
 
 #if 0
@@ -69,55 +70,54 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->max_programs,                             1,                              MAX_PROGRAMS,               (MAX_PROGRAMS/2),               ((pudata_t){.t = PTYPE_NUMBER, .desc=DESC[PARAMETERS_DESC_MAX_PROGRAMMI]}),                                                                                 USER_BITS);
     ps[i++] = PARAMETER(&p->temperatura_sicurezza_out,                0,                              100,                        50,                            ((pudata_t){.t = PTYPE_NUMBER, .desc=DESC[PARAMETERS_DESC_TEMPERATURA_SICUREZZA_OUT], .fmt = "%i C"}),                                                      USER_BITS);
     ps[i++] = PARAMETER(&p->tipo_riscaldamento,                       TIPO_RISCALDAMENTO_GAS,         TIPO_RISCALDAMENTO_VAPORE,  TIPO_RISCALDAMENTO_ELETTRICO,   ((pudata_t){.t = PTYPE_DROPDOWN, .desc = DESC[PARAMETERS_DESC_TIPO_RISCALDAMENTO], .values = (const char***)parameters_riscaldamento}),                     USER_BITS);
-    ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              ((pudata_t){.t = PTYPE_DROPDOWN, .desc = DESC[PARAMETERS_DESC_LIVELLO_ACCESSO], .values = (const char***)parameters_livello_accesso}),                      TECH_BITS);
     ps[i++] = PARAMETER(&p->autoavvio,                                0,                              1,                          0,                              ((pudata_t){.t = PTYPE_SWITCH, .desc = DESC[PARAMETERS_DESC_AUTOAVVIO], .values = (const char***)parameters_abilitazione}),                                 USER_BITS);
 #endif
 
     parameter_check_ranges(parameters, i);
     if (reset) {
-    parameter_reset_to_defaults(parameters, i);
+        parameter_reset_to_defaults(parameters, i);
     }
-    }
+}
 
-    void parmac_operation(model_t *pmodel, size_t parameter, int op, uint8_t al) {
+void parmac_operation(model_t *pmodel, size_t parameter, int op, uint8_t al) {
     parameter_operator(get_actual_parameter(pmodel, parameter, al), op);
-    }
+}
 
 
-    const char *parmac_get_description(model_t *pmodel, size_t parameter, uint8_t al) {
+const char *parmac_get_description(model_t *pmodel, size_t parameter, uint8_t al) {
     parameter_user_data_t *data = parameter_get_user_data(get_actual_parameter(pmodel, parameter, al));
 
     return data->descrizione[pmodel->config.parmac.language];
-    }
+}
 
-    void parmac_format_value(model_t *model, char *string, size_t parameter, uint8_t al) {
+void parmac_format_value(model_t *model, char *string, size_t parameter, uint8_t al) {
     parameter_handle_t    *par  = get_actual_parameter(model, parameter, al);
     parameter_user_data_t *data = parameter_get_user_data(par);
 
     data->format(string, model->config.parmac.language, model, par);
-    }
+}
 
-    size_t parmac_get_tot_parameters(uint8_t al) {
+size_t parmac_get_tot_parameters(uint8_t al) {
     return parameter_get_count(parameters, NUM_PARAMETERS, model_get_bit_accesso(al));
-    }
+}
 
 
 
-    static parameter_handle_t *get_actual_parameter(model_t *model, size_t parameter, uint8_t al) {
+static parameter_handle_t *get_actual_parameter(model_t *model, size_t parameter, uint8_t al) {
     (void)model;
     parameter_handle_t *par = parameter_get_handle(parameters, NUM_PARAMETERS, parameter, model_get_bit_accesso(al));
     assert(par != NULL);
     return par;
-    }
+}
 
 
-    const char *parmac_commissioning_language_get_description(model_t *pmodel) {
+const char *parmac_commissioning_language_get_description(model_t *pmodel) {
     parameter_user_data_t *data = parameter_get_user_data(&parameters[PARMAC_COMMISSIONING_LINGUA]);
     return data->descrizione[pmodel->config.parmac.language];
-    }
+}
 
 
 
-    void parmac_commissioning_operation(model_t *pmodel, parmac_commissioning_t parameter, int op) {
+void parmac_commissioning_operation(model_t *pmodel, parmac_commissioning_t parameter, int op) {
     parameter_operator(&parameters[parameter], op);
-    }
+}

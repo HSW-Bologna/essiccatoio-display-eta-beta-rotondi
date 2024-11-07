@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "model.h"
 #include "services/serializer.h"
+#include "services/timestamp.h"
 #include "parmac.h"
 #include "program.h"
 
@@ -22,6 +23,8 @@ void model_init(mut_model_t *model) {
         model->config.programs[i].steps[0]  = program_default_drying_parameters[i];
         model->config.programs[i].num_steps = 1;
     }
+
+    model->run.minion.communication_enabled = 1;
 
     parmac_init(model, 1);
 }
@@ -190,7 +193,8 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     memcpy(&buffer[i], p->nome, sizeof(name_t));
     i += sizeof(name_t);
 
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->language);
+    i += serialize_uint8(&buffer[i], (uint16_t)p->language);
+    i += serialize_uint8(&buffer[i], (uint16_t)p->access_level);
 
     // assert(i == PARMAC_SIZE);
     return i;
@@ -204,7 +208,8 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     memcpy(p->nome, &buffer[i], sizeof(name_t));
     i += sizeof(name_t);
 
-    i += UNPACK_UINT16_BE(p->language, &buffer[i]);
+    i += UNPACK_UINT8(p->language, &buffer[i]);
+    i += UNPACK_UINT8(p->access_level, &buffer[i]);
 
     // assert(i == PARMAC_SIZE);
     return i;
@@ -216,4 +221,82 @@ uint8_t model_is_program_done(model_t *model) {
     return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE &&
            model->run.minion.read.remaining_time_seconds == 0 &&
            model->run.current_step_index + 1 >= model->run.current_program.num_steps;
+}
+
+
+uint8_t model_swap_programs(mut_model_t *model, size_t first, size_t second) {
+    assert(model != NULL);
+
+    if (first >= model->config.num_programs) {
+        return 0;
+    }
+    if (second >= model->config.num_programs) {
+        return 0;
+    }
+    if (first == second) {
+        return 0;
+    }
+
+    program_t p                    = model->config.programs[first];
+    model->config.programs[first]  = model->config.programs[second];
+    model->config.programs[second] = p;
+
+    return 1;
+}
+
+
+void model_create_new_program(mut_model_t *model, uint16_t program_index) {
+    assert(model != NULL);
+
+    if (program_index > model->config.num_programs || model->config.num_programs >= MAX_PROGRAMMI) {
+        return;
+    }
+
+    if (model->config.num_programs > 0) {
+        // Make room
+        for (uint16_t i = model->config.num_programs - 1; i > program_index; i--) {
+            model->config.programs[i] = model->config.programs[i - 1];
+        }
+    }
+
+    program_t *program = &model->config.programs[program_index];
+    model_new_unique_filename(model, program->filename, timestamp_get());
+
+    const char *nuovo_programma[MAX_LINGUE] = {"Nuovo programma", "New program", "New program", "New program",
+                                               "New program",     "New program", "New program", "New program",
+                                               "New program",     "New program"};
+    for (uint16_t i = 0; i < MAX_LINGUE; i++) {
+        strcpy(program->nomi[i], nuovo_programma[i]);
+    }
+
+    program->antifold_enabled = 0;
+    program->cooling_enabled  = 0;
+    program->prezzo           = 0;
+    program->num_steps        = 0;
+
+    model->config.num_programs++;
+}
+
+
+void model_clone_program(mut_model_t *model, uint16_t source_program_index, uint16_t destination_program_index) {
+    assert(model != NULL);
+
+    if (source_program_index > model->config.num_programs || destination_program_index > model->config.num_programs ||
+        model->config.num_programs >= MAX_PROGRAMMI) {
+        return;
+    }
+
+    program_t source_program = model->config.programs[source_program_index];
+    model_create_new_program(model, destination_program_index);
+    model->config.programs[destination_program_index] = source_program;
+}
+
+
+void model_delete_program(mut_model_t *model, uint16_t program_index) {
+    assert(model != NULL);
+
+    for (uint16_t i = program_index; i < model->config.num_programs - 1; i++) {
+        model->config.programs[i] = model->config.programs[i + 1];
+    }
+    model->config.num_programs--;
 }

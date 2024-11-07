@@ -1,4 +1,4 @@
-const char *strings[18][2] = {
+const char *strings[25][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -17,5 +17,12 @@ const char *strings[18][2] = {
     {"Asciugatura in corso", "Drying in progress", },
     {"Codice", "Codice", },
     {"Allarme", "Alarm", },
+    {"Disabilita", "Disable", },
+    {"Avanzate", "Advanced", },
+    {"Comunicazione", "Communication", },
+    {"Ripristino a impostazioni di fabbrica", "Factory reset", },
+    {"Accesso", "Access", },
+    {"Programmi", "Programs", },
+    {"Cancellare il programma?", "Delete the program?", },
 };
 

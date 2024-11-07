@@ -24,6 +24,7 @@ extern const lv_style_t style_padless_cont;
 extern const lv_style_t style_borderless_cont;
 extern const lv_style_t style_black_border;
 extern const lv_style_t style_config_btn;
+extern const lv_style_t style_icon_button;
 extern lv_style_t       style_tall_button;
 extern lv_style_t       style_tall_button_checked;
 

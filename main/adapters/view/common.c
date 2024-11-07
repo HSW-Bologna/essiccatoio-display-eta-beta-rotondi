@@ -40,6 +40,22 @@ void view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t langu
 }
 
 
+lv_obj_t *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id) {
+    const int32_t button_height = 48;
+
+    lv_obj_t *button = lv_button_create(parent);
+    lv_obj_add_style(button, &style_icon_button, LV_STATE_DEFAULT);
+    lv_obj_set_size(button, button_height, button_height);
+
+    lv_obj_t *label = lv_label_create(button);
+    lv_label_set_text(label, icon);
+    lv_obj_center(label);
+
+    view_register_object_default_callback(button, id);
+    return button;
+}
+
+
 password_page_options_t *view_common_default_password_page_options(pman_stack_msg_t msg, const char *password) {
     password_page_options_t *fence = (password_page_options_t *)lv_malloc(sizeof(password_page_options_t));
     assert(fence != NULL);
@@ -121,17 +137,25 @@ communication_error_popup_t view_common_communication_error_popup(lv_obj_t *pare
     lv_obj_align(lbl_msg, LV_ALIGN_TOP_MID, 0, 0);
 
     lv_obj_t *btn = lv_button_create(cont);
-    lv_obj_set_size(btn, 96, 64);
+    lv_obj_set_size(btn, 104, 48);
     lv_obj_t *lbl_retry = lv_label_create(btn);
     // lv_label_set_text(lbl_retry, view_intl_get_string(model, STRINGS_RIPROVA));
     lv_obj_center(lbl_retry);
     lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, 0);
 
+    lv_obj_t *btn_disable = lv_button_create(cont);
+    lv_obj_set_size(btn_disable, 104, 48);
+    lv_obj_t *lbl_disable = lv_label_create(btn_disable);
+    lv_obj_center(lbl_disable);
+    lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, 0);
+
     return (communication_error_popup_t){
-        .blanket   = blanket,
-        .btn_retry = btn,
-        .lbl_msg   = lbl_msg,
-        .lbl_retry = lbl_retry,
+        .blanket     = blanket,
+        .btn_retry   = btn,
+        .lbl_msg     = lbl_msg,
+        .lbl_retry   = lbl_retry,
+        .lbl_disable = lbl_disable,
+        .btn_disable = btn_disable,
     };
 }
 

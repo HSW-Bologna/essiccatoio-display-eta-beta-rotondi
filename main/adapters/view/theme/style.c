@@ -38,6 +38,13 @@ static const lv_style_const_prop_t style_config_btn_props[] = {
 };
 LV_STYLE_CONST_INIT(style_config_btn, (void *)style_config_btn_props);
 
+static const lv_style_const_prop_t style_icon_button_props[] = {
+    LV_STYLE_CONST_RADIUS(LV_RADIUS_CIRCLE),
+    LV_STYLE_CONST_TEXT_FONT(STYLE_FONT_MEDIUM),
+    LV_STYLE_CONST_PROPS_END,
+};
+LV_STYLE_CONST_INIT(style_icon_button, (void *)style_icon_button_props);
+
 
 lv_style_t style_tall_button         = {0};
 lv_style_t style_tall_button_checked = {0};

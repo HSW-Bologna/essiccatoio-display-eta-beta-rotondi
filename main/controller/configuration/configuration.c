@@ -36,7 +36,6 @@
 
 
 static int load_parmac(parmac_t *parmac);
-static int update_index(program_t *programs, size_t len);
 
 
 static const char *TAG = "Configuration";
@@ -209,7 +208,7 @@ int configuration_clone_program(model_t *pmodel, size_t destination) {
 
         pmodel->prog.num_programmi++;
     }
-    update_index(pmodel->prog.preview_programmi, model_get_num_programs(pmodel));
+    configuration_update_index(pmodel->prog.preview_programmi, model_get_num_programs(pmodel));
 #endif
     return res;
 }
@@ -365,11 +364,11 @@ void configuration_remove_program(program_t *programs, size_t len, size_t num) {
         programs[i] = programs[i + 1];
     }
 
-    update_index(programs, len);
+    configuration_update_index(programs, len);
 }
 
 
-int configuration_load_programs_preview(model_t *pmodel, program_t *programs, size_t len, uint16_t lingua) {
+int configuration_load_programs(model_t *pmodel, program_t *programs, size_t len) {
     int16_t num = list_saved_programs(programs, len);
     char    path[PATH_MAX];
     int     count = 0;
@@ -381,7 +380,7 @@ int configuration_load_programs_preview(model_t *pmodel, program_t *programs, si
     ESP_LOGI(TAG, "%i programs found", num);
 
     uint8_t *buffer = malloc(MAX_PROGRAM_SIZE);
-    for (size_t i = 0; i < num; i++) {
+    for (size_t i = 0; i < (uint16_t)num; i++) {
         sprintf(path, "%s/%s", PROGRAMS_PATH, programs[i].filename);
 
         if (is_file(path)) {
@@ -471,7 +470,7 @@ int configuration_save_data_version(void) {
         res = -1;
     } else {
         char string[64];
-        snprintf(string, sizeof(string), "%i", COMPATIBILITY_VERSION);
+        snprintf(string, sizeof(string), "%i", CONFIGURATION_COMPATIBILITY_VERSION);
         fwrite(string, 1, strlen(string), findex);
         fclose(findex);
     }
@@ -488,8 +487,8 @@ int configuration_load_all_data(mut_model_t *pmodel) {
         configuration_save_parmac(&pmodel->config.parmac);
     }
 
-    pmodel->config.num_programs = configuration_load_programs_preview(pmodel, pmodel->config.programs, MAX_PROGRAMMI,
-                                                                      pmodel->config.parmac.language);
+    pmodel->config.num_programs =
+        configuration_load_programs(pmodel, pmodel->config.programs, MAX_PROGRAMMI);
     configuration_clear_orphan_programs(pmodel->config.programs, pmodel->config.num_programs);
 
     return configuration_read_local_data_version();
@@ -515,7 +514,7 @@ int configuration_read_local_data_version(void) {
 }
 
 
-static int update_index(program_t *previews, size_t len) {
+int configuration_update_index(program_t *programs, size_t len) {
     FILE *findex = fopen(PATH_FILE_INDICE, "w");
     if (findex == NULL) {
         ESP_LOGE(TAG, "Unable to open index: %s", strerror(errno));
@@ -523,7 +522,7 @@ static int update_index(program_t *previews, size_t len) {
     }
 
     for (size_t i = 0; i < len; i++) {
-        fwrite(previews[i].filename, 1, strlen(previews[i].filename), findex);
+        fwrite(programs[i].filename, 1, strlen(programs[i].filename), findex);
         fwrite("\n", 1, 1, findex);
     }
 

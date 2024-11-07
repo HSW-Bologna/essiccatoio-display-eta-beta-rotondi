@@ -23,6 +23,7 @@ typedef struct {
     void (*resume_cycle)(pman_handle_t handle);
     void (*pause_cycle)(pman_handle_t handle);
     void (*stop_cycle)(pman_handle_t handle);
+    void (*save_programs)(pman_handle_t handle);
 } view_protocol_t;
 
 
@@ -72,7 +73,7 @@ view_protocol_t *view_get_protocol(pman_handle_t handle);
 
 
 extern const pman_page_t page_main, page_password, page_menu, page_test_inputs, page_test_outputs,
-    page_test_temperature, page_parmac, page_test_drum, page_main_demo;
+    page_test_temperature, page_parmac, page_test_drum, page_main_demo, page_advanced, page_programs;
 
 
 #endif

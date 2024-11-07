@@ -5,6 +5,7 @@
 #include "minion.h"
 #include "services/timestamp.h"
 #include "esp_log.h"
+#include "configuration/configuration.h"
 
 
 static struct {
@@ -19,10 +20,12 @@ static const char *TAG = "Controller";
 void controller_init(mut_model_t *model) {
     (void)model;
 
+    configuration_init();
+    configuration_load_all_data(model);
+
     minion_init();
     minion_handshake();
 
-    //view_change_page(&page_main);
     view_change_page(&page_main_demo);
 }
 
@@ -95,7 +98,7 @@ void controller_manage(mut_model_t *model) {
 
 
 void controller_sync_minion(model_t *model) {
-    if (state.handshook) {
+    if (state.handshook && model->run.minion.communication_enabled) {
         minion_sync(model);
         state.minion_sync_ts = timestamp_get();
     }

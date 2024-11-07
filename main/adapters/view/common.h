@@ -21,7 +21,9 @@ typedef struct {
 
     lv_obj_t *lbl_msg;
     lv_obj_t *lbl_retry;
+    lv_obj_t *lbl_disable;
     lv_obj_t *btn_retry;
+    lv_obj_t *btn_disable;
 } communication_error_popup_t;
 
 
@@ -52,6 +54,7 @@ void                        view_common_format_alarm(lv_obj_t *label, uint16_t a
 popup_t                     view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, int cancel_id);
 popup_t                     view_common_alarm_popup_create(lv_obj_t *parent, int id);
 void                        view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language);
+lv_obj_t                   *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id);
 
 
 #endif

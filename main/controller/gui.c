@@ -20,6 +20,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index);
 static void resume_cycle(pman_handle_t handle);
 static void pause_cycle(pman_handle_t handle);
 static void stop_cycle(pman_handle_t handle);
+static void save_programs(pman_handle_t handle);
 
 
 static const char *TAG = "Gui";
@@ -37,6 +38,7 @@ view_protocol_t controller_gui_protocol = {
     .resume_cycle        = resume_cycle,
     .pause_cycle         = pause_cycle,
     .stop_cycle          = stop_cycle,
+    .save_programs       = save_programs,
 };
 
 
@@ -62,8 +64,9 @@ static void retry_communication(pman_handle_t handle) {
     ESP_LOGI(TAG, "Requesting com retry");
 
     minion_retry_communication();
-    mut_model_t *model                    = view_get_model(handle);
-    model->run.minion.communication_error = 0;
+    mut_model_t *model                      = view_get_model(handle);
+    model->run.minion.communication_error   = 0;
+    model->run.minion.communication_enabled = 1;
 }
 
 
@@ -130,7 +133,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
     ESP_LOGI(TAG, "Starting program %i", program_index);
     model_select_program(model, program_index);
     controller_sync_minion(model);
-    if (model_is_cycle_stopped(model)) {
+    if (model_is_cycle_stopped(model) && model->run.minion.communication_enabled) {
         minion_resume_program();
     }
 }
@@ -138,20 +141,32 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
 
 static void resume_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_resume_program();
+    if (model->run.minion.communication_enabled) {
+        minion_resume_program();
+    }
 }
 
 
 static void pause_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_pause_program();
+    if (model->run.minion.communication_enabled) {
+        minion_pause_program();
+    }
 }
 
 
 static void stop_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_program_done();
+    if (model->run.minion.communication_enabled) {
+        minion_program_done();
+    }
+}
+
+
+static void save_programs(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_update_index(model->config.programs, model->config.num_programs);
+    for (uint16_t i = 0; i < model->config.num_programs; i++) {
+        configuration_update_program(&model->config.programs[i]);
+    }
 }

@@ -1,17 +1,3 @@
-const char *pars_tipo_macchina_occupata[6][2] = {
-    {"Segnalazione allarmi, attivita' e pagamento", "Signal alarms, activity and payment", },
-    {"Segnalazione allarmi", "Signal alarms", },
-    {"Segnalazione attivita'", "Signal activity", },
-    {"Segnalazione allarmi, attivita' e pagamento (invertito)", "Signal alarms, activity and payment (inverted)", },
-    {"Segnalazione allarmi (invertito)", "Signal alarms (inverted)", },
-    {"Segnalazione attivita' (invertito)", "Signal activity (inverted)", },
-};
-
-const char *pars_nosi[2][2] = {
-    {"No", "No", },
-    {"Si", "Yes", },
-};
-
 const char *pars_descriptions[13][2] = {
     {"Lingua", "Language", },
     {"Livello di accesso", "Access level", },
@@ -34,5 +20,24 @@ const char *pars_lingue[5][5] = {
     {"Spagnolo", "Spanish", "Español", "Espagnol", "Spanisch", },
     {"Francese", "French", "Francés", "Français", "Französisch", },
     {"Tedesco", "German", "Alemán", "Allemand", "Deutsch", },
+};
+
+const char *pars_livello_accesso[2][2] = {
+    {"Utente", "User", },
+    {"Tecnico", "Technician", },
+};
+
+const char *pars_tipo_macchina_occupata[6][2] = {
+    {"Segnalazione allarmi, attivita' e pagamento", "Signal alarms, activity and payment", },
+    {"Segnalazione allarmi", "Signal alarms", },
+    {"Segnalazione attivita'", "Signal activity", },
+    {"Segnalazione allarmi, attivita' e pagamento (invertito)", "Signal alarms, activity and payment (inverted)", },
+    {"Segnalazione allarmi (invertito)", "Signal alarms (inverted)", },
+    {"Segnalazione attivita' (invertito)", "Signal activity (inverted)", },
+};
+
+const char *pars_nosi[2][2] = {
+    {"No", "No", },
+    {"Si", "Yes", },
 };
 

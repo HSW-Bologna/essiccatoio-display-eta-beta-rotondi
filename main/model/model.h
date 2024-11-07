@@ -7,8 +7,8 @@
 #include "program.h"
 
 
-#define USER_ACCESS_LEVEL       1
-#define TECHNICIAN_ACCESS_LEVEL 3
+#define USER_ACCESS_LEVEL       0
+#define TECHNICIAN_ACCESS_LEVEL 1
 #define PARMAC_SIZE             279
 
 
@@ -58,16 +58,16 @@ typedef struct {
     name_t nome;
 
     uint16_t language;
-    uint16_t abilita_visualizzazione_temperatura;
-    uint16_t abilita_tasto_menu;
+    uint8_t  abilita_visualizzazione_temperatura;
+    uint8_t  abilita_tasto_menu;
     uint16_t tempo_pressione_tasto_pausa;
     uint16_t tempo_pressione_tasto_stop;
     uint16_t tempo_stop_automatico;
     uint16_t stop_tempo_ciclo;
     uint16_t tempo_attesa_partenza_ciclo;
 
-    uint16_t abilita_espansione_rs485;
-    uint16_t abilita_gas;
+    uint8_t  abilita_espansione_rs485;
+    uint8_t  abilita_gas;
     uint16_t velocita_minima;
     uint16_t velocita_massima;
     uint16_t tempo_gettone;
@@ -87,7 +87,6 @@ typedef struct {
     uint16_t allarme_inverter_off_on;
     uint16_t allarme_filtro_off_on;
     uint16_t tipo_macchina_occupata;
-    uint16_t inverti_macchina_occupata;
     uint16_t tipo_riscaldamento;
     uint16_t autoavvio;
     uint16_t disabilita_allarmi;
@@ -105,6 +104,7 @@ struct model {
     struct {
         struct {
             uint8_t communication_error;
+            uint8_t communication_enabled;
 
             struct {
                 uint8_t firmware_version_major;
@@ -169,6 +169,10 @@ uint8_t                     model_is_alarm_active(model_t *model, alarm_t alarm)
 uint8_t                     model_is_porthole_open(model_t *model);
 uint8_t                     model_is_cycle_running(model_t *model);
 uint8_t                     model_is_any_alarm_active(model_t *model);
+uint8_t                     model_swap_programs(mut_model_t *model, size_t first, size_t second);
+void                        model_create_new_program(mut_model_t *model, uint16_t program_index);
+void model_clone_program(mut_model_t *model, uint16_t source_program_index, uint16_t destination_program_index);
+void model_delete_program(mut_model_t *model, uint16_t program_index);
 
 
 #endif
