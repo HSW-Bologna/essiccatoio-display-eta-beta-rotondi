@@ -50,7 +50,6 @@ view_protocol_t controller_gui_protocol = {
     .create_new_program         = create_new_program,
     .clone_program              = clone_program,
     .delete_program             = delete_program,
-    .save_program               = save_program,
 };
 
 
@@ -76,8 +75,9 @@ static void retry_communication(pman_handle_t handle) {
     ESP_LOGI(TAG, "Requesting com retry");
 
     minion_retry_communication();
-    mut_model_t *model                    = view_get_model(handle);
-    model->run.minion.communication_error = 0;
+    mut_model_t *model                      = view_get_model(handle);
+    model->run.minion.communication_error   = 0;
+    model->run.minion.communication_enabled = 1;
 }
 
 
@@ -145,7 +145,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
     ESP_LOGI(TAG, "Starting program %i", program_index);
     model_select_program(model, program_index);
     controller_sync_minion(model);
-    if (model_is_cycle_stopped(model)) {
+    if (model_is_cycle_stopped(model) && model->run.minion.communication_enabled) {
         minion_resume_program(model, 1);
     }
 }
@@ -153,22 +153,26 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
 
 static void resume_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_resume_program(model, 1);
+    if (model->run.minion.communication_enabled) {
+        minion_resume_program(model, 1);
+    }
 }
 
 
 static void pause_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_pause_program();
+    if (model->run.minion.communication_enabled) {
+        minion_pause_program();
+    }
 }
 
 
 static void stop_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    model_reset_program(model);
-    minion_program_done(model);
+    if (model->run.minion.communication_enabled) {
+        model_reset_program(model);
+        minion_program_done(model);
+    }
 }
 
 

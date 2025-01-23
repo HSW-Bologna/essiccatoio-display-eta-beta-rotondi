@@ -33,6 +33,8 @@ struct page_data {
 
     uint8_t delete_program;
 
+    pman_timer_t *timer;
+
     uint16_t program_window_index;
     int16_t  selected_program;
     uint8_t  changed;
@@ -75,6 +77,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
     pdata->program_window_index = 0;
     pdata->selected_program     = -1;
     pdata->delete_program       = 0;
+    pdata->timer                = PMAN_REGISTER_TIMER_ID(handle, APP_CONFIG_PAGE_TIMEOUT, 0);
     pdata->changed              = 0;
 
     return pdata;
@@ -244,6 +247,9 @@ static void open_page(pman_handle_t handle, void *state) {
         pdata->obj_delete = obj_delete;
     }
 
+    pman_timer_reset(pdata->timer);
+    pman_timer_resume(pdata->timer);
+
     update_page(model, pdata);
 }
 
@@ -285,6 +291,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
+                    pman_timer_reset(pdata->timer);
+
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
@@ -432,6 +440,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
+    language_t language = model->config.parmac.language;
+
     for (uint16_t i = 0; i < PROGRAM_WINDOW_SIZE; i++) {
         uint16_t absolute_index = pdata->program_window_index * PROGRAM_WINDOW_SIZE + i;
 
@@ -444,8 +454,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 lv_obj_remove_state(pdata->button_programs[i], LV_STATE_CHECKED);
             }
 
-            if (strcmp(lv_label_get_text(pdata->label_names[i]), program->nomi[model->config.parmac.language])) {
-                lv_label_set_text(pdata->label_names[i], program->nomi[model->config.parmac.language]);
+            if (strcmp(lv_label_get_text(pdata->label_names[i]), program->nomi[language])) {
+                lv_label_set_text(pdata->label_names[i], program->nomi[language]);
             }
             lv_label_set_text_fmt(pdata->label_numbers[i], "%i.", absolute_index + 1);
 
@@ -523,13 +533,14 @@ static void update_page(model_t *model, struct page_data *pdata) {
 static void destroy_page(void *state, void *extra) {
     struct page_data *pdata = state;
     (void)extra;
+    pman_timer_delete(pdata->timer);
     lv_free(pdata);
 }
 
 
 static void close_page(void *state) {
     struct page_data *pdata = state;
-    (void)pdata;
+    pman_timer_pause(pdata->timer);
     lv_obj_clean(lv_scr_act());
 }
 

@@ -44,8 +44,13 @@ typedef enum {
     STRINGS_BLOCCO_BRUCIATORE,
     STRINGS_SURRISCALDAMENTO,
     STRINGS_CASSA,
+    STRINGS_DISABILITA,
+    STRINGS_AVANZATE,
+    STRINGS_COMUNICAZIONE,
+    STRINGS_RIPRISTINO_A_IMPOSTAZIONI_DI_FABBRICA,
+    STRINGS_ACCESSO,
 } strings_t;
 
-extern const char *strings[42][2];
+extern const char *strings[47][2];
 
 #endif

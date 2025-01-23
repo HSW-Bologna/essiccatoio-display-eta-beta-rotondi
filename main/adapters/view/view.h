@@ -25,11 +25,11 @@ typedef struct {
     void (*stop_cycle)(pman_handle_t handle);
     void (*clear_coins)(pman_handle_t handle);
     void (*digital_coin_reader_enable)(pman_handle_t handle, uint8_t enable);
-    void (*save_program_index)(pman_handle_t handle);
     void (*create_new_program)(pman_handle_t handle, uint16_t program_index);
     void (*clone_program)(pman_handle_t handle, uint16_t source_program_index, uint16_t destination_program_index);
     void (*delete_program)(pman_handle_t handle, uint16_t program_index);
     void (*save_program)(pman_handle_t handle, uint16_t program_index);
+    void (*save_program_index)(pman_handle_t handle);
 } view_protocol_t;
 
 
@@ -80,7 +80,7 @@ view_protocol_t *view_get_protocol(pman_handle_t handle);
 
 extern const pman_page_t page_main, page_password, page_menu, page_test_inputs, page_test_outputs,
     page_test_temperature, page_parmac, page_test_drum, page_main_demo, page_test_coins_digital, page_programs,
-    page_program, page_program_info, page_keyboard, page_step;
+    page_program, page_program_info, page_keyboard, page_step, page_advanced;
 
 
 #endif

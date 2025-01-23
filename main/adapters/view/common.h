@@ -21,7 +21,9 @@ typedef struct {
 
     lv_obj_t *lbl_msg;
     lv_obj_t *lbl_retry;
+    lv_obj_t *lbl_disable;
     lv_obj_t *btn_retry;
+    lv_obj_t *btn_disable;
 } communication_error_popup_t;
 
 

@@ -9,8 +9,8 @@
 
 
 #define NUM_PARAMETERS 107
-#define USER_BITS      USER_ACCESS_LEVEL
-#define TECH_BITS      0x02
+#define USER_BITS      0x01
+#define TECH_BITS      0x03
 
 
 enum {
@@ -55,6 +55,7 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->invert_fan_drum_pwm,                      0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_INVERSIONE_VENTOLA_E_CESTO, pars_nosi),                    USER_BITS);
     ps[i++] = PARAMETER(&p->disabilita_allarmi,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DISABILITA_ALLARMI, pars_nosi),                            TECH_BITS);
     ps[i++] = PARAMETER(&p->porthole_nc_na,                           0,                              1,                          1,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_CONTATTO_OBLO, pars_nc_na),                      USER_BITS);
+    ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_LIVELLO_ACCESSO, pars_livello_accesso),                    TECH_BITS);
     // clang-format on
 
 #if 0
@@ -72,7 +73,6 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->max_programs,                             1,                              MAX_PROGRAMS,               (MAX_PROGRAMS/2),               ((pudata_t){.t = PTYPE_NUMBER, .desc=DESC[PARAMETERS_DESC_MAX_PROGRAMMI]}),                                                                                 USER_BITS);
     ps[i++] = PARAMETER(&p->temperatura_sicurezza_out,                0,                              100,                        50,                            ((pudata_t){.t = PTYPE_NUMBER, .desc=DESC[PARAMETERS_DESC_TEMPERATURA_SICUREZZA_OUT], .fmt = "%i C"}),                                                      USER_BITS);
     ps[i++] = PARAMETER(&p->tipo_riscaldamento,                       TIPO_RISCALDAMENTO_GAS,         TIPO_RISCALDAMENTO_VAPORE,  TIPO_RISCALDAMENTO_ELETTRICO,   ((pudata_t){.t = PTYPE_DROPDOWN, .desc = DESC[PARAMETERS_DESC_TIPO_RISCALDAMENTO], .values = (const char***)parameters_riscaldamento}),                     USER_BITS);
-    ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              ((pudata_t){.t = PTYPE_DROPDOWN, .desc = DESC[PARAMETERS_DESC_LIVELLO_ACCESSO], .values = (const char***)parameters_livello_accesso}),                      TECH_BITS);
     ps[i++] = PARAMETER(&p->autoavvio,                                0,                              1,                          0,                              ((pudata_t){.t = PTYPE_SWITCH, .desc = DESC[PARAMETERS_DESC_AUTOAVVIO], .values = (const char***)parameters_abilitazione}),                                 USER_BITS);
 #endif
 

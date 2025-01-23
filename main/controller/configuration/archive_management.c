@@ -91,7 +91,7 @@ int archive_management_save_configuration(const char *path, const char *name) {
 
     // Data version
     char version_string[8] = "";
-    snprintf(version_string, sizeof(version_string), "%i", COMPATIBILITY_VERSION);
+    snprintf(version_string, sizeof(version_string), "%i", CONFIGURATION_COMPATIBILITY_VERSION);
     mtar_write_file_header(&tar, DATA_VERSION_FILE, strlen(version_string));
     mtar_write_data(&tar, version_string, strlen(version_string));
 

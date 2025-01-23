@@ -1,4 +1,4 @@
-const char *strings[42][2] = {
+const char *strings[47][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -41,5 +41,10 @@ const char *strings[42][2] = {
     {"Blocco bruciatore", "Burner lock", },
     {"Surriscaldamento", "Overheating", },
     {"Cassa", "Cash desk", },
+    {"Disabilita", "Disable", },
+    {"Avanzate", "Advanced", },
+    {"Comunicazione", "Communication", },
+    {"Ripristino a impostazioni di fabbrica", "Factory reset", },
+    {"Accesso", "Access", },
 };
 

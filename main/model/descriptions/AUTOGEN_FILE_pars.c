@@ -9,6 +9,14 @@ const char *pars_nosi[2][2] = {
     {"Si", "Yes", },
 };
 
+const char *pars_loghi[5][2] = {
+    {"Nessuno", "None", },
+    {"MSGroup", "MSGroup", },
+    {"Rotondi", "Rotondi", },
+    {"Hoover", "Hoover", },
+    {"Unity Laundry", "Unity Laundry", },
+};
+
 const char *pars_tipo_riscaldamento[2][2] = {
     {"Electtrico", "Electric", },
     {"Gas", "Gas", },
@@ -19,7 +27,7 @@ const char *pars_manuale_automatico[2][2] = {
     {"Automatico", "Automatic", },
 };
 
-const char *pars_descriptions[38][2] = {
+const char *pars_descriptions[40][2] = {
     {"Lingua", "Language", },
     {"Livello di accesso", "Access level", },
     {"Visualizzare temperatura", "Show temperature", },
@@ -58,6 +66,8 @@ const char *pars_descriptions[38][2] = {
     {"Inversione ventola e cesto", "Invert fan and drum", },
     {"Abilita attesa temperatura", "Wait for temperature", },
     {"Abilita inversione", "Enable reverse", },
+    {"Lingua massima utente", "Max user language", },
+    {"Logo", "Logo", },
 };
 
 const char *pars_sonda_temperatura[3][2] = {
@@ -69,6 +79,11 @@ const char *pars_sonda_temperatura[3][2] = {
 const char *pars_nc_na[2][2] = {
     {"NC", "NC", },
     {"NA", "NO", },
+};
+
+const char *pars_livello_accesso[2][2] = {
+    {"Utente", "User", },
+    {"Tecnico", "Technician", },
 };
 
 const char *pars_lingue[5][5] = {

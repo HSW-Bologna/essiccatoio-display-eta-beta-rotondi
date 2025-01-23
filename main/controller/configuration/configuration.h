@@ -8,14 +8,14 @@
 #include "bsp/fs_storage.h"
 
 
-#define COMPATIBILITY_VERSION  1
-#define BASE_PATH              LITTLEFS_PARTITION_PATH
-#define DATA_PATH              BASE_PATH "/data"
-#define PROGRAMS_PATH          (DATA_PATH "/programmi")
-#define PARAMS_PATH            (DATA_PATH "/parametri")
-#define PATH_FILE_INDICE       (DATA_PATH "/programmi/index.txt")
-#define PATH_FILE_PARMAC       (DATA_PATH "/parametri/parmac.bin")
-#define PATH_FILE_DATA_VERSION (DATA_PATH "/version.txt")
+#define CONFIGURATION_COMPATIBILITY_VERSION 1
+#define BASE_PATH                           LITTLEFS_PARTITION_PATH
+#define DATA_PATH                           BASE_PATH "/data"
+#define PROGRAMS_PATH                       (DATA_PATH "/programmi")
+#define PARAMS_PATH                         (DATA_PATH "/parametri")
+#define PATH_FILE_INDICE                    (DATA_PATH "/programmi/index.txt")
+#define PATH_FILE_PARMAC                    (DATA_PATH "/parametri/parmac.bin")
+#define PATH_FILE_DATA_VERSION              (DATA_PATH "/version.txt")
 
 
 void configuration_init(void);
@@ -34,6 +34,5 @@ int  configuration_update_index(program_t *previews, size_t len);
 int  configuration_load_programs(model_t *pmodel, program_t *programs);
 void configuration_clear_orphan_programs(program_t *programs, uint16_t num);
 void configuration_clear_all_programs(void);
-
 
 #endif

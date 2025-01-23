@@ -15,6 +15,15 @@ typedef enum {
 
 extern const char *pars_nosi[2][2];
 typedef enum {
+    PARS_LOGHI_NESSUNO = 0,
+    PARS_LOGHI_MSGROUP,
+    PARS_LOGHI_ROTONDI,
+    PARS_LOGHI_HOOVER,
+    PARS_LOGHI_UNITYLAUNDRY,
+} pars_loghi_t;
+
+extern const char *pars_loghi[5][2];
+typedef enum {
     PARS_TIPO_RISCALDAMENTO_ELETTRICO = 0,
     PARS_TIPO_RISCALDAMENTO_GAS,
 } pars_tipo_riscaldamento_t;
@@ -65,9 +74,11 @@ typedef enum {
     PARS_DESCRIPTIONS_INVERSIONE_VENTOLA_E_CESTO,
     PARS_DESCRIPTIONS_ATTESA_TEMPERATURA,
     PARS_DESCRIPTIONS_ABILITA_INVERSIONE,
+    PARS_DESCRIPTIONS_LINGUA_MASSIMA_UTENTE,
+    PARS_DESCRIPTIONS_LOGO,
 } pars_descriptions_t;
 
-extern const char *pars_descriptions[38][2];
+extern const char *pars_descriptions[40][2];
 typedef enum {
     PARS_SONDA_TEMPERATURA_INGRESSO = 0,
     PARS_SONDA_TEMPERATURA_USCITA,
@@ -81,6 +92,12 @@ typedef enum {
 } pars_nc_na_t;
 
 extern const char *pars_nc_na[2][2];
+typedef enum {
+    PARS_LIVELLO_ACCESSO_UTENTE = 0,
+    PARS_LIVELLO_ACCESSO_TECNICO,
+} pars_livello_accesso_t;
+
+extern const char *pars_livello_accesso[2][2];
 typedef enum {
     PARS_LINGUE_ITALIANO = 0,
     PARS_LINGUE_INGLESE,

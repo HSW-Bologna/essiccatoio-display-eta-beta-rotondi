@@ -7,8 +7,8 @@
 #include "program.h"
 
 
-#define USER_ACCESS_LEVEL       1
-#define TECHNICIAN_ACCESS_LEVEL 3
+#define USER_ACCESS_LEVEL       0
+#define TECHNICIAN_ACCESS_LEVEL 1
 #define PARMAC_SIZE             279
 
 
@@ -73,8 +73,8 @@ typedef struct {
     uint16_t tempo_stop_automatico;
     uint16_t tempo_attesa_partenza_ciclo;
 
-    uint16_t abilita_espansione_rs485;
-    uint16_t abilita_gas;
+    uint8_t  abilita_espansione_rs485;
+    uint8_t  abilita_gas;
     uint16_t velocita_minima;
     uint16_t velocita_massima;
     uint16_t tempo_gettone;
@@ -96,7 +96,6 @@ typedef struct {
     uint16_t allarme_filtro_off_on;
     uint16_t air_flow_alarm_time;
     uint16_t tipo_macchina_occupata;
-    uint16_t inverti_macchina_occupata;
     uint16_t tipo_riscaldamento;
     uint16_t autoavvio;
     uint16_t disabilita_allarmi;
@@ -122,6 +121,7 @@ struct model {
     struct {
         struct {
             uint8_t communication_error;
+            uint8_t communication_enabled;
 
             struct {
                 uint8_t firmware_version_major;

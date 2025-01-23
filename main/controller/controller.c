@@ -22,6 +22,9 @@ void controller_init(mut_model_t *model) {
     configuration_init();
     configuration_load_all_data(model);
 
+    configuration_init();
+    configuration_load_all_data(model);
+
     minion_init();
     minion_handshake();
 
@@ -113,7 +116,7 @@ void controller_manage(mut_model_t *model) {
 
 
 void controller_sync_minion(model_t *model) {
-    if (state.handshook) {
+    if (state.handshook && model->run.minion.communication_enabled) {
         minion_sync(model);
         state.minion_sync_ts = timestamp_get();
     }

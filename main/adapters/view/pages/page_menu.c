@@ -6,6 +6,44 @@
 #include "config/app_config.h"
 #include "src/widgets/led/lv_led.h"
 #include "../intl/intl.h"
+#include "config/app_config.h"
+
+
+#define COMPUTE_BUILD_YEAR                                                                                             \
+    ((__DATE__[7] - '0') * 1000 + (__DATE__[8] - '0') * 100 + (__DATE__[9] - '0') * 10 + (__DATE__[10] - '0'))
+
+
+#define COMPUTE_BUILD_DAY (((__DATE__[4] >= '0') ? (__DATE__[4] - '0') * 10 : 0) + (__DATE__[5] - '0'))
+
+
+#define BUILD_MONTH_IS_JAN (__DATE__[0] == 'J' && __DATE__[1] == 'a' && __DATE__[2] == 'n')
+#define BUILD_MONTH_IS_FEB (__DATE__[0] == 'F')
+#define BUILD_MONTH_IS_MAR (__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'r')
+#define BUILD_MONTH_IS_APR (__DATE__[0] == 'A' && __DATE__[1] == 'p')
+#define BUILD_MONTH_IS_MAY (__DATE__[0] == 'M' && __DATE__[1] == 'a' && __DATE__[2] == 'y')
+#define BUILD_MONTH_IS_JUN (__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'n')
+#define BUILD_MONTH_IS_JUL (__DATE__[0] == 'J' && __DATE__[1] == 'u' && __DATE__[2] == 'l')
+#define BUILD_MONTH_IS_AUG (__DATE__[0] == 'A' && __DATE__[1] == 'u')
+#define BUILD_MONTH_IS_SEP (__DATE__[0] == 'S')
+#define BUILD_MONTH_IS_OCT (__DATE__[0] == 'O')
+#define BUILD_MONTH_IS_NOV (__DATE__[0] == 'N')
+#define BUILD_MONTH_IS_DEC (__DATE__[0] == 'D')
+
+
+#define COMPUTE_BUILD_MONTH                                                                                            \
+    ((BUILD_MONTH_IS_JAN)   ? 1                                                                                        \
+     : (BUILD_MONTH_IS_FEB) ? 2                                                                                        \
+     : (BUILD_MONTH_IS_MAR) ? 3                                                                                        \
+     : (BUILD_MONTH_IS_APR) ? 4                                                                                        \
+     : (BUILD_MONTH_IS_MAY) ? 5                                                                                        \
+     : (BUILD_MONTH_IS_JUN) ? 6                                                                                        \
+     : (BUILD_MONTH_IS_JUL) ? 7                                                                                        \
+     : (BUILD_MONTH_IS_AUG) ? 8                                                                                        \
+     : (BUILD_MONTH_IS_SEP) ? 9                                                                                        \
+     : (BUILD_MONTH_IS_OCT) ? 10                                                                                       \
+     : (BUILD_MONTH_IS_NOV) ? 11                                                                                       \
+     : (BUILD_MONTH_IS_DEC) ? 12                                                                                       \
+                            : /* error default */ 99)
 
 
 struct page_data {
@@ -18,6 +56,7 @@ enum {
     BTN_TEST_ID,
     BTN_ARCHIVING_ID,
     BTN_PARMAC_ID,
+    BTN_ADVANCED_ID,
     BTN_PROGRAMS_ID,
 };
 
@@ -65,6 +104,16 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, 140);
         lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_PROGRAMMI));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_PROGRAMS_ID);
+    }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_PARAMETRI));
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
@@ -90,6 +139,33 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_center(lbl);
         view_register_object_default_callback(btn, BTN_ARCHIVING_ID);
     }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_AVANZATE));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_ADVANCED_ID);
+    }
+
+    lv_obj_t *label_machine_version = lv_label_create(lv_screen_active());
+    lv_obj_set_style_text_font(label_machine_version, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(label_machine_version, lv_color_lighten(VIEW_STYLE_COLOR_GREEN, LV_OPA_50),
+                                LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(label_machine_version, "v%i.%i.%i", model->run.minion.read.firmware_version_major,
+                          model->run.minion.read.firmware_version_minor, model->run.minion.read.firmware_version_patch);
+    lv_obj_align(label_machine_version, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+
+    lv_obj_t *label_display_version = lv_label_create(lv_screen_active());
+    lv_obj_set_style_text_font(label_display_version, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(label_display_version, lv_color_lighten(VIEW_STYLE_COLOR_RED, LV_OPA_50),
+                                LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(label_display_version, "v%i.%i.%i %02i/%02i/%i", APP_CONFIG_FIRMWARE_VERSION_MAJOR,
+                          APP_CONFIG_FIRMWARE_VERSION_MINOR, APP_CONFIG_FIRMWARE_VERSION_PATCH, COMPUTE_BUILD_DAY,
+                          COMPUTE_BUILD_MONTH, COMPUTE_BUILD_YEAR);
+    lv_obj_align(label_display_version, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
 
     update_page(model, pdata);
 }
@@ -146,6 +222,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_PARMAC_ID:
                             msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_parmac);
+                            break;
+
+                        case BTN_ADVANCED_ID:
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_advanced);
                             break;
                     }
                     break;

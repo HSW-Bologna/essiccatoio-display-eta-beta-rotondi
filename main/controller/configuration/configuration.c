@@ -455,7 +455,7 @@ int configuration_save_data_version(void) {
         res = -1;
     } else {
         char string[64];
-        snprintf(string, sizeof(string), "%i", COMPATIBILITY_VERSION);
+        snprintf(string, sizeof(string), "%i", CONFIGURATION_COMPATIBILITY_VERSION);
         fwrite(string, 1, strlen(string), findex);
         fclose(findex);
     }
@@ -500,7 +500,7 @@ int configuration_read_local_data_version(void) {
 }
 
 
-int configuration_update_index(program_t *previews, size_t len) {
+int configuration_update_index(program_t *programs, size_t len) {
     FILE *findex = fopen(PATH_FILE_INDICE, "w");
     if (findex == NULL) {
         ESP_LOGE(TAG, "Unable to open index: %s", strerror(errno));
@@ -508,7 +508,7 @@ int configuration_update_index(program_t *previews, size_t len) {
     }
 
     for (size_t i = 0; i < len; i++) {
-        fwrite(previews[i].filename, 1, strlen(previews[i].filename), findex);
+        fwrite(programs[i].filename, 1, strlen(programs[i].filename), findex);
         fwrite("\n", 1, 1, findex);
     }
 
