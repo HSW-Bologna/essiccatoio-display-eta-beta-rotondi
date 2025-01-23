@@ -29,14 +29,8 @@ void view_common_set_disabled(lv_obj_t *obj, uint8_t disabled) {
 }
 
 
-void view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t language) {
-    if ((alarms & (1 << ALARM_EMERGENCY)) > 0) {
-        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_ALLARME_EMERGENZA));
-    } else if ((alarms & (1 << ALARM_FILTER)) > 0) {
-        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_CASSETTO_DEL_FILTRO_APERTO));
-    } else if ((alarms & (1 << ALARM_PORTHOLE)) > 0) {
-        lv_label_set_text(label, view_intl_get_string_in_language(language, STRINGS_OBLO_APERTO));
-    }
+void view_common_format_alarm(lv_obj_t *label, model_t *model, language_t language) {
+    lv_label_set_text(label, get_alarm_description(model, language, NULL));
 }
 
 
@@ -60,24 +54,28 @@ view_title_t view_common_create_title(lv_obj_t *root, const char *text, int back
 
     btn = lv_button_create(cont);
     lv_obj_add_style(btn, (lv_style_t *)&style_config_btn, LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, LV_STATE_DEFAULT);
     lv_obj_set_size(btn, SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE);
     lv_obj_t *img = lv_image_create(btn);
     lv_image_set_src(img, &img_door);
+    lv_obj_add_style(img, &style_white_icon, LV_STATE_DEFAULT);
     lv_obj_center(img);
     lv_obj_align(btn, LV_ALIGN_LEFT_MID, 4, 0);
     view_register_object_default_callback(btn, back_id);
     lv_obj_t *button_back = btn;
 
+    lv_obj_t *button_next = NULL;
     if (next_id >= 0) {
-        btn = lv_button_create(cont);
-        lv_obj_add_style(btn, (lv_style_t *)&style_config_btn, LV_STATE_DEFAULT);
-        lv_obj_set_size(btn, SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE);
-        lbl = lv_label_create(btn);
+        button_next = lv_button_create(cont);
+        lv_obj_add_style(button_next, (lv_style_t *)&style_config_btn, LV_STATE_DEFAULT);
+        lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, LV_STATE_DEFAULT);
+        lv_obj_set_size(button_next, SQUARE_BUTTON_SIZE, SQUARE_BUTTON_SIZE);
+        lbl = lv_label_create(button_next);
         lv_obj_set_style_text_font(lbl, STYLE_FONT_BIG, LV_STATE_DEFAULT);
         lv_label_set_text(lbl, LV_SYMBOL_RIGHT);
         lv_obj_center(lbl);
-        lv_obj_align(btn, LV_ALIGN_RIGHT_MID, -4, 0);
-        view_register_object_default_callback(btn, next_id);
+        lv_obj_align(button_next, LV_ALIGN_RIGHT_MID, -4, 0);
+        view_register_object_default_callback(button_next, next_id);
     }
 
     lbl = lv_label_create(cont);
@@ -94,7 +92,8 @@ view_title_t view_common_create_title(lv_obj_t *root, const char *text, int back
         lv_obj_align(lbl, LV_ALIGN_RIGHT_MID, 0, 0);
     }
 
-    return (view_title_t){.label_title = lbl, .button_back = button_back, .obj_title = cont};
+    return (view_title_t){
+        .label_title = lbl, .button_back = button_back, .button_next = button_next, .obj_title = cont};
 }
 
 
@@ -202,11 +201,44 @@ popup_t view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, 
 }
 
 
+lv_obj_t *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id) {
+    const int32_t button_height = 48;
+
+    lv_obj_t *button = lv_button_create(parent);
+    lv_obj_add_style(button, &style_icon_button, LV_STATE_DEFAULT);
+    lv_obj_set_size(button, button_height, button_height);
+
+    lv_obj_t *label = lv_label_create(button);
+    lv_label_set_text(label, icon);
+    lv_obj_center(label);
+
+    view_register_object_default_callback(button, id);
+    return button;
+}
+
+
+const pman_page_t *view_common_main_page(model_t *model) {
+    (void)model;
+    return &page_main_demo;
+}
+
+
+const char *view_common_step2str(model_t *model, program_step_type_t type) {
+    strings_t step_names[] = {STRINGS_ASCIUGATURA, STRINGS_RAFFREDDAMENTO, STRINGS_ANTIPIEGA};
+    return view_intl_get_string(model, step_names[type]);
+}
+
+
 static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code) {
-    strings_t string_codes[] = {STRINGS_ALLARME_EMERGENZA, STRINGS_CASSETTO_DEL_FILTRO_APERTO, STRINGS_OBLO_APERTO};
+    strings_t string_codes[] = {
+        STRINGS_OBLO_APERTO,           STRINGS_ALLARME_EMERGENZA, STRINGS_CASSETTO_DEL_FILTRO_APERTO,
+        STRINGS_FLUSSO_D_ARIA_ASSENTE, STRINGS_BLOCCO_BRUCIATORE, STRINGS_SURRISCALDAMENTO,
+    };
     for (alarm_t alarm = 0; alarm < ALARMS_NUM; alarm++) {
         if (model_is_alarm_active(model, alarm)) {
-            *alarm_code = alarm;
+            if (alarm_code) {
+                *alarm_code = alarm;
+            }
             return view_intl_get_string_in_language(language, string_codes[alarm]);
         }
     }

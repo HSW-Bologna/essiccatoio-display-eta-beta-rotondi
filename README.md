@@ -1,1 +1,6 @@
-Template for esp32 projects with UI.
+# Essiccatoio
+
+
+## TODO
+ - Loghi
+ - Modello macchina (non presente nella lista dei parametri) con azzeramento di fabbrica

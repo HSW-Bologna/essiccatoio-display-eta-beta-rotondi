@@ -18,6 +18,7 @@ enum {
     BTN_TEST_ID,
     BTN_ARCHIVING_ID,
     BTN_PARMAC_ID,
+    BTN_PROGRAMS_ID,
 };
 
 
@@ -39,7 +40,6 @@ static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
 
     model_t *model = view_get_model(handle);
-
 
     view_common_create_title(lv_scr_act(), view_intl_get_string(model, STRINGS_IMPOSTAZIONI), BTN_BACK_ID, -1);
 
@@ -69,6 +69,16 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
         view_register_object_default_callback(btn, BTN_PARMAC_ID);
+    }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_PROGRAMMI));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_PROGRAMS_ID);
     }
 
     {
@@ -128,6 +138,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_ARCHIVING_ID:
                             // msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_archiving);
+                            break;
+
+                        case BTN_PROGRAMS_ID:
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_programs);
                             break;
 
                         case BTN_PARMAC_ID:

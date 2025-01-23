@@ -29,7 +29,15 @@ typedef struct {
     lv_obj_t *obj_title;
     lv_obj_t *label_title;
     lv_obj_t *button_back;
+    lv_obj_t *button_next;
 } view_title_t;
+
+
+typedef struct {
+    program_step_type_t type;
+    uint8_t             changed;
+    uint16_t            program_index;
+} step_modification_t;
 
 
 typedef struct {
@@ -48,10 +56,13 @@ view_title_t                view_common_create_title(lv_obj_t *root, const char 
 void                        view_common_image_set_src(lv_obj_t *img, const lv_image_dsc_t *img_dsc);
 communication_error_popup_t view_common_communication_error_popup(lv_obj_t *parent);
 void                        view_common_set_disabled(lv_obj_t *obj, uint8_t disabled);
-void                        view_common_format_alarm(lv_obj_t *label, uint16_t alarms, language_t language);
+void                        view_common_format_alarm(lv_obj_t *label, model_t *model, language_t language);
 popup_t                     view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, int cancel_id);
 popup_t                     view_common_alarm_popup_create(lv_obj_t *parent, int id);
 void                        view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language);
+lv_obj_t                   *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id);
+const pman_page_t          *view_common_main_page(model_t *model);
+const char                 *view_common_step2str(model_t *model, program_step_type_t type);
 
 
 #endif

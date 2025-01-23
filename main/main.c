@@ -11,7 +11,6 @@
 #include "bsp/tft/display.h"
 #include "services/timestamp.h"
 #include "bsp/tft/touch.h"
-#include "bsp/heartbit.h"
 #include "bsp/rs232.h"
 #include "bsp/storage.h"
 #include "bsp/fs_storage.h"
@@ -30,7 +29,6 @@ void app_main(void) {
     bsp_system_init();
     storage_init();
     fs_storage_mount_littlefs();
-    bsp_heartbit_init(2000);
     bsp_tft_display_init(view_display_flush_ready, VIEW_LVGL_BUFFER_SIZE);
     bsp_tft_touch_init();
     bsp_rs232_init();

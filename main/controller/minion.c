@@ -11,8 +11,9 @@
 
 #define MODBUS_RESPONSE_03_LEN(data_len)   (5 + data_len * 2)
 #define MODBUS_RESPONSE_05_LEN             8
+#define MODBUS_RESPONSE_16_LEN             8
 #define MODBUS_REQUEST_MESSAGE_QUEUE_SIZE  8
-#define MODBUS_RESPONSE_MESSAGE_QUEUE_SIZE 8
+#define MODBUS_RESPONSE_MESSAGE_QUEUE_SIZE 4
 #define MODBUS_TIMEOUT                     40
 #define MODBUS_MAX_PACKET_SIZE             256
 #define MODBUS_COMMUNICATION_ATTEMPTS      3
@@ -20,9 +21,9 @@
 #define MODBUS_IR_DEVICE_MODEL 0
 #define MODBUS_IR_CYCLE_STATE  9
 
-#define MODBUS_HR_COMMAND        0
-#define MODBUS_HR_TEST_MODE      1
-#define MODBUS_HR_PROGRAM_NUMBER 11
+#define MODBUS_HR_TEST_MODE      0
+#define MODBUS_HR_PROGRAM_NUMBER 10
+#define MODBUS_HR_COMMAND        29
 
 #define MINION_ADDR 1
 
@@ -31,6 +32,7 @@
 #define COMMAND_REGISTER_PAUSE        2
 #define COMMAND_REGISTER_DONE         3
 #define COMMAND_REGISTER_CLEAR_ALARMS 4
+#define COMMAND_REGISTER_CLEAR_COINS  5
 
 
 typedef enum {
@@ -51,19 +53,32 @@ struct __attribute__((packed)) task_message {
             uint8_t  test_pwm1;
             uint8_t  test_pwm2;
             uint16_t test_outputs;
+            uint8_t  coin_reader_inhibition;
             uint16_t cycle_delay_time;
             uint16_t safety_temperature;
             uint16_t temperature_alarm_delay_seconds;
+            uint16_t air_flow_alarm_time;
+            uint16_t temperature_probe;
+            uint16_t heating_type;
+            uint16_t gas_ignition_attempts;
+            uint16_t fan_with_open_porthole_time;
             uint16_t flags;
             uint16_t rotation_running_time;
             uint16_t rotation_pause_time;
             uint16_t rotation_speed;
-            uint16_t drying_duration;
-            uint16_t drying_temperature;
-            uint16_t drying_humidity;
+            uint16_t duration;
+            uint16_t start_delay;
+            uint16_t max_cycles;
+            uint16_t setpoint_temperature;
+            uint16_t setpoint_humidity;
+            uint16_t temperature_cooling_hysteresis;
+            uint16_t temperature_heating_hysteresis;
+            uint16_t progressive_heating_time;
             uint16_t drying_type;
             uint16_t program_number;
             uint16_t step_number;
+            uint16_t step_type;
+            uint16_t command;
         } sync;
 
         uint16_t command;
@@ -82,12 +97,13 @@ uint8_t            handle_message(ModbusMaster *master, struct task_message mess
 static ModbusError exception_callback(const ModbusMaster *master, uint8_t address, uint8_t function,
                                       ModbusExceptionCode code);
 static ModbusError data_callback(const ModbusMaster *master, const ModbusDataCallbackArgs *args);
-static int write_holding_registers(ModbusMaster *master, uint8_t address, uint16_t starting_address, uint16_t *data,
-                                   size_t num);
-static int read_holding_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
-                                  uint16_t count);
-static int read_input_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
-                                uint16_t count);
+static int  write_holding_registers(ModbusMaster *master, uint8_t address, uint16_t starting_address, uint16_t *data,
+                                    size_t num);
+static int  read_holding_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+                                   uint16_t count);
+static int  read_input_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+                                 uint16_t count);
+static void sync_with_command(model_t *model, uint16_t command);
 
 
 static const char   *TAG       = "Modbus";
@@ -116,15 +132,12 @@ void minion_retry_communication(void) {
 }
 
 
-void minion_resume_program(void) {
-    {
+void minion_resume_program(model_t *model, uint8_t clear_alarms) {
+    if (clear_alarms) {
         struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_CLEAR_ALARMS}};
         xQueueSend(messageq, &msg, 0);
     }
-    {
-        struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_RESUME}};
-        xQueueSend(messageq, &msg, 0);
-    }
+    sync_with_command(model, COMMAND_REGISTER_RESUME);
 }
 
 
@@ -134,8 +147,13 @@ void minion_pause_program(void) {
 }
 
 
-void minion_program_done(void) {
-    struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_DONE}};
+void minion_program_done(model_t *model) {
+    sync_with_command(model, COMMAND_REGISTER_DONE);
+}
+
+
+void minion_clear_coins(void) {
+    struct task_message msg = {.tag = TASK_MESSAGE_TAG_COMMAND, .as = {.command = COMMAND_REGISTER_CLEAR_COINS}};
     xQueueSend(messageq, &msg, 0);
 }
 
@@ -147,7 +165,17 @@ void minion_handshake(void) {
 
 
 void minion_sync(model_t *model) {
-    program_drying_parameters_t drying_step = model_get_current_step(model);
+    sync_with_command(model, COMMAND_REGISTER_NONE);
+}
+
+
+uint8_t minion_get_response(minion_response_t *response) {
+    return xQueueReceive(responseq, response, 0);
+}
+
+
+static void sync_with_command(model_t *model, uint16_t command) {
+    program_step_t step = model_get_current_step(model);
 
     struct task_message msg = {
         .tag = TASK_MESSAGE_TAG_SYNC,
@@ -155,6 +183,7 @@ void minion_sync(model_t *model) {
             {
                 .sync =
                     {
+                        .coin_reader_inhibition          = !model_should_enable_coin_reader(model),
                         .test_mode                       = model->run.minion.write.test_mode,
                         .test_outputs                    = model->run.minion.write.test_outputs,
                         .test_pwm1                       = model->run.minion.write.test_pwm1,
@@ -162,27 +191,65 @@ void minion_sync(model_t *model) {
                         .cycle_delay_time                = model->config.parmac.tempo_attesa_partenza_ciclo,
                         .safety_temperature              = model->config.parmac.temperatura_sicurezza,
                         .temperature_alarm_delay_seconds = model->config.parmac.tempo_allarme_temperatura,
-                        .flags                           = ((model->config.parmac.stop_tempo_ciclo > 0) << 0 |
-                                  (model->config.parmac.disabilita_allarmi > 0) << 1     //|
+                        .air_flow_alarm_time             = model->config.parmac.air_flow_alarm_time,
+                        .flags                           = ((model->config.parmac.stop_time_in_pause > 0) << 0 |
+                                  (model->config.parmac.disabilita_allarmi > 0) << 1 |
+                                  (model->config.parmac.gas_preemptive_reset > 0) << 2 |
+                                  (model->config.parmac.porthole_nc_na > 0) << 3 |
+                                  (model->config.parmac.busy_signal_nc_na > 0) << 4 |
+                                  (model->config.parmac.invert_fan_drum_pwm > 0) << 5     //|
                                   ),
-                        .rotation_running_time           = drying_step.rotation_time,
-                        .rotation_pause_time             = drying_step.pause_time,
-                        .rotation_speed                  = drying_step.speed,
-                        .drying_duration                 = drying_step.duration,
-                        .drying_type                     = drying_step.type,
-                        .drying_temperature              = drying_step.temperature,
-                        .drying_humidity                 = drying_step.humidity,
+                        .temperature_probe               = model->config.parmac.temperature_probe,
+                        .heating_type                    = model->config.parmac.heating_type,
+                        .gas_ignition_attempts           = model->config.parmac.gas_ignition_attempts,
+                        .fan_with_open_porthole_time     = model->config.parmac.fan_with_open_porthole_time,
                         .program_number                  = model->run.current_program_index,
                         .step_number                     = model->run.current_step_index,
+                        .step_type                       = step.type,
+                        .command                         = command,
                     },
             },
     };
+
+    switch (step.type) {
+        case PROGRAM_STEP_TYPE_DRYING: {
+            msg.as.sync.rotation_running_time          = step.drying.rotation_time;
+            msg.as.sync.rotation_pause_time            = step.drying.pause_time;
+            msg.as.sync.rotation_speed                 = step.drying.speed;
+            msg.as.sync.duration                       = step.drying.duration;
+            msg.as.sync.drying_type                    = step.drying.type;
+            msg.as.sync.setpoint_temperature           = step.drying.temperature;
+            msg.as.sync.setpoint_humidity              = step.drying.humidity;
+            msg.as.sync.temperature_cooling_hysteresis = step.drying.cooling_hysteresis;
+            msg.as.sync.temperature_heating_hysteresis = step.drying.heating_hysteresis;
+            msg.as.sync.progressive_heating_time       = step.drying.progressive_heating_time;
+
+            msg.as.sync.flags |=
+                ((step.drying.enable_reverse > 0) << 6) | ((step.drying.enable_waiting_for_temperature << 7));
+            break;
+        }
+
+        case PROGRAM_STEP_TYPE_COOLING: {
+            msg.as.sync.rotation_running_time = step.cooling.rotation_time;
+            msg.as.sync.rotation_pause_time   = step.cooling.pause_time;
+            msg.as.sync.duration              = step.cooling.duration;
+
+            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 6);
+            break;
+        }
+
+        case PROGRAM_STEP_TYPE_ANTIFOLD: {
+            msg.as.sync.duration              = step.antifold.max_duration == 0 ? 0xFFFF : step.antifold.max_duration;
+            msg.as.sync.start_delay           = step.antifold.start_delay;
+            msg.as.sync.max_cycles            = step.antifold.max_cycles;
+            msg.as.sync.rotation_running_time = step.antifold.rotation_time;
+            msg.as.sync.rotation_pause_time   = step.antifold.pause_time;
+            msg.as.sync.rotation_speed        = step.antifold.speed;
+            break;
+        }
+    }
+
     xQueueSend(messageq, &msg, 0);
-}
-
-
-uint8_t minion_get_response(minion_response_t *response) {
-    return xQueueReceive(responseq, response, 0);
 }
 
 
@@ -271,52 +338,74 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
         case TASK_MESSAGE_TAG_SYNC: {
             response.tag = MINION_RESPONSE_TAG_SYNC;
 
-            uint16_t values[14] = {0};
-            if (read_input_registers(master, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
-                                     sizeof(values) / sizeof(values[0]))) {
-                error = 1;
-            } else {
-                response.as.sync.firmware_version_major = (values[1] >> 11) & 0x1F;
-                response.as.sync.firmware_version_minor = (values[1] >> 6) & 0x1F;
-                response.as.sync.firmware_version_patch = (values[1] >> 0) & 0x3F;
-                response.as.sync.inputs                 = values[2];
-                response.as.sync.temperature_1_adc      = values[3];
-                response.as.sync.temperature_1          = values[4];
-                response.as.sync.temperature_2_adc      = values[5];
-                response.as.sync.temperature_2          = values[6];
-                response.as.sync.pressure_adc           = values[7];
-                response.as.sync.pressure               = values[8];
-                response.as.sync.cycle_state            = values[9];
-                response.as.sync.step_type              = values[10];
-                response.as.sync.default_temperature    = values[11];
-                response.as.sync.remaining_time_seconds = values[12];
-                response.as.sync.alarms                 = values[13];
-            }
-
-            if (!error) {
-                uint16_t values[17] = {
+            {
+                uint16_t values[30] = {
                     message.as.sync.test_mode,
                     message.as.sync.test_outputs,
                     message.as.sync.test_pwm1 | (message.as.sync.test_pwm2 << 8),
+                    message.as.sync.coin_reader_inhibition,
                     message.as.sync.busy_signal_type,
                     message.as.sync.safety_temperature,
                     message.as.sync.temperature_alarm_delay_seconds,
+                    message.as.sync.air_flow_alarm_time,
+                    message.as.sync.temperature_probe,
+                    message.as.sync.heating_type,
+                    message.as.sync.gas_ignition_attempts,
+                    message.as.sync.fan_with_open_porthole_time,
                     message.as.sync.cycle_delay_time,
                     message.as.sync.flags,
+                    message.as.sync.duration,
                     message.as.sync.rotation_running_time,
                     message.as.sync.rotation_pause_time,
                     message.as.sync.rotation_speed,
-                    message.as.sync.drying_duration,
+                    message.as.sync.setpoint_temperature,
+                    message.as.sync.setpoint_humidity,
+                    message.as.sync.temperature_cooling_hysteresis,
+                    message.as.sync.temperature_heating_hysteresis,
+                    message.as.sync.progressive_heating_time,
                     message.as.sync.drying_type,
-                    message.as.sync.drying_temperature,
-                    message.as.sync.drying_humidity,
+                    message.as.sync.start_delay,
+                    message.as.sync.max_cycles,
                     message.as.sync.program_number,
                     message.as.sync.step_number,
+                    message.as.sync.step_type,
+                    message.as.sync.command,
                 };
 
                 if (write_holding_registers(master, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
                                             sizeof(values) / sizeof(values[0]))) {
                     error = 1;
+                }
+            }
+
+            if (!error) {
+                uint16_t values[21] = {0};
+                if (read_input_registers(master, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
+                                         sizeof(values) / sizeof(values[0]))) {
+                    error = 1;
+                } else {
+                    response.as.sync.firmware_version_major = (values[1] >> 11) & 0x1F;
+                    response.as.sync.firmware_version_minor = (values[1] >> 6) & 0x1F;
+                    response.as.sync.firmware_version_patch = (values[1] >> 0) & 0x3F;
+                    response.as.sync.inputs                 = values[2];
+                    response.as.sync.temperature_1_adc      = values[3];
+                    response.as.sync.temperature_1          = values[4];
+                    response.as.sync.temperature_2_adc      = values[5];
+                    response.as.sync.temperature_2          = values[6];
+                    response.as.sync.temperature_probe      = values[7];
+                    response.as.sync.humidity_probe         = values[8];
+                    response.as.sync.pressure_adc           = values[9];
+                    response.as.sync.pressure               = values[10];
+                    response.as.sync.payment                = values[11];
+                    response.as.sync.coins[0]               = values[12];
+                    response.as.sync.coins[1]               = values[13];
+                    response.as.sync.coins[2]               = values[14];
+                    response.as.sync.coins[3]               = values[15];
+                    response.as.sync.coins[4]               = values[16];
+                    response.as.sync.cycle_state            = values[17];
+                    response.as.sync.default_temperature    = values[18];
+                    response.as.sync.remaining_time_seconds = values[19];
+                    response.as.sync.alarms                 = values[20];
                 }
             }
 
@@ -438,7 +527,7 @@ static int read_holding_registers(ModbusMaster *master, uint16_t *registers, uin
 
         bsp_rs232_write((uint8_t *)modbusMasterGetRequest(master), modbusMasterGetRequestLength(master));
 
-        int len = bsp_rs232_read(buffer, sizeof(buffer));
+        int len = bsp_rs232_read(buffer, MODBUS_RESPONSE_03_LEN(count));
         err     = modbusParseResponseRTU(master, modbusMasterGetRequest(master), modbusMasterGetRequestLength(master),
                                          buffer, len);
 

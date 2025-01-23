@@ -12,3 +12,30 @@ TEMPERATURA_DI_SICUREZZA, Temperatura di sicurezza, Safety temperature
 TIPO_MACCHINA_OCCUPATA, Tipo macchina occupata, Busy signal type
 ALLARME_FILTRO, Allarme filtro, Filter alarm
 ALLARME_INVERTER, Allarme inverter, Inverter alarm
+SONDA_TEMPERATURA, Sonda di temperatura, Temperature probe
+TIPO_RISCALDAMENTO, Tipo riscaldamento, Heating mode
+TENTATIVI_ACCENSIONE_GAS, Tentativi accesione gas, Gas ignition attempts
+RESET_INIZIALE_GAS, Reset iniziale gas, Gas initial reset
+FERMA_TEMPO_IN_PAUSA, Ferma il tempo in pausa, Stop time in pause
+DIREZIONE_CONTATTO_OBLO, Direzione contatto oblo', Porthole contact direction
+DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, Direzione contatto macchina occupata, Busy signal contact direction
+DURATA, Durata, Duration
+TEMPO_DI_ROTAZIONE, Tempo di rotazione, Rotation time
+TEMPO_DI_PAUSA, Tempo di pausa, Pause time
+TEMPERATURA, Temperatura, Temperature
+ISTERESI_RISCALDAMENTO, Isteresi riscaldamento, Heating hysteresis
+ISTERESI_RAFFREDDAMENTO, Isteresi raffreddamento, Cooling hysteresis
+UMIDITA, Umidita, Humidity
+RISCALDAMENTO_PROGRESSIVO, Riscaldamento progressivo, Progressive heating
+DURATA_MASSIMA, Durata massima, Max duration
+CICLI_MASSIMI, Cicli massimi, Max cycles
+TEMPO_DI_RITARDO, Tempo di ritardo, Delay time
+VELOCITA, Velocita', Speed
+TIPO, Tipo, Type
+TEMPO_ALLARME_FLUSSO_ARIA, Tempo allarme flusso aria, Air flow alarm time
+TEMPO_VENTILAZIONE_OBLO_APERTO, Tempo ventilazione oblo' aperto, Porthole open fan time
+INVERSIONE_VENTOLA_E_CESTO, Inversione ventola e cesto, Invert fan and drum
+ATTESA_TEMPERATURA, Abilita attesa temperatura, Wait for temperature
+ABILITA_INVERSIONE, Abilita inversione, Enable reverse
+LINGUA_MASSIMA_UTENTE, Lingua massima utente, Max user language
+LOGO, Logo, Logo

@@ -5,6 +5,8 @@
 #include "minion.h"
 #include "services/timestamp.h"
 #include "esp_log.h"
+#include "configuration/configuration.h"
+#include "adapters/view/common.h"
 
 
 static struct {
@@ -17,13 +19,13 @@ static const char *TAG = "Controller";
 
 
 void controller_init(mut_model_t *model) {
-    (void)model;
+    configuration_init();
+    configuration_load_all_data(model);
 
     minion_init();
     minion_handshake();
 
-    //view_change_page(&page_main);
-    view_change_page(&page_main_demo);
+    view_change_page(view_common_main_page(model));
 }
 
 
@@ -56,17 +58,33 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.temperature_1_adc      = response.as.sync.temperature_1_adc;
                     model->run.minion.read.temperature_2          = response.as.sync.temperature_2;
                     model->run.minion.read.temperature_2_adc      = response.as.sync.temperature_2_adc;
+                    model->run.minion.read.temperature_probe      = response.as.sync.temperature_probe;
+                    model->run.minion.read.humidity_probe         = response.as.sync.humidity_probe;
                     model->run.minion.read.pressure_adc           = response.as.sync.pressure_adc;
                     model->run.minion.read.pressure               = response.as.sync.pressure;
                     model->run.minion.read.cycle_state            = response.as.sync.cycle_state;
-                    model->run.minion.read.step_type              = response.as.sync.step_type;
                     model->run.minion.read.default_temperature    = response.as.sync.default_temperature;
                     model->run.minion.read.remaining_time_seconds = response.as.sync.remaining_time_seconds;
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
+                    model->run.minion.read.payment                = response.as.sync.payment;
+                    memcpy(model->run.minion.read.coins, response.as.sync.coins, sizeof(model->run.minion.read.coins));
 
+                    ESP_LOGI(TAG, "Cycle state %i, inputs 0x%02X, alarms 0x%02X, remaining %i, step %i",
+                             model->run.minion.read.cycle_state, model->run.minion.read.inputs,
+                             model->run.minion.read.alarms, model->run.minion.read.remaining_time_seconds,
+                             model->run.current_step_index);
+
+                    // Program finished
                     if (model_is_program_done(model)) {
                         ESP_LOGI(TAG, "Program done!");
-                        minion_program_done();
+                        model_reset_program(model);
+                        minion_program_done(model);
+                    }
+                    // Currently waiting
+                    else if (model_waiting_for_next_step(model)) {
+                        ESP_LOGI(TAG, "Moving to next step");
+                        model_move_to_next_step(model);
+                        minion_resume_program(model, 0);
                     }
                     break;
                 }

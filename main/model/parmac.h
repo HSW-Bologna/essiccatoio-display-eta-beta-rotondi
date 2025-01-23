@@ -1,20 +1,3 @@
-/******************************************************************************/
-/*                                                                            */
-/*  HSW snc - Casalecchio di Reno (BO) ITALY                                  */
-/*  ----------------------------------------                                  */
-/*                                                                            */
-/*  modulo: parmac.h                                                          */
-/*                                                                            */
-/*      definizione e gestione parametri macchina                             */
-/*                                                                            */
-/*  Autore: Maldus (Mattia MALDINI) & Virginia NEGRI & Massimo ZANNA          */
-/*                                                                            */
-/*  Data  : 19/07/2021      REV  : 00.0                                       */
-/*                                                                            */
-/*  U.mod.: 29/07/2021      REV  : 01.0                                       */
-/*                                                                            */
-/******************************************************************************/
-
 #ifndef PARMAC_H_INCLUDED
 #define PARMAC_H_INCLUDED
 

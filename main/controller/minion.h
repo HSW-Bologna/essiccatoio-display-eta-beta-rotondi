@@ -26,13 +26,16 @@ typedef struct {
             uint16_t temperature_2_adc;
             uint16_t temperature_2;
             uint16_t pressure_adc;
+            uint16_t temperature_probe;
+            uint16_t humidity_probe;
             uint16_t pressure;
+            uint16_t payment;
+            uint16_t coins[DIGITAL_COIN_LINES_NUM];
 
-            cycle_state_t             cycle_state;
-            dryer_program_step_type_t step_type;
-            int16_t                   default_temperature;
-            uint16_t                  remaining_time_seconds;
-            uint16_t                  alarms;
+            cycle_state_t cycle_state;
+            int16_t       default_temperature;
+            uint16_t      remaining_time_seconds;
+            uint16_t      alarms;
         } sync;
 
         struct {
@@ -49,11 +52,11 @@ void    minion_read_state(model_t *model);
 void    minion_sync(model_t *model);
 uint8_t minion_get_response(minion_response_t *response);
 void    minion_retry_communication(void);
-void    minion_resume_program(void);
 void    minion_pause_program(void);
-void    minion_program_done(void);
-void    minion_resume_program(void);
+void    minion_program_done(model_t *model);
+void    minion_resume_program(model_t *model, uint8_t clear_alarms);
 void    minion_handshake(void);
+void    minion_clear_coins(void);
 
 
 #endif

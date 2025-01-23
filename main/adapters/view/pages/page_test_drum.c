@@ -211,7 +211,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_NEXT_ID:
                             if (pdata->forward) {
-                                // msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_level);
+                                msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_coins_digital);
                             } else {
                                 msg.stack_msg = PMAN_STACK_MSG_SWAP_EXTRA(&page_test_drum, (void *)(uintptr_t)1);
                             }
@@ -235,6 +235,19 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                     break;
                 }
 
+                case LV_EVENT_LONG_PRESSED: {
+                    switch (obj_data->id) {
+                        case BTN_NEXT_ID:
+                            if (pdata->forward) {
+                                msg.stack_msg = PMAN_STACK_MSG_SWAP_EXTRA(&page_test_drum, (void *)(uintptr_t)0);
+                            } else {
+                                msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_temperature);
+                            }
+                            break;
+                    }
+                    break;
+                }
+
                 default:
                     break;
             }
@@ -251,7 +264,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 static int test_cesto_in_sicurezza(model_t *model, struct page_data *data) {
     (void)data;
-    return (model->run.minion.read.alarms & (1 << ALARM_EMERGENCY)) == 0;
+    return model_is_alarm_active(model, ALARM_EMERGENCY);
 }
 
 
@@ -262,7 +275,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
     lv_label_set_text_fmt(pdata->label_run, "[marcia] %s %s", pdata->run ? "on " : "off",
                           test_cesto_in_sicurezza(model, pdata) ? "ok" : "no");
 
-    if ((model->run.minion.read.alarms & (1 << ALARM_EMERGENCY)) > 0) {
+    if (model_is_alarm_active(model, ALARM_EMERGENCY)) {
         lv_led_on(pdata->led_emergency);
     } else {
         lv_led_off(pdata->led_emergency);

@@ -1,7 +1,4 @@
 Identificatore, Italiano, Inglese
-TIPO_0, "Segnalazione allarmi, attivita' e pagamento", "Signal alarms, activity and payment"
+TIPO_0, "Segnalazione allarmi e attivita'", "Signal alarms and activity"
 TIPO_1, Segnalazione allarmi, Signal alarms
 TIPO_2, Segnalazione attivita', Signal activity
-TIPO_3, "Segnalazione allarmi, attivita' e pagamento (invertito)", "Signal alarms, activity and payment (inverted)"
-TIPO_4, Segnalazione allarmi (invertito), Signal alarms (inverted)
-TIPO_5, Segnalazione attivita' (invertito), Signal activity (inverted)

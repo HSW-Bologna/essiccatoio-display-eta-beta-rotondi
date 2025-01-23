@@ -20,9 +20,7 @@
 #include "services/timestamp.h"
 
 
-#define DIR_PROGRAMMI "programmi"
-#define DIR_PARAMETRI "parametri"
-#define BASENAME(x)   (strrchr(x, '/') + 1)
+#define BASENAME(x) (strrchr(x, '/') + 1)
 
 
 #define CONTRAST_KEY "CONTRAST"
@@ -36,7 +34,6 @@
 
 
 static int load_parmac(parmac_t *parmac);
-static int update_index(program_t *programs, size_t len);
 
 
 static const char *TAG = "Configuration";
@@ -164,29 +161,18 @@ void configuration_init(void) {
  *  Programmi
  */
 
-void configuration_remove_program_file(char *name) {
-    char filename[128];
-    snprintf(filename, sizeof(filename), "%s/%s", PROGRAMS_PATH, name);
-
-    if (remove(filename)) {
-        ESP_LOGE(TAG, "Non sono riuscito a cancellare il file %s: %s", filename, strerror(errno));
-    }
-}
-
-
-int configuration_clone_program(model_t *pmodel, size_t destination) {
+int configuration_clone_program(mut_model_t *model, uint16_t source, uint16_t destination) {
     int res = 0;
 
-#if 0
     char   path[128] = {0};
     name_t filename;
 
-    snprintf(path, sizeof(path), "%s/%s", PROGRAMS_PATH, model_new_unique_filename(pmodel, filename, timestamp_get()));
-    ESP_LOGI(TAG, "Cloning new program %s (from %i to %i)", path, model_get_program_num(pmodel), destination);
+    snprintf(path, sizeof(path), "%s/%s", PROGRAMS_PATH, model_new_unique_filename(model, filename, timestamp_get()));
+    ESP_LOGI(TAG, "Cloning new program %s (from %i to %i)", path, model->config.num_programs, (int)destination);
 
     uint8_t *buffer = malloc(MAX_PROGRAM_SIZE);
     assert(buffer != NULL);
-    size_t size = serialize_program(buffer, model_get_program(pmodel));
+    size_t size = program_serialize(buffer, &model->config.programs[source]);
     FILE  *fp   = fopen(path, "w");
     if (fwrite(buffer, 1, size, fp) == 0) {
         res = 1;
@@ -195,28 +181,25 @@ int configuration_clone_program(model_t *pmodel, size_t destination) {
     fclose(fp);
     free(buffer);
 
-    if (destination < model_get_num_programs(pmodel)) {
-        memcpy(&pmodel->prog.preview_programmi[destination],
-               &pmodel->prog.preview_programmi[model_get_program_num(pmodel)], sizeof(programma_preview_t));
-        strcpy(pmodel->prog.preview_programmi[destination].filename, filename);
+    if (destination < model->config.num_programs) {
+        memcpy(&model->config.programs[destination], &model->config.programs[source], sizeof(program_t));
+        strcpy(model->config.programs[destination].filename, filename);
     } else {
-        for (size_t i = model_get_num_programs(pmodel); i > destination; i--) {
-            pmodel->prog.preview_programmi[i] = pmodel->prog.preview_programmi[i - 1];
+        for (size_t i = model->config.num_programs; i > destination; i--) {
+            model->config.programs[i] = model->config.programs[i - 1];
         }
-        memcpy(&pmodel->prog.preview_programmi[destination],
-               &pmodel->prog.preview_programmi[model_get_program_num(pmodel)], sizeof(programma_preview_t));
-        strcpy(pmodel->prog.preview_programmi[destination].filename, filename);
+        memcpy(&model->config.programs[destination], &model->config.programs[source], sizeof(program_t));
+        strcpy(model->config.programs[destination].filename, filename);
 
-        pmodel->prog.num_programmi++;
+        model->config.num_programs++;
     }
-    update_index(pmodel->prog.preview_programmi, model_get_num_programs(pmodel));
-#endif
+    configuration_update_index(model->config.programs, model->config.num_programs);
     return res;
 }
 
 
-int configuration_create_empty_program(model_t *pmodel) {
-    uint16_t num       = pmodel->config.num_programs;
+int configuration_create_empty_program(model_t *model) {
+    uint16_t num       = model->config.num_programs;
     char     path[128] = {0};
     name_t   filename;
     uint8_t  buffer[PROGRAM_SIZE(0)];
@@ -224,7 +207,7 @@ int configuration_create_empty_program(model_t *pmodel) {
 
     size_t size = program_serialize_empty(buffer, num);
 
-    snprintf(path, sizeof(path), "%s/%s", PROGRAMS_PATH, model_new_unique_filename(pmodel, filename, timestamp_get()));
+    snprintf(path, sizeof(path), "%s/%s", PROGRAMS_PATH, model_new_unique_filename(model, filename, timestamp_get()));
     ESP_LOGI(TAG, "Creating new program %s", path);
     FILE *fp = fopen(path, "w");
     if (fwrite(buffer, 1, size, fp) == 0) {
@@ -241,7 +224,7 @@ int configuration_create_empty_program(model_t *pmodel) {
 }
 
 
-int configuration_update_program(program_t *p) {
+int configuration_update_program(const program_t *p) {
     char path[128];
     int  res = 0;
 
@@ -254,7 +237,7 @@ int configuration_update_program(program_t *p) {
 
     uint8_t *buffer = malloc(MAX_PROGRAM_SIZE);
     assert(buffer != NULL);
-    size_t size = serialize_program(buffer, p);
+    size_t size = program_serialize(buffer, p);
     if (fwrite(buffer, 1, size, fp) == 0) {
         res = 1;
         ESP_LOGE(TAG, "Non sono riuscito a scrivere il file %s : %s", path, strerror(errno));
@@ -319,7 +302,7 @@ void configuration_clear_orphan_programs(program_t *programs, uint16_t num) {
 }
 
 
-int list_saved_programs(program_t *programs, size_t len) {
+int list_saved_programs(program_t *programs) {
     int count = 0;
 
     FILE *findex = fopen(PATH_FILE_INDICE, "r");
@@ -329,7 +312,7 @@ int list_saved_programs(program_t *programs, size_t len) {
     } else {
         char filename[256];
 
-        while (fgets(filename, sizeof(filename), findex)) {
+        while (fgets(filename, sizeof(filename), findex) && count < MAX_PROGRAMMI) {
             int len = strlen(filename);
             if (len <= 0) {
                 continue;
@@ -365,12 +348,12 @@ void configuration_remove_program(program_t *programs, size_t len, size_t num) {
         programs[i] = programs[i + 1];
     }
 
-    update_index(programs, len);
+    configuration_update_index(programs, len);
 }
 
 
-int configuration_load_programs_preview(model_t *pmodel, program_t *programs, size_t len, uint16_t lingua) {
-    int16_t num = list_saved_programs(programs, len);
+int configuration_load_programs(model_t *model, program_t *programs) {
+    int16_t num = list_saved_programs(programs);
     char    path[PATH_MAX];
     int     count = 0;
 
@@ -381,7 +364,7 @@ int configuration_load_programs_preview(model_t *pmodel, program_t *programs, si
     ESP_LOGI(TAG, "%i programs found", num);
 
     uint8_t *buffer = malloc(MAX_PROGRAM_SIZE);
-    for (size_t i = 0; i < num; i++) {
+    for (int16_t i = 0; i < num; i++) {
         sprintf(path, "%s/%s", PROGRAMS_PATH, programs[i].filename);
 
         if (is_file(path)) {
@@ -397,7 +380,8 @@ int configuration_load_programs_preview(model_t *pmodel, program_t *programs, si
             if (read == 0) {
                 ESP_LOGE(TAG, "Non sono riuscito a leggere il file %s: %s", path, strerror(errno));
             } else {
-                ESP_LOGI(TAG, "Trovato lavaggio %s (%s)", programs[i].nomi[pmodel->config.parmac.language], path);
+                program_deserialize(&programs[i], buffer);
+                ESP_LOGI(TAG, "Trovato lavaggio %s (%s)", programs[i].nomi[model->config.parmac.language], path);
                 count++;
             }
 
@@ -480,17 +464,18 @@ int configuration_save_data_version(void) {
 }
 
 
-int configuration_load_all_data(mut_model_t *pmodel) {
-    int err = load_parmac(&pmodel->config.parmac);
+int configuration_load_all_data(mut_model_t *model) {
+    int err = load_parmac(&model->config.parmac);
 
     if (err) {
-        strcpy(pmodel->config.parmac.nome, "");
-        configuration_save_parmac(&pmodel->config.parmac);
+        strcpy(model->config.parmac.nome, "");
+        configuration_save_parmac(&model->config.parmac);
     }
 
-    pmodel->config.num_programs = configuration_load_programs_preview(pmodel, pmodel->config.programs, MAX_PROGRAMMI,
-                                                                      pmodel->config.parmac.language);
-    configuration_clear_orphan_programs(pmodel->config.programs, pmodel->config.num_programs);
+    model->config.num_programs = configuration_load_programs(model, model->config.programs);
+    // Never less than 5 programs
+    model_init_default_programs(model);
+    configuration_clear_orphan_programs(model->config.programs, model->config.num_programs);
 
     return configuration_read_local_data_version();
 }
@@ -515,7 +500,7 @@ int configuration_read_local_data_version(void) {
 }
 
 
-static int update_index(program_t *previews, size_t len) {
+int configuration_update_index(program_t *previews, size_t len) {
     FILE *findex = fopen(PATH_FILE_INDICE, "w");
     if (findex == NULL) {
         ESP_LOGE(TAG, "Unable to open index: %s", strerror(errno));

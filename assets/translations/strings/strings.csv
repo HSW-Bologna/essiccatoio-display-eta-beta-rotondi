@@ -8,6 +8,8 @@ ERRORE_DI_COMUNICAZIONE, Errore di comunicazione, Communication error
 RIPROVA, Riprova, Try again
 USCITE, Uscite, Outputs
 TEMPERATURA, Temperatura, Temperature
+UMIDITA_SONDA, Umidita' sonda, Humidity probe
+TEMPERATURA_SONDA, Temperatura sonda, Temperature probe
 MOTORE_AVANTI, Motore avanti, Motor forward
 MOTORE_INDIETRO, Motore indietro, Motor backward
 SCELTA_PROGRAMMA, Scelta programma, Program choice
@@ -17,3 +19,25 @@ OBLO_APERTO, Oblo' aperto, Porthole open
 ASCIUGATURA_IN_CORSO, Asciugatura in corso, Drying in progress
 CODICE, Codice, Codice
 ALLARME, Allarme, Alarm
+GETTONI, Gettoni, Coins
+DIGITALE, Digitale, Digital
+LINEA, Linea, Line
+TOTALE, Totale, Total
+AZZERA, Azzera, Clear
+ABILITA, Abilita, Enable
+PROGRAMMI, Programmi, Programs
+CANCELLARE_IL_PROGRAMMA, Cancellare il programma?, Delete the program?
+CALDO, CALDO, HOT
+MEDIO, MEDIO, WARM
+TIEPIDO, TIEPIDO, TEPID
+FREDDO, FREDDO, COLD
+LANA, LANA, WHOOL
+CANCELLARE_IL_PASSO, Cancellare il passo?, Delete the step?
+INFORMAZIONI, Informazioni, Information
+ASCIUGATURA, Asciugatura, Drying
+RAFFREDDAMENTO, Raffreddamento, Cooling
+ANTIPIEGA, Antipiega, Antifold
+FLUSSO_D_ARIA_ASSENTE, Flusso d'aria assente, Air flow missing
+BLOCCO_BRUCIATORE, Blocco bruciatore, Burner lock
+SURRISCALDAMENTO, Surriscaldamento, Overheating
+CASSA, Cassa, Cash desk

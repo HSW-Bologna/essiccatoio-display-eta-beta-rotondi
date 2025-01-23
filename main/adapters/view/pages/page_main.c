@@ -32,7 +32,7 @@ LV_IMG_DECLARE(img_button_background);
 
 
 #define SETTINGS_DRAG_WIDTH    96
-#define SETTINGS_DRAG_HEIGHT   16
+#define SETTINGS_DRAG_HEIGHT   24
 #define SETTINGS_DRAWER_WIDTH  96
 #define SETTINGS_DRAWER_HEIGHT 96
 #define SETTINGS_BTN_WIDTH     64
@@ -192,7 +192,7 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_size(obj, SETTINGS_DRAG_WIDTH, SETTINGS_DRAG_HEIGHT);
         lv_obj_align(obj, LV_ALIGN_TOP_MID, 0, 0);
         lv_obj_add_style(obj, (lv_style_t *)&style_transparent_cont, LV_STATE_DEFAULT);
-        lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         view_register_object_default_callback(obj, OBJ_SETTINGS_ID);
         pdata->obj_handle = obj;
 
@@ -605,11 +605,16 @@ static void update_info(model_t *model, struct page_data *pdata) {
     const lv_image_dsc_t *icons_language[LANGUAGES_NUM] = {&img_italiano, &img_english};
     lv_image_set_src(pdata->icon_button_language.image_icon, icons_language[language]);
 
-    if (model_is_drying(model)) {
-        lv_label_set_text_fmt(pdata->label_temperature, "%i/%i °C", model->run.minion.read.default_temperature,
-                              model_get_current_step(model).temperature);
-    } else {
-        lv_label_set_text_fmt(pdata->label_temperature, "%i °C", model->run.minion.read.default_temperature);
+    program_step_t step = model_get_current_step(model);
+
+    switch (step.type) {
+        case PROGRAM_STEP_TYPE_DRYING:
+            lv_label_set_text_fmt(pdata->label_temperature, "%i/%i °C", model->run.minion.read.default_temperature,
+                                  step.drying.temperature);
+            break;
+        default:
+            lv_label_set_text_fmt(pdata->label_temperature, "%i °C", model->run.minion.read.default_temperature);
+            break;
     }
     view_common_set_hidden(pdata->label_temperature, !model->config.parmac.abilita_visualizzazione_temperatura);
 
@@ -627,7 +632,7 @@ static void update_info(model_t *model, struct page_data *pdata) {
                               view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
         }
     } else {
-        view_common_format_alarm(pdata->label_status, model->run.minion.read.alarms, language);
+        view_common_format_alarm(pdata->label_status, model, language);
     }
 }
 

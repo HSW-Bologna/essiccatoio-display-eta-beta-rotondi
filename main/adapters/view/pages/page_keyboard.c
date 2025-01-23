@@ -8,17 +8,15 @@
 #include "../intl/intl.h"
 
 
-#define NUM_INPUTS 8
-
-
 struct page_data {
-    lv_obj_t *led_input[NUM_INPUTS];
+    char     *string;
+    lv_obj_t *textarea;
 };
 
 
 enum {
-    BTN_BACK_ID,
-    BTN_NEXT_ID,
+    KEYBOARD_ID,
+    TEXTAREA_ID,
 };
 
 
@@ -31,6 +29,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
+    pdata->string = (char *)extra;
 
     return pdata;
 }
@@ -41,37 +40,29 @@ static void open_page(pman_handle_t handle, void *state) {
 
     model_t *model = view_get_model(handle);
 
-    view_common_create_title(lv_scr_act(), view_intl_get_string(model, STRINGS_INGRESSI), BTN_BACK_ID, BTN_NEXT_ID);
+    lv_obj_t *cont = lv_obj_create(lv_screen_active());
+    lv_obj_add_style(cont, &style_padless_cont, LV_STATE_DEFAULT);
+    lv_obj_set_size(cont, LV_PCT(100), LV_PCT(100));
+    lv_obj_center(cont);
 
-    lv_obj_t *cont = lv_obj_create(lv_scr_act());
-    lv_obj_set_style_pad_column(cont, 6, LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_row(cont, 6, LV_STATE_DEFAULT);
-    lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES - 56);
-    lv_obj_set_layout(cont, LV_LAYOUT_FLEX);
-    lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_ROW_WRAP);
-    lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_obj_t *textarea = lv_textarea_create(cont);
+    lv_obj_set_size(textarea, 300, 64);
+    lv_obj_set_scrollbar_mode(textarea, LV_SCROLLBAR_MODE_OFF);
+    lv_textarea_set_one_line(textarea, 1);
+    lv_textarea_set_text(textarea, pdata->string);
+    lv_textarea_set_max_length(textarea, MAX_NAME_LENGTH);
+    lv_obj_align(textarea, LV_ALIGN_TOP_MID, 0, 32);
+    view_register_object_default_callback(textarea, TEXTAREA_ID);
+    pdata->textarea = textarea;
 
-    for (size_t i = 0; i < NUM_INPUTS; i++) {
-        lv_obj_t *obj = lv_obj_create(cont);
-        lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_radius(obj, 4, LV_STATE_DEFAULT);
-        lv_obj_set_size(obj, 52, 52);
-
-        lv_obj_t *led = lv_led_create(obj);
-        lv_led_set_color(led, VIEW_STYLE_COLOR_GREEN);
-        lv_obj_set_size(led, 32, 32);
-        lv_obj_center(led);
-
-        lv_obj_t *lbl = lv_label_create(obj);
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_label_set_text_fmt(lbl, "%02zu", i + 1);
-        lv_obj_center(lbl);
-
-        pdata->led_input[i] = led;
-    }
-
-    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.inputs, 0);
+    lv_obj_t *keyboard = lv_keyboard_create(cont);
+    lv_keyboard_set_textarea(keyboard, textarea);
+    lv_obj_add_style(keyboard, (lv_style_t *)&style_config_btn, LV_PART_ITEMS);
+    lv_obj_set_style_text_font(keyboard, STYLE_FONT_SMALL, LV_PART_ITEMS);
+    lv_obj_set_style_bg_opa(keyboard, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_size(keyboard, LV_PCT(100), 160);
+    lv_obj_align(keyboard, LV_ALIGN_BOTTOM_MID, 0, 0);
+    view_register_object_default_callback(keyboard, KEYBOARD_ID);
 
     update_page(model, pdata);
 }
@@ -86,7 +77,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
     switch (event.tag) {
         case PMAN_EVENT_TAG_OPEN:
-            view_get_protocol(handle)->set_test_mode(handle, 1);
+            lv_obj_send_event(pdata->textarea, LV_EVENT_FOCUSED, NULL);
+            lv_textarea_set_cursor_pos(pdata->textarea, LV_TEXTAREA_CURSOR_LAST);
             break;
 
         case PMAN_EVENT_TAG_USER: {
@@ -100,6 +92,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 default:
                     break;
             }
+
             break;
         }
 
@@ -108,24 +101,37 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
             view_object_data_t *obj_data = lv_obj_get_user_data(target);
 
             switch (lv_event_get_code(event.as.lvgl)) {
-                case LV_EVENT_CLICKED: {
+                case LV_EVENT_VALUE_CHANGED: {
                     switch (obj_data->id) {
-                        case BTN_BACK_ID:
-                            view_get_protocol(handle)->set_test_mode(handle, 0);
-                            msg.stack_msg = PMAN_STACK_MSG_BACK();
+                        case TEXTAREA_ID:
                             break;
 
-                        case BTN_NEXT_ID:
-                            msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_outputs);
+                        default:
                             break;
                     }
                     break;
                 }
 
-                case LV_EVENT_LONG_PRESSED: {
+                case LV_EVENT_READY: {
                     switch (obj_data->id) {
-                        case BTN_NEXT_ID:
-                            msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_coins_digital);
+                        case KEYBOARD_ID:
+                            strcpy(pdata->string, lv_textarea_get_text(pdata->textarea));
+                            msg.stack_msg = PMAN_STACK_MSG_BACK();
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break;
+                }
+
+                case LV_EVENT_CANCEL: {
+                    switch (obj_data->id) {
+                        case KEYBOARD_ID:
+                            msg.stack_msg = PMAN_STACK_MSG_BACK();
+                            break;
+
+                        default:
                             break;
                     }
                     break;
@@ -146,17 +152,12 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    for (size_t i = 0; i < NUM_INPUTS; i++) {
-        if (model->run.minion.read.inputs & (1 << i)) {
-            lv_led_on(pdata->led_input[i]);
-        } else {
-            lv_led_off(pdata->led_input[i]);
-        }
-    }
+    (void)model;
+    (void)pdata;
 }
 
 
-const pman_page_t page_test_inputs = {
+const pman_page_t page_keyboard = {
     .create        = create_page,
     .destroy       = pman_destroy_all,
     .open          = open_page,

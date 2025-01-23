@@ -20,23 +20,37 @@ static void start_program(pman_handle_t handle, uint16_t program_index);
 static void resume_cycle(pman_handle_t handle);
 static void pause_cycle(pman_handle_t handle);
 static void stop_cycle(pman_handle_t handle);
+static void clear_coins(pman_handle_t handle);
+static void digital_coin_reader_enable(pman_handle_t handle, uint8_t enable);
+static void save_program_index(pman_handle_t handle);
+static void create_new_program(pman_handle_t handle, uint16_t program_index);
+static void clone_program(pman_handle_t handle, uint16_t source_program_index, uint16_t destination_program_index);
+static void delete_program(pman_handle_t handle, uint16_t program_index);
+static void save_program(pman_handle_t handle, uint16_t program_index);
 
 
 static const char *TAG = "Gui";
 
 
 view_protocol_t controller_gui_protocol = {
-    .retry_communication = retry_communication,
-    .refresh_minion      = refresh_minion,
-    .set_test_mode       = set_test_mode,
-    .test_output         = test_output,
-    .test_drum           = test_drum,
-    .clear_test_outputs  = clear_test_outputs,
-    .save_parmac         = save_parmac,
-    .start_program       = start_program,
-    .resume_cycle        = resume_cycle,
-    .pause_cycle         = pause_cycle,
-    .stop_cycle          = stop_cycle,
+    .retry_communication        = retry_communication,
+    .refresh_minion             = refresh_minion,
+    .set_test_mode              = set_test_mode,
+    .test_output                = test_output,
+    .test_drum                  = test_drum,
+    .clear_test_outputs         = clear_test_outputs,
+    .save_parmac                = save_parmac,
+    .start_program              = start_program,
+    .resume_cycle               = resume_cycle,
+    .pause_cycle                = pause_cycle,
+    .stop_cycle                 = stop_cycle,
+    .digital_coin_reader_enable = digital_coin_reader_enable,
+    .clear_coins                = clear_coins,
+    .save_program_index         = save_program_index,
+    .create_new_program         = create_new_program,
+    .clone_program              = clone_program,
+    .delete_program             = delete_program,
+    .save_program               = save_program,
 };
 
 
@@ -74,8 +88,9 @@ static void refresh_minion(pman_handle_t handle) {
 
 
 static void set_test_mode(pman_handle_t handle, uint8_t test_mode) {
-    mut_model_t *model                = view_get_model(handle);
-    model->run.minion.write.test_mode = test_mode;
+    mut_model_t *model                 = view_get_model(handle);
+    model->run.minion.write.test_mode  = test_mode;
+    model->run.test_enable_coin_reader = 0;
     controller_sync_minion(model);
 }
 
@@ -96,14 +111,14 @@ static void test_drum(pman_handle_t handle, uint8_t forward, uint8_t run, uint8_
     mut_model_t *model = view_get_model(handle);
 
     if (run) {
-        uint16_t output_index = forward ? 5 : 4;
+        uint16_t output_index = forward ? 0 : 1;
         model_clear_test_outputs(model);
         model_set_test_output(model, output_index);
     } else {
         model_clear_test_outputs(model);
     }
 
-    model->run.minion.write.test_pwm1 = percentage;
+    model->run.minion.write.test_pwm2 = percentage;
 
     controller_sync_minion(model);
 }
@@ -131,7 +146,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
     model_select_program(model, program_index);
     controller_sync_minion(model);
     if (model_is_cycle_stopped(model)) {
-        minion_resume_program();
+        minion_resume_program(model, 1);
     }
 }
 
@@ -139,7 +154,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
 static void resume_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
     (void)model;
-    minion_resume_program();
+    minion_resume_program(model, 1);
 }
 
 
@@ -152,6 +167,65 @@ static void pause_cycle(pman_handle_t handle) {
 
 static void stop_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
-    (void)model;
-    minion_program_done();
+    model_reset_program(model);
+    minion_program_done(model);
+}
+
+
+static void clear_coins(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    memset(model->run.minion.read.coins, 0, sizeof(model->run.minion.read.coins));
+    minion_clear_coins();
+}
+
+
+static void digital_coin_reader_enable(pman_handle_t handle, uint8_t enable) {
+    mut_model_t *model                 = view_get_model(handle);
+    model->run.test_enable_coin_reader = enable;
+    minion_sync(model);
+}
+
+
+static void save_program_index(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_update_index(model->config.programs, model->config.num_programs);
+}
+
+
+static void create_new_program(pman_handle_t handle, uint16_t program_index) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_create_empty_program(model);
+    model->config.num_programs = configuration_load_programs(model, model->config.programs);
+    configuration_clear_orphan_programs(model->config.programs, model->config.num_programs);
+
+    program_t new_program = model->config.programs[model->config.num_programs - 1];
+    for (uint16_t i = model->config.num_programs - 1; i > program_index; i--) {
+        model->config.programs[i] = model->config.programs[i - 1];
+    }
+    model->config.programs[program_index] = new_program;
+
+    ESP_LOGI(TAG, "Created new program at index %i", program_index);
+}
+
+
+static void clone_program(pman_handle_t handle, uint16_t source_program_index, uint16_t destination_program_index) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_clone_program(model, source_program_index, destination_program_index);
+    ESP_LOGI(TAG, "Clone program at %i to %i", source_program_index, destination_program_index);
+}
+
+
+static void delete_program(pman_handle_t handle, uint16_t program_index) {
+    mut_model_t *model = view_get_model(handle);
+    if (model->config.num_programs > BASE_PROGRAMS_NUM) {
+        configuration_remove_program(model->config.programs, model->config.num_programs, program_index);
+        model->config.num_programs--;
+    }
+}
+
+
+static void save_program(pman_handle_t handle, uint16_t program_index) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_update_program(model_get_program(model, program_index));
+    configuration_update_index(model->config.programs, model->config.num_programs);
 }

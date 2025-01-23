@@ -10,6 +10,7 @@
 #include "../theme/style.h"
 #include "../common.h"
 #include "config/app_config.h"
+#include "services/timestamp.h"
 
 
 LV_IMG_DECLARE(img_wool_demo);
@@ -25,8 +26,8 @@ LV_IMG_DECLARE(img_stop_pressed_demo);
 LV_IMG_DECLARE(img_stop_released_demo);
 
 
-#define SETTINGS_DRAG_WIDTH    32
-#define SETTINGS_DRAG_HEIGHT   100
+#define SETTINGS_DRAG_WIDTH    64
+#define SETTINGS_DRAG_HEIGHT   32
 #define SETTINGS_DRAWER_WIDTH  128
 #define SETTINGS_DRAWER_HEIGHT 100
 #define SETTINGS_BTN_WIDTH     64
@@ -81,6 +82,8 @@ struct page_data {
     uint8_t alarm_pacified;
     int16_t last_alarm;
 
+    timestamp_t stop_button_ts;
+
     pman_timer_t *timer_change_page;
     pman_timer_t *timer_restore_language;
 };
@@ -113,7 +116,7 @@ static void open_page(pman_handle_t handle, void *state) {
     model_t *model = pman_get_user_data(handle);
 
     lv_obj_t *cont = lv_obj_create(lv_screen_active());
-    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES);
     lv_obj_add_style(cont, &style_padless_cont, LV_STATE_DEFAULT);
     lv_obj_add_style(cont, &style_borderless_cont, LV_STATE_DEFAULT);
@@ -235,7 +238,7 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_size(obj, SETTINGS_DRAG_WIDTH, SETTINGS_DRAG_HEIGHT);
         lv_obj_align(obj, LV_ALIGN_TOP_MID, 0, 0);
         lv_obj_add_style(obj, (lv_style_t *)&style_transparent_cont, LV_STATE_DEFAULT);
-        lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         view_register_object_default_callback(obj, OBJ_SETTINGS_ID);
         pdata->obj_handle = obj;
 
@@ -366,7 +369,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_STOP_ID:
                             if (model_is_cycle_paused(model)) {
-                                view_get_protocol(handle)->stop_cycle(handle);
+                                // Do nothing
                             } else {
                                 view_get_protocol(handle)->pause_cycle(handle);
                             }
@@ -389,6 +392,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                     switch (obj_data->id) {
                         case BTN_STOP_ID: {
                             if (model_is_cycle_paused(model)) {
+                                pdata->stop_button_ts = timestamp_get();
                                 lv_image_set_src(pdata->image_stop, &img_stop_pressed_demo);
                             } else {
                                 lv_image_set_src(pdata->image_stop, &img_pause_pressed_demo);
@@ -404,17 +408,27 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                 case LV_EVENT_PRESSING: {
                     switch (obj_data->id) {
+                        case BTN_STOP_ID:
+                            if (model_is_cycle_paused(model) && timestamp_is_expired(pdata->stop_button_ts, 3000UL)) {
+                                view_get_protocol(handle)->stop_cycle(handle);
+                            }
+                            break;
+
                         case OBJ_SETTINGS_ID: {
-                            lv_indev_t *indev = lv_indev_get_act();
-                            if (indev != NULL) {
-                                lv_point_t vect;
-                                lv_indev_get_vect(indev, &vect);
+                            if (model_is_cycle_active(model)) {
 
-                                lv_coord_t y = lv_obj_get_y_aligned(target) + vect.y;
+                            } else {
+                                lv_indev_t *indev = lv_indev_get_act();
+                                if (indev != NULL) {
+                                    lv_point_t vect;
+                                    lv_indev_get_vect(indev, &vect);
 
-                                if (y > 0 && y < SETTINGS_DRAWER_HEIGHT) {
-                                    lv_obj_set_y(target, y);
-                                    lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_TOP_MID, 0, 0);
+                                    lv_coord_t y = lv_obj_get_y_aligned(target) + vect.y;
+
+                                    if (y > 0 && y < SETTINGS_DRAWER_HEIGHT) {
+                                        lv_obj_set_y(target, y);
+                                        lv_obj_align_to(pdata->obj_drawer, target, LV_ALIGN_OUT_TOP_MID, 0, 0);
+                                    }
                                 }
                             }
                             break;
@@ -507,16 +521,27 @@ static void update_page(model_t *model, struct page_data *pdata) {
         if (model_is_porthole_open(model)) {
             lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_OBLO_APERTO));
         } else if (model_is_cycle_active(model)) {
-            uint16_t minutes = model->run.minion.read.remaining_time_seconds / 60;
-            uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
+            program_step_t step = model_get_current_step(model);
 
-            lv_label_set_text_fmt(pdata->label_status, "%02i:%02i", minutes, seconds);
+            if (model_is_step_endless(model)) {
+                lv_label_set_text(pdata->label_status, view_common_step2str(model, step.type));
+            } else {
+                uint16_t minutes = model->run.minion.read.remaining_time_seconds / 60;
+                uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
+
+                if (model->config.parmac.abilita_visualizzazione_temperatura && step.type == PROGRAM_STEP_TYPE_DRYING) {
+                    lv_label_set_text_fmt(pdata->label_status, "%02i:%02i    %i °C", minutes, seconds,
+                                          model_get_current_setpoint(model));
+                } else {
+                    lv_label_set_text_fmt(pdata->label_status, "%02i:%02i", minutes, seconds);
+                }
+            }
         } else {
             lv_label_set_text(pdata->label_status,
                               view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
         }
     } else {
-        view_common_format_alarm(pdata->label_status, model->run.minion.read.alarms, language);
+        view_common_format_alarm(pdata->label_status, model, language);
     }
 
     const lv_img_dsc_t *language_icons[2] = {&img_marble_italiano, &img_marble_english};

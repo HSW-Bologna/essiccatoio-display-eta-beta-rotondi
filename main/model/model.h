@@ -13,11 +13,13 @@
 
 
 typedef enum {
-    DRYER_PROGRAM_STEP_TYPE_DRYING = 0,
-    DRYER_PROGRAM_STEP_TYPE_COOLING,
-    DRYER_PROGRAM_STEP_TYPE_UNFOLDING,
-#define DRYER_PROGRAM_STEP_TYPE_NUM 3,
-} dryer_program_step_type_t;
+    DIGITAL_COIN_LINE_1 = 0,
+    DIGITAL_COIN_LINE_2,
+    DIGITAL_COIN_LINE_3,
+    DIGITAL_COIN_LINE_4,
+    DIGITAL_COIN_LINE_5,
+#define DIGITAL_COIN_LINES_NUM 5
+} digital_coin_line_t;
 
 
 typedef enum {
@@ -47,10 +49,13 @@ typedef enum {
 
 
 typedef enum {
-    ALARM_EMERGENCY = 0,
+    ALARM_PORTHOLE = 0,
+    ALARM_EMERGENCY,
     ALARM_FILTER,
-    ALARM_PORTHOLE,
-#define ALARMS_NUM 3
+    ALARM_AIR_FLOW,
+    ALARM_BURNER,
+    ALARM_TEMPERATURE,
+#define ALARMS_NUM 6
 } alarm_t;
 
 
@@ -58,12 +63,14 @@ typedef struct {
     name_t nome;
 
     uint16_t language;
+    uint16_t max_user_language;
+    uint16_t logo;
     uint16_t abilita_visualizzazione_temperatura;
     uint16_t abilita_tasto_menu;
+    uint16_t display_cycles_statistics;
     uint16_t tempo_pressione_tasto_pausa;
     uint16_t tempo_pressione_tasto_stop;
     uint16_t tempo_stop_automatico;
-    uint16_t stop_tempo_ciclo;
     uint16_t tempo_attesa_partenza_ciclo;
 
     uint16_t abilita_espansione_rs485;
@@ -84,13 +91,23 @@ typedef struct {
     uint16_t temperatura_sicurezza;
     uint16_t temperatura_sicurezza_out;
     uint16_t tempo_allarme_temperatura;     // se non arriva in temperatura in quel tempo
+    uint16_t temperature_probe;
     uint16_t allarme_inverter_off_on;
     uint16_t allarme_filtro_off_on;
+    uint16_t air_flow_alarm_time;
     uint16_t tipo_macchina_occupata;
     uint16_t inverti_macchina_occupata;
     uint16_t tipo_riscaldamento;
     uint16_t autoavvio;
     uint16_t disabilita_allarmi;
+    uint16_t heating_type;
+    uint16_t gas_ignition_attempts;
+    uint16_t gas_preemptive_reset;
+    uint16_t stop_time_in_pause;
+    uint16_t porthole_nc_na;
+    uint16_t busy_signal_nc_na;
+    uint16_t fan_with_open_porthole_time;
+    uint16_t invert_fan_drum_pwm;
 } parmac_t;
 
 
@@ -116,14 +133,17 @@ struct model {
                 int16_t  temperature_1;
                 int16_t  temperature_2_adc;
                 int16_t  temperature_2;
+                int16_t  temperature_probe;
+                uint16_t humidity_probe;
                 int16_t  pressure_adc;
                 int16_t  pressure;
 
-                cycle_state_t             cycle_state;
-                dryer_program_step_type_t step_type;
-                int16_t                   default_temperature;
-                uint16_t                  remaining_time_seconds;
-                uint16_t                  alarms;
+                cycle_state_t cycle_state;
+                int16_t       default_temperature;
+                uint16_t      remaining_time_seconds;
+                uint16_t      alarms;
+                uint16_t      payment;
+                uint16_t      coins[DIGITAL_COIN_LINES_NUM];
             } read;
 
             struct {
@@ -139,6 +159,8 @@ struct model {
         uint16_t   current_program_index;
         program_t  current_program;
         uint16_t   current_step_index;
+
+        uint8_t test_enable_coin_reader;
     } run;
 };
 
@@ -147,28 +169,36 @@ typedef const struct model model_t;
 typedef struct model       mut_model_t;
 
 
-void                        model_init(mut_model_t *pmodel);
-void                        model_clear_test_outputs(mut_model_t *model);
-void                        model_set_test_output(mut_model_t *model, uint16_t output_index);
-uint8_t                     model_get_bit_accesso(uint8_t al);
-char                       *model_new_unique_filename(model_t *model, char *filename, unsigned long seed);
-program_t                  *model_get_program(mut_model_t *pmodel);
-void                        model_reset_temporary_language(mut_model_t *model);
-size_t                      model_serialize_parmac(uint8_t *buffer, parmac_t *p);
-size_t                      model_deserialize_parmac(parmac_t *p, uint8_t *buffer);
-program_drying_parameters_t model_get_current_step(model_t *model);
-uint8_t                     model_is_cycle_active(model_t *model);
-uint8_t                     model_is_cycle_paused(model_t *model);
-uint8_t                     model_is_cycle_stopped(model_t *model);
-void                        model_select_program(mut_model_t *model, uint16_t program_index);
-void                        model_select_step(mut_model_t *model, uint16_t step_index);
-uint8_t                     model_is_drying(model_t *model);
-uint8_t                     model_is_program_done(model_t *model);
-int16_t                     model_get_program_display_temperature(model_t *model, uint16_t program_index);
-uint8_t                     model_is_alarm_active(model_t *model, alarm_t alarm);
-uint8_t                     model_is_porthole_open(model_t *model);
-uint8_t                     model_is_cycle_running(model_t *model);
-uint8_t                     model_is_any_alarm_active(model_t *model);
+void             model_init(mut_model_t *model);
+void             model_clear_test_outputs(mut_model_t *model);
+void             model_set_test_output(mut_model_t *model, uint16_t output_index);
+uint8_t          model_get_bit_accesso(uint8_t al);
+char            *model_new_unique_filename(model_t *model, char *filename, unsigned long seed);
+const program_t *model_get_program(model_t *model, uint16_t program_index);
+program_t       *model_get_mut_program(mut_model_t *model, uint16_t program_index);
+void             model_reset_temporary_language(mut_model_t *model);
+size_t           model_serialize_parmac(uint8_t *buffer, parmac_t *p);
+size_t           model_deserialize_parmac(parmac_t *p, uint8_t *buffer);
+program_step_t   model_get_current_step(model_t *model);
+uint8_t          model_is_cycle_active(model_t *model);
+uint8_t          model_is_cycle_paused(model_t *model);
+uint8_t          model_is_cycle_stopped(model_t *model);
+void             model_select_program(mut_model_t *model, uint16_t program_index);
+void             model_select_step(mut_model_t *model, uint16_t step_index);
+uint8_t          model_is_program_done(model_t *model);
+int16_t          model_get_program_display_temperature(model_t *model, uint16_t program_index);
+uint8_t          model_is_alarm_active(model_t *model, alarm_t alarm);
+uint8_t          model_is_porthole_open(model_t *model);
+uint8_t          model_is_cycle_running(model_t *model);
+uint8_t          model_is_any_alarm_active(model_t *model);
+uint8_t          model_should_enable_coin_reader(model_t *model);
+uint8_t          model_swap_programs(mut_model_t *model, size_t first, size_t second);
+void             model_init_default_programs(mut_model_t *model);
+uint8_t          model_waiting_for_next_step(model_t *model);
+void             model_move_to_next_step(mut_model_t *model);
+int16_t          model_get_current_setpoint(model_t *model);
+void             model_reset_program(mut_model_t *model);
+uint8_t          model_is_step_endless(model_t *model);
 
 
 #endif

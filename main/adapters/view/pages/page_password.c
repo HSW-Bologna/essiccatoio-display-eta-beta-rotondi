@@ -56,6 +56,7 @@ static void open_page(pman_handle_t handle, void *state) {
     };
 
     lv_obj_t *cont = lv_obj_create(lv_scr_act());
+    lv_obj_remove_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES - 56);
     lv_obj_add_style(cont, (lv_style_t *)&style_padless_cont, LV_STATE_DEFAULT);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -66,7 +67,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_textarea_set_text(ta, "");
     lv_textarea_set_max_length(ta, strlen(pdata->fence->password));
     lv_obj_set_width(ta, LV_PCT(50));
-    lv_obj_clear_flag(ta, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(ta, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 8);
     lv_obj_set_style_text_font(ta, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ta, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
@@ -78,10 +79,15 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_t *kb = lv_keyboard_create(cont);
     lv_keyboard_set_textarea(kb, ta);
     lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUMBER);
-    lv_obj_set_height(kb, 180);
+    lv_obj_set_size(kb, 320, 160);
     lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_add_style(kb, (lv_style_t *)&style_config_btn, LV_PART_ITEMS);
     lv_obj_set_style_text_font(kb, STYLE_FONT_BIG, LV_PART_ITEMS);
+    lv_obj_set_style_pad_row(kb, 16, LV_PART_MAIN);
+    lv_obj_set_style_pad_column(kb, 16, LV_PART_MAIN);
+    lv_obj_set_style_pad_right(kb, 8, LV_PART_MAIN);
+    lv_obj_set_style_pad_left(kb, 8, LV_PART_MAIN);
+    lv_obj_set_style_pad_bottom(kb, 8, LV_PART_MAIN);
     lv_obj_set_style_bg_opa(kb, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_NUMBER, kbmap, ctrl_map);
     view_register_object_default_callback(kb, PASSWORD_KB_ID);
