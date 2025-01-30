@@ -1,4 +1,4 @@
-const char *strings[47][2] = {
+const char *strings[60][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -46,5 +46,18 @@ const char *strings[47][2] = {
     {"Comunicazione", "Communication", },
     {"Ripristino a impostazioni di fabbrica", "Factory reset", },
     {"Accesso", "Access", },
+    {"Italiano", "Italian", },
+    {"Inglese", "English", },
+    {"Lingua", "Language", },
+    {"Logo", "Logo", },
+    {"Modello macchina", "Machine model", },
+    {"Azzerare alle impostazioni di fabbrica?", "Reset to factory condition?", },
+    {"Chiavetta", "Thumb key", },
+    {"Importa una configurazione", "Import a configuration", },
+    {"Esporta la configurazione", "Export the configuration", },
+    {"Aggiorna", "Update", },
+    {"Aggiornamento firmware concluso; resettare il dispositivo", "Firmware update done; reset the device", },
+    {"Aggiornamento firmware in corso", "Firmware update in progress", },
+    {"Aggiornamento firmware fallito", "Firmware update failed", },
 };
 

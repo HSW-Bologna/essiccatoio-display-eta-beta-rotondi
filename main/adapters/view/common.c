@@ -34,7 +34,7 @@ void view_common_format_alarm(lv_obj_t *label, model_t *model, language_t langua
 }
 
 
-lv_obj_t *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id) {
+lv_obj_t *view_common_icon_button_create_with_number(lv_obj_t *parent, const char *icon, int id, int number) {
     const int32_t button_height = 48;
 
     lv_obj_t *button = lv_button_create(parent);
@@ -45,8 +45,13 @@ lv_obj_t *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int
     lv_label_set_text(label, icon);
     lv_obj_center(label);
 
-    view_register_object_default_callback(button, id);
+    view_register_object_default_callback_with_number(button, id, number);
     return button;
+}
+
+
+lv_obj_t *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id) {
+    return view_common_icon_button_create_with_number(parent, icon, id, 0);
 }
 
 
@@ -234,6 +239,18 @@ const pman_page_t *view_common_main_page(model_t *model) {
 const char *view_common_step2str(model_t *model, program_step_type_t type) {
     strings_t step_names[] = {STRINGS_ASCIUGATURA, STRINGS_RAFFREDDAMENTO, STRINGS_ANTIPIEGA};
     return view_intl_get_string(model, step_names[type]);
+}
+
+
+const char *view_common_modello_str(model_t *model) {
+    const char *strings_modello[] = {
+        "TEST MODEL",       "EDS RE SELF C.A.", "EDS RE LAB  C.A.", "EDS RG SELF C.A.", "EDS RG LAB  C.A.",
+        "EDS RV SELF C.A.", "EDS RV LAB  C.A.", "EDS RE SELF C.C.", "EDS RV SELF C.C.", "EDS RE LAB  C.C.",
+        "EDS RV LAB  C.C.", "EDS RP SELF C.A.", "EDS RP LAB  C.A.", "EDS RP SELF C.C.", "EDS RP LAB  C.C.",
+        "EDS RE LAB TH CA", "EDS RG LAB TH CA", "EDS RV LAB TH CA", "EDS RE LAB TH CC", "EDS RV LAB TH CC",
+    };
+
+    return strings_modello[model->config.machine_model];
 }
 
 

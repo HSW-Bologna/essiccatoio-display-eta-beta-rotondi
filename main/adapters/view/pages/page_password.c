@@ -30,9 +30,12 @@ struct page_data {
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
+    model_t *model = view_get_model(handle);
+
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
-    pdata->timer = pman_timer_create(handle, 10000UL, NULL);
+
+    pdata->timer = pman_timer_create(handle, model->config.parmac.reset_page_time * 1000UL, NULL);
     pdata->fence = extra;
     return pdata;
 }
@@ -42,7 +45,10 @@ static void open_page(pman_handle_t handle, void *state) {
     (void)handle;
 
     struct page_data *pdata = state;
+
+    pman_timer_reset(pdata->timer);
     pman_timer_resume(pdata->timer);
+
     pdata->valid  = 0;
     pdata->lockts = 0;
 
@@ -95,7 +101,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
 
 static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t event) {
-    (void)handle;
+    model_t *model = view_get_model(handle);
 
     pman_msg_t msg = PMAN_MSG_NULL;
 
@@ -103,7 +109,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
     switch (event.tag) {
         case PMAN_EVENT_TAG_TIMER: {
-            msg.stack_msg = PMAN_STACK_MSG_BACK();
+            msg.stack_msg = PMAN_STACK_MSG_REBASE(view_common_main_page(model));
             break;
         }
 

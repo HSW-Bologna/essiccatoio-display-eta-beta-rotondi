@@ -82,7 +82,7 @@ struct page_data {
     uint8_t alarm_pacified;
     int16_t last_alarm;
 
-    timestamp_t stop_button_ts;
+    timestamp_t button_ts;
 
     pman_timer_t *timer_change_page;
     pman_timer_t *timer_restore_language;
@@ -94,14 +94,15 @@ static void handle_alarm(model_t *model, struct page_data *pdata);
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
-    (void)handle;
+    model_t *model = pman_get_user_data(handle);
     (void)extra;
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
 
     pdata->timer_change_page      = pman_timer_create(handle, 250, (void *)(uintptr_t)TIMER_CHANGE_PAGE_ID);
-    pdata->timer_restore_language = pman_timer_create(handle, 10000, (void *)(uintptr_t)TIMER_RESTORE_LANGUAGE_ID);
+    pdata->timer_restore_language = pman_timer_create(handle, model->config.parmac.reset_language_time * 1000UL,
+                                                      (void *)(uintptr_t)TIMER_RESTORE_LANGUAGE_ID);
     pdata->last_alarm             = 0;
     pdata->alarm_pacified         = 0;
 
@@ -367,14 +368,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             }
                             break;
 
-                        case BTN_STOP_ID:
-                            if (model_is_cycle_paused(model)) {
-                                // Do nothing
-                            } else {
-                                view_get_protocol(handle)->pause_cycle(handle);
-                            }
-                            break;
-
                         case BTN_LANGUAGE_ID: {
                             pman_timer_resume(pdata->timer_restore_language);
                             model->run.temporary_language = (model->run.temporary_language + 1) % LANGUAGES_NUM;
@@ -391,8 +384,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_PRESSED: {
                     switch (obj_data->id) {
                         case BTN_STOP_ID: {
+                            pdata->button_ts = timestamp_get();
                             if (model_is_cycle_paused(model)) {
-                                pdata->stop_button_ts = timestamp_get();
                                 lv_image_set_src(pdata->image_stop, &img_stop_pressed_demo);
                             } else {
                                 lv_image_set_src(pdata->image_stop, &img_pause_pressed_demo);
@@ -409,8 +402,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_PRESSING: {
                     switch (obj_data->id) {
                         case BTN_STOP_ID:
-                            if (model_is_cycle_paused(model) && timestamp_is_expired(pdata->stop_button_ts, 3000UL)) {
+                            if (model_is_cycle_paused(model) &&
+                                timestamp_is_expired(pdata->button_ts,
+                                                     model->config.parmac.stop_button_time * 1000UL)) {
                                 view_get_protocol(handle)->stop_cycle(handle);
+                            } else if (model_is_cycle_paused(model) &&
+                                       timestamp_is_expired(pdata->button_ts,
+                                                            model->config.parmac.pause_button_time * 1000UL)) {
+                                view_get_protocol(handle)->pause_cycle(handle);
                             }
                             break;
 

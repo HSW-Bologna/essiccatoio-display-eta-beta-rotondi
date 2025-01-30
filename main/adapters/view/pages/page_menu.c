@@ -47,7 +47,9 @@
 
 
 struct page_data {
-    uint8_t placeholder;
+    lv_obj_t *btn_drive;
+
+    pman_timer_t *timer;
 };
 
 
@@ -58,6 +60,7 @@ enum {
     BTN_PARMAC_ID,
     BTN_ADVANCED_ID,
     BTN_PROGRAMS_ID,
+    BTN_DRIVE_ID,
 };
 
 
@@ -65,11 +68,14 @@ static void update_page(model_t *model, struct page_data *pdata);
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
-    (void)handle;
     (void)extra;
+
+    model_t *model = view_get_model(handle);
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
+
+    pdata->timer = PMAN_REGISTER_TIMER_ID(handle, model->config.parmac.reset_page_time * 1000UL, 0);
 
     return pdata;
 }
@@ -77,6 +83,9 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
+
+    pman_timer_reset(pdata->timer);
+    pman_timer_resume(pdata->timer);
 
     model_t *model = view_get_model(handle);
 
@@ -108,6 +117,17 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
         view_register_object_default_callback(btn, BTN_PROGRAMS_ID);
+    }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_ARCHIVIAZIONE));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_DRIVE_ID);
+        pdata->btn_drive = btn;
     }
 
     {
@@ -182,6 +202,11 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
         case PMAN_EVENT_TAG_OPEN:
             break;
 
+        case PMAN_EVENT_TAG_TIMER: {
+            msg.stack_msg = PMAN_STACK_MSG_REBASE(view_common_main_page(model));
+            break;
+        }
+
         case PMAN_EVENT_TAG_USER: {
             view_event_t *view_event = event.as.user;
             switch (view_event->tag) {
@@ -203,6 +228,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
+                    pman_timer_reset(pdata->timer);
+
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
@@ -218,6 +245,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_PROGRAMS_ID:
                             msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_programs);
+                            break;
+
+                        case BTN_DRIVE_ID:
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_drive);
                             break;
 
                         case BTN_PARMAC_ID:
@@ -246,15 +277,33 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    (void)model;
-    (void)pdata;
+    if (model->run.removable_drive_state != REMOVABLE_DRIVE_STATE_MOUNTED) {
+        lv_obj_add_state(pdata->btn_drive, LV_STATE_DISABLED);
+    } else {
+        lv_obj_remove_state(pdata->btn_drive, LV_STATE_DISABLED);
+    }
+}
+
+
+static void destroy_page(void *state, void *extra) {
+    struct page_data *pdata = state;
+    (void)extra;
+    pman_timer_delete(pdata->timer);
+    lv_free(pdata);
+}
+
+
+static void close_page(void *state) {
+    struct page_data *pdata = state;
+    pman_timer_pause(pdata->timer);
+    lv_obj_clean(lv_scr_act());
 }
 
 
 const pman_page_t page_menu = {
     .create        = create_page,
-    .destroy       = pman_destroy_all,
+    .destroy       = destroy_page,
     .open          = open_page,
-    .close         = pman_close_all,
+    .close         = close_page,
     .process_event = page_event,
 };

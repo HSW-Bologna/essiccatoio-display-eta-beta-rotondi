@@ -27,7 +27,7 @@ const char *pars_manuale_automatico[2][2] = {
     {"Automatico", "Automatic", },
 };
 
-const char *pars_descriptions[40][2] = {
+const char *pars_descriptions[49][2] = {
     {"Lingua", "Language", },
     {"Livello di accesso", "Access level", },
     {"Visualizzare temperatura", "Show temperature", },
@@ -44,7 +44,6 @@ const char *pars_descriptions[40][2] = {
     {"Sonda di temperatura", "Temperature probe", },
     {"Tipo riscaldamento", "Heating mode", },
     {"Tentativi accesione gas", "Gas ignition attempts", },
-    {"Reset iniziale gas", "Gas initial reset", },
     {"Ferma il tempo in pausa", "Stop time in pause", },
     {"Direzione contatto oblo'", "Porthole contact direction", },
     {"Direzione contatto macchina occupata", "Busy signal contact direction", },
@@ -68,6 +67,16 @@ const char *pars_descriptions[40][2] = {
     {"Abilita inversione", "Enable reverse", },
     {"Lingua massima utente", "Max user language", },
     {"Logo", "Logo", },
+    {"Velocita' minima", "Minimum speed", },
+    {"Velocita' massima", "Maximum speed", },
+    {"Temperatura massima in ingresso", "Maximum input temperature", },
+    {"Temperatura massima in uscita", "Maximum output temperature", },
+    {"Temperatura di sicurezza in ingresso", "Input safety temperature", },
+    {"Temperatura di sicurezza in uscita", "Output safety temperature", },
+    {"Tempo di ritorno alla lingua iniziale", "Initial language reset period", },
+    {"Tempo di ritorno alla pagina iniziale", "Initial page reset period", },
+    {"Controllo umidita' residua", "Residual humidity check", },
+    {"Autoavvio", "Autostart", },
 };
 
 const char *pars_sonda_temperatura[3][2] = {

@@ -11,6 +11,8 @@
 struct page_data {
     step_modification_t *meta;
 
+    pman_timer_t *timer;
+
     lv_obj_t *checkbox_cooling;
     lv_obj_t *checkbox_antifold;
 };
@@ -41,6 +43,9 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
+
+    pman_timer_reset(pdata->timer);
+    pman_timer_resume(pdata->timer);
 
     model_t         *model   = view_get_model(handle);
     const program_t *program = model_get_program(model, pdata->meta->program_index);
@@ -124,6 +129,11 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
         case PMAN_EVENT_TAG_OPEN:
             break;
 
+        case PMAN_EVENT_TAG_TIMER: {
+            msg.stack_msg = PMAN_STACK_MSG_REBASE(view_common_main_page(model));
+            break;
+        }
+
         case PMAN_EVENT_TAG_USER: {
             view_event_t *view_event = event.as.user;
             switch (view_event->tag) {
@@ -145,6 +155,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
+                    pman_timer_reset(pdata->timer);
+
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
@@ -161,6 +173,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 }
 
                 case LV_EVENT_VALUE_CHANGED: {
+                    pman_timer_reset(pdata->timer);
+
                     switch (obj_data->id) {
                         case CHECKBOX_COOLING_ID: {
                             program_t *program = model_get_mut_program(model, pdata->meta->program_index);
@@ -218,10 +232,25 @@ static void update_page(model_t *model, struct page_data *pdata) {
 }
 
 
+static void close_page(void *args) {
+    struct page_data *pdata = args;
+    pman_timer_pause(pdata->timer);
+    lv_obj_clean(lv_scr_act());
+}
+
+
+static void destroy_page(void *args, void *extra) {
+    struct page_data *pdata = args;
+    pman_timer_delete(pdata->timer);
+    lv_free(pdata);
+    lv_free(extra);
+}
+
+
 const pman_page_t page_program_info = {
     .create        = create_page,
-    .destroy       = pman_destroy_all,
+    .destroy       = destroy_page,
     .open          = open_page,
-    .close         = pman_close_all,
+    .close         = close_page,
     .process_event = page_event,
 };

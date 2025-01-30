@@ -55,7 +55,7 @@ struct __attribute__((packed)) task_message {
             uint16_t test_outputs;
             uint8_t  coin_reader_inhibition;
             uint16_t cycle_delay_time;
-            uint16_t safety_temperature;
+            uint16_t output_safety_temperature;
             uint16_t temperature_alarm_delay_seconds;
             uint16_t air_flow_alarm_time;
             uint16_t temperature_probe;
@@ -189,15 +189,14 @@ static void sync_with_command(model_t *model, uint16_t command) {
                         .test_pwm1                       = model->run.minion.write.test_pwm1,
                         .test_pwm2                       = model->run.minion.write.test_pwm2,
                         .cycle_delay_time                = model->config.parmac.tempo_attesa_partenza_ciclo,
-                        .safety_temperature              = model->config.parmac.temperatura_sicurezza,
+                        .output_safety_temperature       = model->config.parmac.safety_output_temperature,
                         .temperature_alarm_delay_seconds = model->config.parmac.tempo_allarme_temperatura,
                         .air_flow_alarm_time             = model->config.parmac.air_flow_alarm_time,
                         .flags                           = ((model->config.parmac.stop_time_in_pause > 0) << 0 |
                                   (model->config.parmac.disabilita_allarmi > 0) << 1 |
-                                  (model->config.parmac.gas_preemptive_reset > 0) << 2 |
-                                  (model->config.parmac.porthole_nc_na > 0) << 3 |
-                                  (model->config.parmac.busy_signal_nc_na > 0) << 4 |
-                                  (model->config.parmac.invert_fan_drum_pwm > 0) << 5     //|
+                                  (model->config.parmac.porthole_nc_na > 0) << 2 |
+                                  (model->config.parmac.busy_signal_nc_na > 0) << 3 |
+                                  (model->config.parmac.invert_fan_drum_pwm > 0) << 4     //|
                                   ),
                         .temperature_probe               = model->config.parmac.temperature_probe,
                         .heating_type                    = model->config.parmac.heating_type,
@@ -234,7 +233,7 @@ static void sync_with_command(model_t *model, uint16_t command) {
             msg.as.sync.rotation_pause_time   = step.cooling.pause_time;
             msg.as.sync.duration              = step.cooling.duration;
 
-            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 6);
+            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 5);
             break;
         }
 
@@ -345,7 +344,7 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
                     message.as.sync.test_pwm1 | (message.as.sync.test_pwm2 << 8),
                     message.as.sync.coin_reader_inhibition,
                     message.as.sync.busy_signal_type,
-                    message.as.sync.safety_temperature,
+                    message.as.sync.output_safety_temperature,
                     message.as.sync.temperature_alarm_delay_seconds,
                     message.as.sync.air_flow_alarm_time,
                     message.as.sync.temperature_probe,

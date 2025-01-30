@@ -34,5 +34,6 @@ int  configuration_update_index(program_t *previews, size_t len);
 int  configuration_load_programs(model_t *pmodel, program_t *programs);
 void configuration_clear_orphan_programs(program_t *programs, uint16_t num);
 void configuration_clear_all_programs(void);
+void configuration_commissioned(uint8_t commissioned);
 
 #endif

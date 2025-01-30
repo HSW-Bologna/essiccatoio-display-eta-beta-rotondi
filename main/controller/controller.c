@@ -7,6 +7,8 @@
 #include "esp_log.h"
 #include "configuration/configuration.h"
 #include "adapters/view/common.h"
+#include "bsp/msc.h"
+#include "services/fup.h"
 
 
 static struct {
@@ -21,14 +23,11 @@ static const char *TAG = "Controller";
 void controller_init(mut_model_t *model) {
     configuration_init();
     configuration_load_all_data(model);
-
-    configuration_init();
-    configuration_load_all_data(model);
+    model_check_parameters(model);
 
     minion_init();
-    minion_handshake();
 
-    view_change_page(view_common_main_page(model));
+    view_change_page(&page_splash);
 }
 
 
@@ -97,6 +96,11 @@ void controller_manage(mut_model_t *model) {
                         model_select_program(model, response.as.handshake.program_index);
                         model_select_step(model, response.as.handshake.step_index);
                         model->run.minion.read.cycle_state = response.as.handshake.cycle_state;
+
+                        // If configured so start immediately
+                        if (model->config.parmac.autostart) {
+                            minion_resume_program(model, 0);
+                        }
                     }
 
                     state.handshook = 1;
@@ -109,9 +113,55 @@ void controller_manage(mut_model_t *model) {
         }
     }
 
-    if (timestamp_is_expired(state.minion_sync_ts, 400)) {
-        controller_sync_minion(model);
+    {
+        msc_response_t msc_response;
+        if (msc_get_response(&msc_response)) {
+            switch (msc_response.code) {
+                case MSC_RESPONSE_CODE_ARCHIVE_EXTRACTION_COMPLETE:
+                    configuration_load_all_data(model);
+                    model->run.removable_drive_state = msc_is_device_mounted();
+                    break;
+
+                case MSC_RESPONSE_CODE_ARCHIVE_SAVING_COMPLETE:
+                    ESP_LOGI(TAG, "Configuration saved!");
+                    model->run.removable_drive_state = msc_is_device_mounted();
+                    break;
+            }
+
+            if (msc_response.error) {
+                // TODO
+            } else {
+                // TODO
+            }
+        }
     }
+
+    if (timestamp_is_expired(state.minion_sync_ts, 400)) {
+        const uint16_t  boot_target_counter = 7;
+        static uint16_t boot_wait_counter   = 0;
+        static uint8_t  initialized         = 0;
+
+        // The minion has been initialized, sync periodically
+        if (initialized) {
+            controller_sync_minion(model);
+        }
+        // Handshake message
+        else if (boot_wait_counter > boot_target_counter) {
+            minion_handshake();
+            initialized          = 1;
+            state.minion_sync_ts = timestamp_get();
+        }
+        // Wait a few seconds before starting to query the minion in order for it to boot properly
+        else {
+            boot_wait_counter++;
+            state.minion_sync_ts = timestamp_get();
+        }
+
+        model->run.removable_drive_state = msc_is_device_mounted();
+    }
+
+    fup_manage();
+    model->run.firmware_update_state = fup_get_state();
 }
 
 

@@ -62,9 +62,11 @@ void                        view_common_format_alarm(lv_obj_t *label, model_t *m
 popup_t                     view_common_popup_create(lv_obj_t *parent, const char *text, int ok_id, int cancel_id);
 popup_t                     view_common_alarm_popup_create(lv_obj_t *parent, int id);
 void                        view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language);
-lv_obj_t                   *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id);
-const pman_page_t          *view_common_main_page(model_t *model);
-const char                 *view_common_step2str(model_t *model, program_step_type_t type);
+lv_obj_t          *view_common_icon_button_create_with_number(lv_obj_t *parent, const char *icon, int id, int number);
+lv_obj_t          *view_common_icon_button_create(lv_obj_t *parent, const char *icon, int id);
+const pman_page_t *view_common_main_page(model_t *model);
+const char        *view_common_step2str(model_t *model, program_step_type_t type);
+const char        *view_common_modello_str(model_t *model);
 
 
 #endif

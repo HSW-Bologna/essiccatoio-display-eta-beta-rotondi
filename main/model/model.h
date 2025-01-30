@@ -10,6 +10,55 @@
 #define USER_ACCESS_LEVEL       0
 #define TECHNICIAN_ACCESS_LEVEL 1
 #define PARMAC_SIZE             279
+#define NUM_LOGOS               5
+
+
+typedef enum {
+    FIRMWARE_UPDATE_STATE_NONE = 0,
+    FIRMWARE_UPDATE_STATE_AVAILABLE,
+    FIRMWARE_UPDATE_STATE_UPDATING,
+    FIRMWARE_UPDATE_STATE_SUCCESS,
+    FIRMWARE_UPDATE_STATE_FAILURE,
+} firmware_update_state_t;
+
+
+typedef enum {
+    REMOVABLE_DRIVE_STATE_MISSING,
+    REMOVABLE_DRIVE_STATE_MOUNTED,
+    REMOVABLE_DRIVE_STATE_INVALID,
+} removable_drive_state_t;
+
+
+typedef enum {
+    MACHINE_MODEL_TEST = 0,
+    MACHINE_MODEL_EDS_RE_SELF_CA,
+    MACHINE_MODEL_EDS_RE_LAB_CA,
+    MACHINE_MODEL_EDS_RG_SELF_CA,
+    MACHINE_MODEL_EDS_RG_LAB_CA,
+    MACHINE_MODEL_EDS_RV_SELF_CA,
+    MACHINE_MODEL_EDS_RV_LAB_CA,
+    MACHINE_MODEL_EDS_RE_SELF_CC,
+    MACHINE_MODEL_EDS_RV_SELF_CC,
+    MACHINE_MODEL_EDS_RE_LAB_CC,
+    MACHINE_MODEL_EDS_RV_LAB_CC,
+    MACHINE_MODEL_EDS_RP_SELF_CA,
+    MACHINE_MODEL_EDS_RP_LAB_CA,
+    MACHINE_MODEL_EDS_RP_SELF_CC,
+    MACHINE_MODEL_EDS_RP_LAB_CC,
+    MACHINE_MODEL_EDS_RE_LAB_TH_CA,
+    MACHINE_MODEL_EDS_RG_LAB_TH_CA,
+    MACHINE_MODEL_EDS_RV_LAB_TH_CA,
+    MACHINE_MODEL_EDS_RE_LAB_TH_CC,
+    MACHINE_MODEL_EDS_RV_LAB_TH_CC,
+#define MACHINE_MODELS_NUM 20
+} machine_model_t;
+
+
+typedef enum {
+    TEMPERATURE_PROBE_INPUT = 0,
+    TEMPERATURE_PROBE_OUTPUT,
+    TEMPERATURE_PROBE_HUMIDITY,
+} temperature_probe_t;
 
 
 typedef enum {
@@ -68,28 +117,28 @@ typedef struct {
     uint16_t abilita_visualizzazione_temperatura;
     uint16_t abilita_tasto_menu;
     uint16_t display_cycles_statistics;
-    uint16_t tempo_pressione_tasto_pausa;
-    uint16_t tempo_pressione_tasto_stop;
     uint16_t tempo_stop_automatico;
     uint16_t tempo_attesa_partenza_ciclo;
-
-    uint8_t  abilita_espansione_rs485;
-    uint8_t  abilita_gas;
-    uint16_t velocita_minima;
-    uint16_t velocita_massima;
+    uint16_t reset_page_time;
+    uint16_t reset_language_time;
+    uint16_t pause_button_time;
+    uint16_t stop_button_time;
+    uint16_t minimum_speed;
+    uint16_t maximum_speed;
     uint16_t tempo_gettone;
     uint16_t velocita_antipiega;
     uint16_t tipo_pagamento;
     uint16_t access_level;
-    uint16_t max_programs;
+    uint16_t autostart;
+    uint16_t residual_humidity_check;
+    uint16_t max_input_temperature;      // Maximum temperature to be set for the input probe
+    uint16_t max_output_temperature;     // Maximum temperature to be set for the output probe
 
     /* Parametri da inviare alla macchina */
     uint16_t tipo_sonda_temperatura;
     uint16_t posizione_sonda_temperatura;
-    uint16_t temperatura_massima_ingresso;
-    uint16_t temperatura_massima_uscita;
-    uint16_t temperatura_sicurezza;
-    uint16_t temperatura_sicurezza_out;
+    uint16_t safety_input_temperature;
+    uint16_t safety_output_temperature;
     uint16_t tempo_allarme_temperatura;     // se non arriva in temperatura in quel tempo
     uint16_t temperature_probe;
     uint16_t allarme_inverter_off_on;
@@ -97,11 +146,9 @@ typedef struct {
     uint16_t air_flow_alarm_time;
     uint16_t tipo_macchina_occupata;
     uint16_t tipo_riscaldamento;
-    uint16_t autoavvio;
     uint16_t disabilita_allarmi;
     uint16_t heating_type;
     uint16_t gas_ignition_attempts;
-    uint16_t gas_preemptive_reset;
     uint16_t stop_time_in_pause;
     uint16_t porthole_nc_na;
     uint16_t busy_signal_nc_na;
@@ -112,6 +159,9 @@ typedef struct {
 
 struct model {
     struct {
+        uint16_t machine_model;
+        uint8_t  commissioned;
+
         parmac_t parmac;
 
         uint16_t  num_programs;
@@ -154,13 +204,14 @@ struct model {
             } write;
         } minion;
 
-        language_t temporary_language;
-        uint8_t    temporary_access_level;
-        uint16_t   current_program_index;
-        program_t  current_program;
-        uint16_t   current_step_index;
-
-        uint8_t test_enable_coin_reader;
+        language_t              temporary_language;
+        uint8_t                 temporary_access_level;
+        uint16_t                current_program_index;
+        program_t               current_program;
+        uint16_t                current_step_index;
+        uint8_t                 test_enable_coin_reader;
+        removable_drive_state_t removable_drive_state;
+        firmware_update_state_t firmware_update_state;
     } run;
 };
 
@@ -199,6 +250,8 @@ void             model_move_to_next_step(mut_model_t *model);
 int16_t          model_get_current_setpoint(model_t *model);
 void             model_reset_program(mut_model_t *model);
 uint8_t          model_is_step_endless(model_t *model);
+uint16_t         model_get_maximum_temperature(model_t *model);
+void             model_check_parameters(mut_model_t *model);
 
 
 #endif

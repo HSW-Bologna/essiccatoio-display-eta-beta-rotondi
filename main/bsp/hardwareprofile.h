@@ -19,9 +19,9 @@
 #define BSP_HAP_RESET_D GPIO_NUM_9
 #define BSP_HAP_RETRO   GPIO_NUM_10
 #define BSP_HAP_BUZ     GPIO_NUM_11
+#define BSP_HAP_USB_INT GPIO_NUM_15
 #define BSP_HAP_TX      GPIO_NUM_40
 #define BSP_HAP_RX      GPIO_NUM_39
-
 #define BSP_HAP_IRQ     GPIO_NUM_3
 
 #endif

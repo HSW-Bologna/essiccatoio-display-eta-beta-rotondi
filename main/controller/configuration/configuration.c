@@ -36,7 +36,8 @@
 static int load_parmac(parmac_t *parmac);
 
 
-static const char *TAG = "Configuration";
+static const char *TAG                            = "Configuration";
+static const char *CONFIGURATION_KEY_COMMISSIONED = "COMMISSIONED";
 
 /*
  * Funzioni di utilita'
@@ -85,6 +86,11 @@ static int dir_exists(char *name) {
 
 static void create_dir(char *name) {
     DIR_CHECK(mkdir(name, 0766));
+}
+
+
+void configuration_commissioned(uint8_t commissioned) {
+    storage_save_uint8(&commissioned, CONFIGURATION_KEY_COMMISSIONED);
 }
 
 
@@ -476,6 +482,8 @@ int configuration_load_all_data(mut_model_t *model) {
     // Never less than 5 programs
     model_init_default_programs(model);
     configuration_clear_orphan_programs(model->config.programs, model->config.num_programs);
+
+    storage_load_uint8(&model->config.commissioned, CONFIGURATION_KEY_COMMISSIONED);
 
     return configuration_read_local_data_version();
 }

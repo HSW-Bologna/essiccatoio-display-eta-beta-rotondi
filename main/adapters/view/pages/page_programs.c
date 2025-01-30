@@ -67,9 +67,10 @@ static const char *TAG = "PagePrograms";
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
-    (void)handle;
     (void)extra;
     (void)TAG;
+
+    model_t *model = view_get_model(handle);
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
@@ -77,7 +78,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
     pdata->program_window_index = 0;
     pdata->selected_program     = -1;
     pdata->delete_program       = 0;
-    pdata->timer                = PMAN_REGISTER_TIMER_ID(handle, APP_CONFIG_PAGE_TIMEOUT, 0);
+    pdata->timer                = PMAN_REGISTER_TIMER_ID(handle, model->config.parmac.reset_page_time * 1000UL, 0);
     pdata->changed              = 0;
 
     return pdata;
@@ -86,6 +87,9 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
+
+    pman_timer_reset(pdata->timer);
+    pman_timer_resume(pdata->timer);
 
     model_t *model = view_get_model(handle);
 
@@ -246,9 +250,6 @@ static void open_page(pman_handle_t handle, void *state) {
 
         pdata->obj_delete = obj_delete;
     }
-
-    pman_timer_reset(pdata->timer);
-    pman_timer_resume(pdata->timer);
 
     update_page(model, pdata);
 }

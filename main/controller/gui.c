@@ -7,6 +7,8 @@
 #include "minion.h"
 #include "lvgl.h"
 #include "minion.h"
+#include "services/fup.h"
+#include "bsp/system.h"
 
 
 static void retry_communication(pman_handle_t handle);
@@ -27,6 +29,10 @@ static void create_new_program(pman_handle_t handle, uint16_t program_index);
 static void clone_program(pman_handle_t handle, uint16_t source_program_index, uint16_t destination_program_index);
 static void delete_program(pman_handle_t handle, uint16_t program_index);
 static void save_program(pman_handle_t handle, uint16_t program_index);
+static void commissioning_done(pman_handle_t handle);
+static void factory_reset(pman_handle_t handle);
+static void update_firmware(pman_handle_t handle);
+static void reset(pman_handle_t handle);
 
 
 static const char *TAG = "Gui";
@@ -48,8 +54,12 @@ view_protocol_t controller_gui_protocol = {
     .clear_coins                = clear_coins,
     .save_program_index         = save_program_index,
     .create_new_program         = create_new_program,
+    .save_program               = save_program,
     .clone_program              = clone_program,
     .delete_program             = delete_program,
+    .commissioning_done         = commissioning_done,
+    .factory_reset              = factory_reset,
+    .update_firmware            = update_firmware,
 };
 
 
@@ -232,4 +242,33 @@ static void save_program(pman_handle_t handle, uint16_t program_index) {
     mut_model_t *model = view_get_model(handle);
     configuration_update_program(model_get_program(model, program_index));
     configuration_update_index(model->config.programs, model->config.num_programs);
+}
+
+
+static void commissioning_done(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    configuration_save_parmac(&model->config.parmac);
+    configuration_commissioned(1);
+}
+
+
+static void factory_reset(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    model_init(model);
+    configuration_commissioned(0);
+    configuration_save_parmac(&model->config.parmac);
+    configuration_update_index(model->config.programs, model->config.num_programs);
+    bsp_system_reset();
+}
+
+
+static void update_firmware(pman_handle_t handle) {
+    (void)handle;
+    fup_proceed();
+}
+
+
+static void reset(pman_handle_t handle) {
+    (void)handle;
+    bsp_system_reset();
 }

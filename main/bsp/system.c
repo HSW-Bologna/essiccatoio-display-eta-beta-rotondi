@@ -42,3 +42,8 @@ void bsp_system_init(void) {
 
     ESP_LOGI(TAG, "Initialized");
 }
+
+
+void bsp_system_reset(void) {
+    esp_restart();
+}

@@ -52,7 +52,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
         pdata->livello_accesso = model->config.parmac.access_level;
     }
     pdata->livello_accesso = 1;
-    pdata->timer           = PMAN_REGISTER_TIMER_ID(handle, APP_CONFIG_PAGE_TIMEOUT, 0);
+    pdata->timer           = PMAN_REGISTER_TIMER_ID(handle, model->config.parmac.reset_page_time * 1000UL, 0);
 
     return pdata;
 }

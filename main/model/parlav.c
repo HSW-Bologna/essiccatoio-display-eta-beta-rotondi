@@ -35,8 +35,8 @@ void parlav_init_drying(mut_model_t *model, program_drying_parameters_t *p) {
     ps[i++] = PARAMETER(&p->enable_reverse,    0,     1,     0,     FOPT(PARS_DESCRIPTIONS_ABILITA_INVERSIONE, pars_nosi),        USER_BITS);
     ps[i++] = PARAMETER(&p->rotation_time,    1,     99,     95,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_ROTAZIONE),        USER_BITS);
     ps[i++] = PARAMETER(&p->pause_time,    5,     99,     6,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_PAUSA),        USER_BITS);
-    ps[i++] = PARAMETER(&p->speed,    model->config.parmac.velocita_minima,     model->config.parmac.velocita_massima,     55,     FFINT(PARS_DESCRIPTIONS_VELOCITA, "%i rpm"),        USER_BITS);
-    ps[i++] = PARAMETER(&p->temperature,    0,     100,     50,     FFINT(PARS_DESCRIPTIONS_TEMPERATURA, fmt_degrees),        USER_BITS);
+    ps[i++] = PARAMETER(&p->speed,    model->config.parmac.minimum_speed,     model->config.parmac.maximum_speed,     55,     FFINT(PARS_DESCRIPTIONS_VELOCITA, "%i rpm"),        USER_BITS);
+    ps[i++] = PARAMETER(&p->temperature,    0,     model_get_maximum_temperature(model),     50,     FFINT(PARS_DESCRIPTIONS_TEMPERATURA, fmt_degrees),        USER_BITS);
     ps[i++] = PARAMETER(&p->cooling_hysteresis,    0,     20,     2,     FFINT(PARS_DESCRIPTIONS_ISTERESI_RAFFREDDAMENTO, fmt_degrees),        USER_BITS);
     ps[i++] = PARAMETER(&p->heating_hysteresis,    0,     20,     2,     FFINT(PARS_DESCRIPTIONS_ISTERESI_RISCALDAMENTO, fmt_degrees),        USER_BITS);
     ps[i++] = PARAMETER(&p->humidity,    5,     50,     30,     FFINT(PARS_DESCRIPTIONS_UMIDITA, "%i %%"),        USER_BITS);
@@ -74,7 +74,7 @@ void parlav_init_antifold(mut_model_t *model, program_antifold_parameters_t *p) 
     // clang-format off
     ps[i++] = PARAMETER(&p->max_duration,                          0,     250,    0,    FFINT(PARS_DESCRIPTIONS_DURATA_MASSIMA, fmt_min),          USER_BITS);
     ps[i++] = PARAMETER(&p->max_cycles,                          0,     20,    2,    FINT(PARS_DESCRIPTIONS_CICLI_MASSIMI),          USER_BITS);
-    ps[i++] = PARAMETER(&p->speed,    model->config.parmac.velocita_minima,     model->config.parmac.velocita_massima,     15,     FFINT(PARS_DESCRIPTIONS_VELOCITA, "%i rpm"),        USER_BITS);
+    ps[i++] = PARAMETER(&p->speed,    model->config.parmac.minimum_speed,     model->config.parmac.maximum_speed,     15,     FFINT(PARS_DESCRIPTIONS_VELOCITA, "%i rpm"),        USER_BITS);
     ps[i++] = PARAMETER(&p->rotation_time,    1,     99,     4,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_ROTAZIONE),        USER_BITS);
     ps[i++] = PARAMETER(&p->pause_time,    0,     99,     1,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_PAUSA),        USER_BITS);
     ps[i++] = PARAMETER(&p->start_delay,                          0,     250,    5,    FFINT(PARS_DESCRIPTIONS_TEMPO_DI_RITARDO, fmt_min),          USER_BITS);
@@ -115,16 +115,4 @@ static parameter_handle_t *get_actual_parameter(model_t *model, size_t parameter
     parameter_handle_t *par = parameter_get_handle(parameters, NUM_PARAMETERS, parameter, model_get_bit_accesso(al));
     assert(par != NULL);
     return par;
-}
-
-
-const char *parlav_commissioning_language_get_description(model_t *model) {
-    parameter_user_data_t *data = parameter_get_user_data(&parameters[PARMAC_COMMISSIONING_LINGUA]);
-    return data->descrizione[model->config.parmac.language];
-}
-
-
-
-void parlav_commissioning_operation(model_t *model, parmac_commissioning_t parameter, int op) {
-    parameter_operator(&parameters[parameter], op);
 }

@@ -15,7 +15,6 @@ ALLARME_INVERTER, Allarme inverter, Inverter alarm
 SONDA_TEMPERATURA, Sonda di temperatura, Temperature probe
 TIPO_RISCALDAMENTO, Tipo riscaldamento, Heating mode
 TENTATIVI_ACCENSIONE_GAS, Tentativi accesione gas, Gas ignition attempts
-RESET_INIZIALE_GAS, Reset iniziale gas, Gas initial reset
 FERMA_TEMPO_IN_PAUSA, Ferma il tempo in pausa, Stop time in pause
 DIREZIONE_CONTATTO_OBLO, Direzione contatto oblo', Porthole contact direction
 DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, Direzione contatto macchina occupata, Busy signal contact direction
@@ -39,3 +38,13 @@ ATTESA_TEMPERATURA, Abilita attesa temperatura, Wait for temperature
 ABILITA_INVERSIONE, Abilita inversione, Enable reverse
 LINGUA_MASSIMA_UTENTE, Lingua massima utente, Max user language
 LOGO, Logo, Logo
+VELOCITA_MINIMA, Velocita' minima, Minimum speed
+VELOCITA_MASSIMA, Velocita' massima, Maximum speed
+TEMPERATURA_MASSIMA_IN_INGRESSO, Temperatura massima in ingresso, Maximum input temperature
+TEMPERATURA_MASSIMA_IN_USCITA, Temperatura massima in uscita, Maximum output temperature
+TEMPERATURA_DI_SICUREZZA_IN_INGRESSO, Temperatura di sicurezza in ingresso, Input safety temperature
+TEMPERATURA_DI_SICUREZZA_IN_USCITA, Temperatura di sicurezza in uscita, Output safety temperature
+TEMPO_DI_RITORNO_LINGUA_INIZIALE, Tempo di ritorno alla lingua iniziale, Initial language reset period
+TEMPO_DI_RITORNO_PAGINA_INIZIALE, Tempo di ritorno alla pagina iniziale, Initial page reset period
+CONTROLLO_UMIDITA_RESIDUA, Controllo umidita' residua, Residual humidity check
+AUTOAVVIO, Autoavvio, Autostart

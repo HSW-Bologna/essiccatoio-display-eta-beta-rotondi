@@ -47,6 +47,8 @@ struct page_data {
     page_state_t page_state;
 
     step_modification_t meta;
+
+    pman_timer_t *timer;
 };
 
 
@@ -77,7 +79,7 @@ static const char *TAG = __FILE_NAME__;
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
-    (void)handle;
+    model_t *model = view_get_model(handle);
     (void)TAG;
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
@@ -88,6 +90,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
     pdata->page_state         = PAGE_STATE_SELECTION;
     pdata->meta.changed       = 0;
     pdata->meta.program_index = (uint16_t)(uintptr_t)extra;
+    pdata->timer              = pman_timer_create(handle, model->config.parmac.reset_page_time * 1000UL, NULL);
 
     return pdata;
 }
@@ -95,6 +98,9 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
+
+    pman_timer_reset(pdata->timer);
+    pman_timer_resume(pdata->timer);
 
     model_t *model = view_get_model(handle);
 
@@ -358,6 +364,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
+                    pman_timer_reset(pdata->timer);
+
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
@@ -586,7 +594,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 view_common_set_hidden(pdata->button_programs[i], 0);
             }
             // First (or second) additional step, not cooling but antifold
-            else if ((absolute_index == program->num_drying_steps && program->antifold_enabled && !program->cooling_enabled) ||
+            else if ((absolute_index == program->num_drying_steps && program->antifold_enabled &&
+                      !program->cooling_enabled) ||
                      (absolute_index == program->num_drying_steps + 1 && program->antifold_enabled &&
                       program->cooling_enabled)) {
                 const char *string = view_common_step2str(model, PROGRAM_STEP_TYPE_ANTIFOLD);
@@ -681,15 +690,16 @@ static void update_page(model_t *model, struct page_data *pdata) {
 
 
 static void destroy_page(void *state, void *extra) {
-    struct page_data *pdata = state;
     (void)extra;
+    struct page_data *pdata = state;
+    pman_timer_delete(pdata->timer);
     lv_free(pdata);
 }
 
 
 static void close_page(void *state) {
     struct page_data *pdata = state;
-    (void)pdata;
+    pman_timer_pause(pdata->timer);
     lv_obj_clean(lv_scr_act());
 }
 

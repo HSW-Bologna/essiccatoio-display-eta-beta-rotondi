@@ -6,6 +6,7 @@
 #include "services/serializer.h"
 #include "services/timestamp.h"
 #include "parmac.h"
+#include "parlav.h"
 #include "program.h"
 #include "adapters/view/intl/intl.h"
 
@@ -27,7 +28,23 @@ void model_init(mut_model_t *model) {
 
     model->run.minion.communication_enabled = 1;
 
+    model_check_parameters(model);
+}
+
+
+void model_check_parameters(mut_model_t *model) {
+    assert(model != NULL);
+
     parmac_init(model, 1);
+
+    for (uint16_t i = 0; i < model->config.num_programs; i++) {
+        program_t *program = model_get_mut_program(model, i);
+        for (uint16_t j = 0; j < program->num_drying_steps; j++) {
+            parlav_init_drying(model, &program->steps[j]);
+        }
+        parlav_init_cooling(model, &program->cooling_step);
+        parlav_init_antifold(model, &program->antifold_step);
+    }
 }
 
 
@@ -238,25 +255,36 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     i += sizeof(name_t);
 
     uint16_t flags = ((p->stop_time_in_pause > 0) << 0) | ((p->disabilita_allarmi > 0) << 1) |
-                     ((p->gas_preemptive_reset > 0) << 2) | ((p->abilita_visualizzazione_temperatura > 0) << 3) |
-                     ((p->abilita_tasto_menu > 0) << 4) | ((p->allarme_inverter_off_on > 0) << 5) |
-                     ((p->allarme_filtro_off_on > 0) << 6)     // |
+                     ((p->abilita_visualizzazione_temperatura > 0) << 2) | ((p->abilita_tasto_menu > 0) << 3) |
+                     ((p->allarme_inverter_off_on > 0) << 4) | ((p->allarme_filtro_off_on > 0) << 5) |
+                     ((p->autostart > 0) << 6) | ((p->residual_humidity_check > 0) << 7)     // |
         ;
 
     i += serialize_uint16_be(&buffer[i], flags);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->language);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_stop_automatico);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tipo_macchina_occupata);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->temperature_probe);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->temperatura_sicurezza);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_allarme_temperatura);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_user_language);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->logo);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->access_level);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->heating_type);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->gas_ignition_attempts);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->reset_page_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->reset_language_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->pause_button_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->stop_button_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_stop_automatico);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->temperature_probe);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_input_temperature);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->safety_input_temperature);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_output_temperature);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->safety_output_temperature);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_alarm_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_speed);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->maximum_speed);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tipo_macchina_occupata);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_allarme_temperatura);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->busy_signal_nc_na);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->porthole_nc_na);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_alarm_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->fan_with_open_porthole_time);
-    i += serialize_uint8(&buffer[i], (uint16_t)p->access_level);
 
     // assert(i == PARMAC_SIZE);
     return i;
@@ -274,25 +302,37 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     i += UNPACK_UINT16_BE(flags, &buffer[i]);
     p->stop_time_in_pause                  = (flags & (1 << 0)) > 0;
     p->disabilita_allarmi                  = (flags & (1 << 1)) > 0;
-    p->gas_preemptive_reset                = (flags & (1 << 2)) > 0;
-    p->abilita_visualizzazione_temperatura = (flags & (1 << 3)) > 0;
-    p->abilita_tasto_menu                  = (flags & (1 << 4)) > 0;
-    p->allarme_inverter_off_on             = (flags & (1 << 5)) > 0;
-    p->allarme_filtro_off_on               = (flags & (1 << 6)) > 0;
+    p->abilita_visualizzazione_temperatura = (flags & (1 << 2)) > 0;
+    p->abilita_tasto_menu                  = (flags & (1 << 3)) > 0;
+    p->allarme_inverter_off_on             = (flags & (1 << 4)) > 0;
+    p->allarme_filtro_off_on               = (flags & (1 << 5)) > 0;
+    p->autostart                           = (flags & (1 << 6)) > 0;
+    p->residual_humidity_check             = (flags & (1 << 7)) > 0;
 
     i += UNPACK_UINT16_BE(p->language, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->tempo_stop_automatico, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->tipo_macchina_occupata, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->temperature_probe, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->temperatura_sicurezza, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->tempo_allarme_temperatura, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->max_user_language, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->logo, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->access_level, &buffer[i]);
     i += UNPACK_UINT16_BE(p->heating_type, &buffer[i]);
     i += UNPACK_UINT16_BE(p->gas_ignition_attempts, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->reset_page_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->reset_language_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->pause_button_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->stop_button_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->tempo_stop_automatico, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->temperature_probe, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->max_input_temperature, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->safety_input_temperature, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->max_output_temperature, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->safety_output_temperature, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->air_flow_alarm_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->minimum_speed, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->maximum_speed, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->tipo_macchina_occupata, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->tempo_allarme_temperatura, &buffer[i]);
     i += UNPACK_UINT16_BE(p->busy_signal_nc_na, &buffer[i]);
     i += UNPACK_UINT16_BE(p->porthole_nc_na, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->air_flow_alarm_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->fan_with_open_porthole_time, &buffer[i]);
-    i += UNPACK_UINT8(p->access_level, &buffer[i]);
 
     // assert(i == PARMAC_SIZE);
     return i;
@@ -424,4 +464,18 @@ void model_delete_program(mut_model_t *model, uint16_t program_index) {
         model->config.programs[i] = model->config.programs[i + 1];
     }
     model->config.num_programs--;
+}
+
+
+uint16_t model_get_maximum_temperature(model_t *model) {
+    assert(model != NULL);
+
+    switch (model->config.parmac.temperature_probe) {
+        case TEMPERATURE_PROBE_INPUT:
+            return model->config.parmac.max_input_temperature;
+        case TEMPERATURE_PROBE_OUTPUT:
+            return model->config.parmac.max_output_temperature;
+        default:
+            return 145;
+    }
 }

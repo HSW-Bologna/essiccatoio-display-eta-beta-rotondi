@@ -13,6 +13,4 @@
 
 #define APP_CONFIG_PASSWORD "72346"
 
-#define APP_CONFIG_PAGE_TIMEOUT 60UL * 1000UL
-
 #endif

@@ -16,14 +16,14 @@ static char database_read[10000] = {0};
 
 static cJSON *read_database();
 static void   write_database(cJSON *json);
-static int    load_number(double *value, char *key);
-static int    save_number(double value, char *key);
+static int    load_number(double *value, const char *key);
+static int    save_number(double value, const char *key);
 
 
 void storage_init(void) {}
 
 
-int storage_load_double(double *value, char *key) {
+int storage_load_double(double *value, const char *key) {
     double number = 0;
     if (load_number(&number, key)) {
         return -1;
@@ -34,12 +34,12 @@ int storage_load_double(double *value, char *key) {
 }
 
 
-void storage_save_double(double *value, char *key) {
+void storage_save_double(double *value, const char *key) {
     save_number(*value, key);
 }
 
 
-int storage_load_uint8(uint8_t *value, char *key) {
+int storage_load_uint8(uint8_t *value, const char *key) {
     double number = 0;
     if (load_number(&number, key)) {
         return -1;
@@ -50,12 +50,12 @@ int storage_load_uint8(uint8_t *value, char *key) {
 }
 
 
-void storage_save_uint8(uint8_t *value, char *key) {
+void storage_save_uint8(uint8_t *value, const char *key) {
     save_number((double)*value, key);
 }
 
 
-int storage_load_uint16(uint16_t *value, char *key) {
+int storage_load_uint16(uint16_t *value, const char *key) {
     double number = 0;
     if (load_number(&number, key)) {
         return -1;
@@ -66,12 +66,12 @@ int storage_load_uint16(uint16_t *value, char *key) {
 }
 
 
-void storage_save_uint16(uint16_t *value, char *key) {
+void storage_save_uint16(uint16_t *value, const char *key) {
     save_number((double)*value, key);
 }
 
 
-int storage_load_uint32(uint32_t *value, char *key) {
+int storage_load_uint32(uint32_t *value, const char *key) {
     double number = 0;
     if (load_number(&number, key)) {
         return -1;
@@ -82,12 +82,12 @@ int storage_load_uint32(uint32_t *value, char *key) {
 }
 
 
-void storage_save_uint32(uint32_t *value, char *key) {
+void storage_save_uint32(uint32_t *value, const char *key) {
     save_number((double)*value, key);
 }
 
 
-int storage_load_uint64(uint64_t *value, char *key) {
+int storage_load_uint64(uint64_t *value, const char *key) {
     double number = 0;
     if (load_number(&number, key)) {
         return -1;
@@ -98,12 +98,12 @@ int storage_load_uint64(uint64_t *value, char *key) {
 }
 
 
-void storage_save_uint64(uint64_t *value, char *key) {
+void storage_save_uint64(uint64_t *value, const char *key) {
     save_number(*value, key);
 }
 
 
-int storage_load_blob(void *value, size_t len, char *key) {
+int storage_load_blob(void *value, size_t len, const char *key) {
     cJSON *json    = read_database();
     cJSON *encoded = cJSON_GetObjectItemCaseSensitive(json, key);
     if (!cJSON_IsString(encoded)) {
@@ -122,7 +122,7 @@ int storage_load_blob(void *value, size_t len, char *key) {
 }
 
 
-void storage_save_blob(void *value, size_t len, char *key) {
+void storage_save_blob(void *value, size_t len, const char *key) {
     char * encoded = b64_encode((unsigned char *)value, len);
     cJSON *json    = read_database();
     cJSON_DeleteItemFromObjectCaseSensitive(json, key);
@@ -167,7 +167,7 @@ static void write_database(cJSON *json) {
 }
 
 
-static int load_number(double *value, char *key) {
+static int load_number(double *value, const char *key) {
     cJSON *json   = read_database();
     cJSON *number = cJSON_GetObjectItemCaseSensitive(json, key);
     if (!cJSON_IsNumber(number)) {
@@ -182,7 +182,7 @@ static int load_number(double *value, char *key) {
     }
 }
 
-static int save_number(double value, char *key) {
+static int save_number(double value, const char *key) {
     cJSON *json = read_database();
     cJSON_DeleteItemFromObjectCaseSensitive(json, key);
     if (cJSON_AddNumberToObject(json, key, value) == NULL) {

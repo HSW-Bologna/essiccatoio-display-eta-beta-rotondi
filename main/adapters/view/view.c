@@ -28,6 +28,7 @@ static struct {
     view_protocol_t             protocol;
     uint16_t                    communication_attempts;
     timestamp_t                 last_communication_attempt;
+    lv_obj_t                   *toast_list;
 } state = {
     .pman                       = {},
     .display                    = NULL,
@@ -174,6 +175,116 @@ void view_register_object_default_callback_with_number(lv_obj_t *obj, int id, in
     pman_register_obj_event(&state.pman, obj, LV_EVENT_READY);
     pman_set_obj_self_destruct(obj);
 }
+
+
+void view_show_toast(uint8_t error, const char *fmt, ...) {
+    lv_color_t color = error ? STYLE_COLOR_RED : STYLE_COLOR_PRIMARY;
+
+    lv_obj_t *obj_toast = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(obj_toast, LV_PCT(80), LV_SIZE_CONTENT);
+    lv_obj_set_style_radius(obj_toast, LV_RADIUS_CIRCLE, LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_color(obj_toast, lv_color_lighten(color, LV_OPA_70), LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(obj_toast, color, LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_all(obj_toast, 8, LV_STATE_DEFAULT);
+    lv_obj_align(obj_toast, LV_ALIGN_BOTTOM_MID, 0, -32);
+
+    lv_obj_t *label = lv_label_create(obj_toast);
+    lv_obj_set_style_text_font(label, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+    char toast_string[256] = {0};
+
+    /* Declare a va_list type variable */
+    va_list args;
+    /* Initialise the va_list variable with the ... after fmt */
+    va_start(args, fmt);
+    vsnprintf(toast_string, sizeof(toast_string), fmt, args);
+    va_end(args);
+
+    lv_label_set_text(label, toast_string);
+    lv_obj_center(label);
+
+    lv_timer_t *timer = lv_timer_create(toast_fade_out_timer_cb, 5000, obj_toast);
+    lv_timer_set_auto_delete(timer, 1);
+    lv_timer_set_repeat_count(timer, 1);
+    lv_timer_resume(timer);
+
+    lv_obj_add_event_cb(obj_toast, toast_click_callback, LV_EVENT_CLICKED, timer);
+
+    lv_obj_set_user_data(obj_toast, state.toast_list);
+    state.toast_list = obj_toast;
+
+    lv_obj_move_foreground(state.popup_communication_error.blanket);
+
+    align_toast_list();
+}
+
+
+static void align_toast_list(void) {
+    if (state.toast_list != NULL) {
+        lv_obj_align(state.toast_list, LV_ALIGN_BOTTOM_MID, 0, -8);
+        lv_obj_t *prev_toast = state.toast_list;
+
+        while (prev_toast) {
+            lv_obj_t *next_toast = lv_obj_get_user_data(prev_toast);
+            if (next_toast != NULL) {
+                lv_obj_align_to(next_toast, prev_toast, LV_ALIGN_OUT_TOP_MID, 0, -8);
+            }
+            prev_toast = next_toast;
+        }
+    }
+}
+
+
+static void fade_anim_cb(void *obj, int32_t v) {
+    lv_obj_set_style_opa(obj, v, 0);
+}
+
+
+static void delete_var_anim_cb(lv_anim_t *a) {
+    if (a->var == state.toast_list) {
+        state.toast_list = lv_obj_get_user_data(a->var);
+    } else {
+        lv_obj_t *prev_toast = state.toast_list;
+        lv_obj_t *next_toast = lv_obj_get_user_data(state.toast_list);
+
+        // The object must be removed from the list before being deleted
+        while (next_toast != NULL) {
+            // Object found
+            if (next_toast == a->var) {
+                // Remove object from list
+                lv_obj_set_user_data(prev_toast, lv_obj_get_user_data(next_toast));
+                break;
+            } else {
+                prev_toast = next_toast;
+                next_toast = lv_obj_get_user_data(next_toast);
+            }
+        }
+    }
+    lv_obj_delete(a->var);
+    align_toast_list();
+}
+
+
+static void toast_fade_out(lv_obj_t *obj_toast) {
+    lv_obj_remove_event_cb(obj_toast, toast_click_callback);
+    lv_anim_delete(obj_toast, fade_anim_cb);
+
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, obj_toast);
+    lv_anim_set_values(&a, lv_obj_get_style_opa(obj_toast, 0), LV_OPA_TRANSP);
+    lv_anim_set_exec_cb(&a, fade_anim_cb);
+    lv_anim_set_completed_cb(&a, delete_var_anim_cb);
+    lv_anim_set_duration(&a, 500);
+    lv_anim_start(&a);
+}
+
+
+static void toast_fade_out_timer_cb(lv_timer_t *timer) {
+    toast_fade_out(lv_timer_get_user_data(timer));
+}
+
 
 
 static void view_clear_watcher(pman_handle_t handle) {
