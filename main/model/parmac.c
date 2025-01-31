@@ -58,20 +58,30 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->air_flow_alarm_time,                      1,                              250,                        5,                              FTIME(PARS_DESCRIPTIONS_TEMPO_ALLARME_FLUSSO_ARIA),                               USER_BITS);
     ps[i++] = PARAMETER(&p->minimum_speed,                            10,                             25,                         15,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MINIMA, fmt_rpm),                               USER_BITS);
     ps[i++] = PARAMETER(&p->maximum_speed,                            25,                             70,                         60,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MASSIMA, fmt_rpm),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->minimum_coins,                            0,                              10,                         1,                              FINT(PARS_DESCRIPTIONS_NUMERO_MINIMO_DI_GETTONI),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->time_per_coin,                            1,                              3600,                       60,                             FTIME(PARS_DESCRIPTIONS_TEMPO_PER_GETTONE),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->credit_request_type,                      0,                              2,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_DI_RICHIESTA_PAGAMENTO, pars_tipo_richiesta_pagamento),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->number_of_cycles_before_maintenance,      0,                              12500,                      4500,                           FINT(PARS_DESCRIPTIONS_NUMERO_DI_CICLI_PRIMA_DELLA_MANUTENZIONE),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->maintenance_notice_delay,                 0,                              3600,                       900,                            FTIME(PARS_DESCRIPTIONS_CADENZA_AVVISO_MANUTENZIONE),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->maintenance_notice_duration,              0,                              3600,                       300,                            FTIME(PARS_DESCRIPTIONS_DURATA_AVVISO_MANUTENZIONE),                               USER_BITS);
     ps[i++] = PARAMETER(&p->stop_time_in_pause,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_FERMA_TEMPO_IN_PAUSA, pars_nosi),                          USER_BITS);
+    ps[i++] = PARAMETER(&p->cycle_reset_time,                         0,                              3600,                       60,                             FTIME(PARS_DESCRIPTIONS_TEMPO_AZZERAMENTO_CICLO),                          USER_BITS);
     ps[i++] = PARAMETER(&p->busy_signal_nc_na,                        0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, pars_nc_na),         USER_BITS);
     ps[i++] = PARAMETER(&p->tipo_macchina_occupata,                   0,                              3,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_MACCHINA_OCCUPATA, pars_tipo_macchina_occupata),      USER_BITS);
     ps[i++] = PARAMETER(&p->tempo_allarme_temperatura,                60,                             1200,                       300,                            FTIME(PARS_DESCRIPTIONS_TEMPO_ALLARME_TEMPERATURA),                               USER_BITS);
-    ps[i++] = PARAMETER(&p->allarme_inverter_off_on,                  0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_ALLARME_INVERTER, pars_nosi),                              USER_BITS);
-    ps[i++] = PARAMETER(&p->allarme_filtro_off_on,                    0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_ALLARME_FILTRO, pars_nosi),                                USER_BITS);
+    ps[i++] = PARAMETER(&p->allarme_inverter_off_on,                  0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_ALLARME_INVERTER, pars_nc_na),                              USER_BITS);
+    ps[i++] = PARAMETER(&p->allarme_filtro_off_on,                    0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_ALLARME_FILTRO, pars_nc_na),                                USER_BITS);
+    ps[i++] = PARAMETER(&p->emergency_alarm_nc_na,                    0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_ALLARME_EMERGENZA, pars_nc_na),                                USER_BITS);
     ps[i++] = PARAMETER(&p->fan_with_open_porthole_time,              0,                              240,                        10,                             FTIME(PARS_DESCRIPTIONS_TEMPO_VENTILAZIONE_OBLO_APERTO),                          USER_BITS);
     ps[i++] = PARAMETER(&p->invert_fan_drum_pwm,                      0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_INVERSIONE_VENTOLA_E_CESTO, pars_nosi),                    USER_BITS);
     ps[i++] = PARAMETER(&p->disabilita_allarmi,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_DISABILITA_ALLARMI, pars_nosi),                            TECH_BITS);
     ps[i++] = PARAMETER(&p->porthole_nc_na,                           0,                              1,                          1,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_CONTATTO_OBLO, pars_nc_na),                      USER_BITS);
     // clang-format on
- 
+
     if (reset) {
         parameter_reset_to_defaults(parameters, i);
+    } else {
+        parameter_check_ranges(parameters, i);
     }
 }
 

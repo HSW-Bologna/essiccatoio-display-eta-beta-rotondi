@@ -9,7 +9,7 @@
 
 
 #define NUM_PARAMETERS 12
-#define USER_BITS      USER_ACCESS_LEVEL
+#define USER_BITS      0x01
 #define TECH_BITS      0x02
 
 

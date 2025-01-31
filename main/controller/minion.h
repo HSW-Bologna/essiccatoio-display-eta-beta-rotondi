@@ -20,6 +20,7 @@ typedef struct {
             uint8_t  firmware_version_major;
             uint8_t  firmware_version_minor;
             uint8_t  firmware_version_patch;
+            uint8_t  heating;
             uint16_t inputs;
             uint16_t temperature_1_adc;
             uint16_t temperature_1;

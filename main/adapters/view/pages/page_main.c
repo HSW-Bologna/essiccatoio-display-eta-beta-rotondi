@@ -140,7 +140,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *obj = lv_obj_create(cont);
-        lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_style_bg_color(obj, lv_color_white(), LV_STATE_DEFAULT);
         lv_obj_set_style_radius(obj, 0, LV_STATE_DEFAULT);
         lv_obj_set_style_border_width(obj, 0, LV_STATE_DEFAULT);

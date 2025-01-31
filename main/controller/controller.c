@@ -56,6 +56,7 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.firmware_version_minor = response.as.sync.firmware_version_minor;
                     model->run.minion.read.firmware_version_patch = response.as.sync.firmware_version_patch;
                     model->run.minion.read.inputs                 = response.as.sync.inputs;
+                    model->run.minion.read.heating                = response.as.sync.heating;
                     model->run.minion.read.temperature_1          = response.as.sync.temperature_1;
                     model->run.minion.read.temperature_1_adc      = response.as.sync.temperature_1_adc;
                     model->run.minion.read.temperature_2          = response.as.sync.temperature_2;
@@ -70,6 +71,10 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
                     model->run.minion.read.payment                = response.as.sync.payment;
                     memcpy(model->run.minion.read.coins, response.as.sync.coins, sizeof(model->run.minion.read.coins));
+
+                    if (model_is_porthole_open(model)) {
+                        model->run.should_open_porthole = 0;
+                    }
 
                     ESP_LOGI(TAG, "Cycle state %i, inputs 0x%02X, alarms 0x%02X, remaining %i, step %i",
                              model->run.minion.read.cycle_state, model->run.minion.read.inputs,

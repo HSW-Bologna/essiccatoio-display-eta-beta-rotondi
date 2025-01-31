@@ -35,7 +35,7 @@ void model_init(mut_model_t *model) {
 void model_check_parameters(mut_model_t *model) {
     assert(model != NULL);
 
-    parmac_init(model, 1);
+    parmac_init(model, 0);
 
     for (uint16_t i = 0; i < model->config.num_programs; i++) {
         program_t *program = model_get_mut_program(model, i);
@@ -87,6 +87,19 @@ uint8_t model_is_any_alarm_active(model_t *model) {
 uint8_t model_is_alarm_active(model_t *model, alarm_t alarm) {
     assert(model != NULL);
     return model->run.minion.read.alarms & (1 << alarm);
+}
+
+
+int16_t model_get_current_temperature(model_t *model) {
+    assert(model != NULL);
+    switch (model->config.parmac.tipo_sonda_temperatura) {
+        case TEMPERATURE_PROBE_INPUT:
+            return model->run.minion.read.temperature_1;
+        case TEMPERATURE_PROBE_OUTPUT:
+            return model->run.minion.read.temperature_2;
+        default:
+            return model->run.minion.read.temperature_probe;
+    }
 }
 
 
@@ -257,7 +270,9 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     uint16_t flags = ((p->stop_time_in_pause > 0) << 0) | ((p->disabilita_allarmi > 0) << 1) |
                      ((p->abilita_visualizzazione_temperatura > 0) << 2) | ((p->abilita_tasto_menu > 0) << 3) |
                      ((p->allarme_inverter_off_on > 0) << 4) | ((p->allarme_filtro_off_on > 0) << 5) |
-                     ((p->autostart > 0) << 6) | ((p->residual_humidity_check > 0) << 7)     // |
+                     ((p->autostart > 0) << 6) | ((p->residual_humidity_check > 0) << 7) |
+                     ((p->busy_signal_nc_na > 0) << 8) | ((p->porthole_nc_na > 0) << 9) |
+                     ((p->emergency_alarm_nc_na > 0) << 10) | ((p->invert_fan_drum_pwm > 0) << 11)     // |
         ;
 
     i += serialize_uint16_be(&buffer[i], flags);
@@ -280,10 +295,15 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_alarm_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_speed);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->maximum_speed);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_coins);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->time_per_coin);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->credit_request_type);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->number_of_cycles_before_maintenance);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->maintenance_notice_delay);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->maintenance_notice_duration);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->cycle_reset_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->tipo_macchina_occupata);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_allarme_temperatura);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->busy_signal_nc_na);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->porthole_nc_na);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->fan_with_open_porthole_time);
 
     // assert(i == PARMAC_SIZE);
@@ -308,6 +328,10 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     p->allarme_filtro_off_on               = (flags & (1 << 5)) > 0;
     p->autostart                           = (flags & (1 << 6)) > 0;
     p->residual_humidity_check             = (flags & (1 << 7)) > 0;
+    p->busy_signal_nc_na                   = (flags & (1 << 8)) > 0;
+    p->porthole_nc_na                      = (flags & (1 << 9)) > 0;
+    p->emergency_alarm_nc_na               = (flags & (1 << 10)) > 0;
+    p->invert_fan_drum_pwm                 = (flags & (1 << 11)) > 0;
 
     i += UNPACK_UINT16_BE(p->language, &buffer[i]);
     i += UNPACK_UINT16_BE(p->max_user_language, &buffer[i]);
@@ -328,10 +352,15 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     i += UNPACK_UINT16_BE(p->air_flow_alarm_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->minimum_speed, &buffer[i]);
     i += UNPACK_UINT16_BE(p->maximum_speed, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->minimum_coins, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->time_per_coin, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->credit_request_type, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->number_of_cycles_before_maintenance, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->maintenance_notice_delay, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->maintenance_notice_duration, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->cycle_reset_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->tipo_macchina_occupata, &buffer[i]);
     i += UNPACK_UINT16_BE(p->tempo_allarme_temperatura, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->busy_signal_nc_na, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->porthole_nc_na, &buffer[i]);
     i += UNPACK_UINT16_BE(p->fan_with_open_porthole_time, &buffer[i]);
 
     // assert(i == PARMAC_SIZE);
@@ -380,7 +409,8 @@ void model_move_to_next_step(mut_model_t *model) {
 
 void model_reset_program(mut_model_t *model) {
     assert(model);
-    model->run.current_step_index = 0;
+    model->run.should_open_porthole = 1;
+    model->run.current_step_index   = 0;
 }
 
 
@@ -477,5 +507,15 @@ uint16_t model_get_maximum_temperature(model_t *model) {
             return model->config.parmac.max_output_temperature;
         default:
             return 145;
+    }
+}
+
+
+uint8_t model_should_open_porthole(model_t *model) {
+    if (model_is_cycle_stopped(model)) {
+        return model->run.should_open_porthole;
+    } else {
+        program_step_t step = model_get_current_step(model);
+        return step.type == PROGRAM_STEP_TYPE_ANTIFOLD;
     }
 }

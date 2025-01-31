@@ -10,8 +10,8 @@ DISABILITA_ALLARMI, Disabilita allarmi, Disable alarms
 TEMPO_ALLARME_TEMPERATURA, Tempo allarme temperatura, Temperature alarm delay
 TEMPERATURA_DI_SICUREZZA, Temperatura di sicurezza, Safety temperature
 TIPO_MACCHINA_OCCUPATA, Tipo macchina occupata, Busy signal type
-ALLARME_FILTRO, Allarme filtro, Filter alarm
-ALLARME_INVERTER, Allarme inverter, Inverter alarm
+DIREZIONE_ALLARME_FILTRO, Direzione allarme filtro, Filter alarm direction
+DIREZIONE_ALLARME_INVERTER, Direzione allarme inverter, Inverter alarm direction
 SONDA_TEMPERATURA, Sonda di temperatura, Temperature probe
 TIPO_RISCALDAMENTO, Tipo riscaldamento, Heating mode
 TENTATIVI_ACCENSIONE_GAS, Tentativi accesione gas, Gas ignition attempts
@@ -48,3 +48,11 @@ TEMPO_DI_RITORNO_LINGUA_INIZIALE, Tempo di ritorno alla lingua iniziale, Initial
 TEMPO_DI_RITORNO_PAGINA_INIZIALE, Tempo di ritorno alla pagina iniziale, Initial page reset period
 CONTROLLO_UMIDITA_RESIDUA, Controllo umidita' residua, Residual humidity check
 AUTOAVVIO, Autoavvio, Autostart
+DIREZIONE_ALLARME_EMERGENZA, Direzione allarme emergenza, Emergency alarm direction
+TEMPO_AZZERAMENTO_CICLO, Tempo azzeramento ciclo, Reset cycle time
+TEMPO_PER_GETTONE, Tempo per gettone, Time per coin
+NUMERO_MINIMO_DI_GETTONI, Numero minimo di gettoni, Minimum number of coins
+TIPO_DI_RICHIESTA_PAGAMENTO, Tipo di richiesta pagamento, Payment request type
+NUMERO_DI_CICLI_PRIMA_DELLA_MANUTENZIONE, Numero di cicli prima della manutenzione, Number of cycles before maintentance
+CADENZA_AVVISO_MANUTENZIONE, Cadenza avviso manutenzione, Maintenance notice delay
+DURATA_AVVISO_MANUTENZIONE, Durata avviso manutenzione, Maintenance notice duration

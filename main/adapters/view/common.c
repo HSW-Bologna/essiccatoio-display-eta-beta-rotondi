@@ -256,8 +256,15 @@ const char *view_common_modello_str(model_t *model) {
 
 static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code) {
     strings_t string_codes[] = {
-        STRINGS_OBLO_APERTO,           STRINGS_ALLARME_EMERGENZA, STRINGS_CASSETTO_DEL_FILTRO_APERTO,
-        STRINGS_FLUSSO_D_ARIA_ASSENTE, STRINGS_BLOCCO_BRUCIATORE, STRINGS_SURRISCALDAMENTO,
+        STRINGS_OBLO_APERTO,
+        STRINGS_ALLARME_EMERGENZA,
+        STRINGS_CASSETTO_DEL_FILTRO_APERTO,
+        STRINGS_FLUSSO_D_ARIA_ASSENTE,
+        STRINGS_BLOCCO_BRUCIATORE,
+        STRINGS_ALLARME_INVERTER,
+        STRINGS_SURRISCALDAMENTO,
+        STRINGS_TEMPERATURA_NON_RAGGIUNTA_IN_TEMPO,
+
     };
     for (alarm_t alarm = 0; alarm < ALARMS_NUM; alarm++) {
         if (model_is_alarm_active(model, alarm)) {

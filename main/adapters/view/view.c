@@ -177,6 +177,7 @@ void view_register_object_default_callback_with_number(lv_obj_t *obj, int id, in
 }
 
 
+#if 0
 void view_show_toast(uint8_t error, const char *fmt, ...) {
     lv_color_t color = error ? STYLE_COLOR_RED : STYLE_COLOR_PRIMARY;
 
@@ -284,8 +285,7 @@ static void toast_fade_out(lv_obj_t *obj_toast) {
 static void toast_fade_out_timer_cb(lv_timer_t *timer) {
     toast_fade_out(lv_timer_get_user_data(timer));
 }
-
-
+#endif
 
 static void view_clear_watcher(pman_handle_t handle) {
     (void)handle;

@@ -55,6 +55,7 @@ enum {
     BTN_ALARM_ID,
     TIMER_CHANGE_PAGE_ID,
     TIMER_RESTORE_LANGUAGE_ID,
+    TIMER_BLINK_MESSAGE_ID,
     OBJ_SETTINGS_ID,
     WATCH_STATE_ID,
     WATCH_INFO_ID,
@@ -77,8 +78,11 @@ struct page_data {
     lv_obj_t *obj_handle;
     lv_obj_t *obj_drawer;
 
+    lv_obj_t *led_heating;
+
     popup_t alarm_popup;
 
+    uint8_t blink;
     uint8_t alarm_pacified;
     int16_t last_alarm;
 
@@ -86,11 +90,13 @@ struct page_data {
 
     pman_timer_t *timer_change_page;
     pman_timer_t *timer_restore_language;
+    pman_timer_t *timer_blink_message;
 };
 
 
-static void update_page(model_t *model, struct page_data *pdata);
-static void handle_alarm(model_t *model, struct page_data *pdata);
+static void        update_page(model_t *model, struct page_data *pdata);
+static void        handle_alarm(model_t *model, struct page_data *pdata);
+static const char *get_step_string(program_step_type_t type, uint16_t language);
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
@@ -103,8 +109,11 @@ static void *create_page(pman_handle_t handle, void *extra) {
     pdata->timer_change_page      = pman_timer_create(handle, 250, (void *)(uintptr_t)TIMER_CHANGE_PAGE_ID);
     pdata->timer_restore_language = pman_timer_create(handle, model->config.parmac.reset_language_time * 1000UL,
                                                       (void *)(uintptr_t)TIMER_RESTORE_LANGUAGE_ID);
-    pdata->last_alarm             = 0;
-    pdata->alarm_pacified         = 0;
+    pdata->timer_blink_message    = pman_timer_create(handle, 2000, (void *)(uintptr_t)TIMER_BLINK_MESSAGE_ID);
+
+    pdata->last_alarm     = 0;
+    pdata->alarm_pacified = 0;
+    pdata->blink          = 0;
 
     return pdata;
 }
@@ -113,6 +122,8 @@ static void *create_page(pman_handle_t handle, void *extra) {
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
     (void)pdata;
+
+    pman_timer_resume(pdata->timer_blink_message);
 
     model_t *model = pman_get_user_data(handle);
 
@@ -231,8 +242,14 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
     lv_label_set_long_mode(lbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_set_width(lbl, LV_HOR_RES);
-    lv_obj_center(lbl);
+    lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
     pdata->label_status = lbl;
+
+    lv_obj_t *led = lv_led_create(cont);
+    lv_led_set_color(led, VIEW_STYLE_COLOR_RED);
+    lv_obj_set_size(led, 24, 24);
+    lv_obj_align(led, LV_ALIGN_RIGHT_MID, -8, 0);
+    pdata->led_heating = led;
 
     {
         lv_obj_t *obj = lv_obj_create(cont);
@@ -267,6 +284,7 @@ static void open_page(pman_handle_t handle, void *state) {
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.default_temperature, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.remaining_time_seconds, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.alarms, WATCH_INFO_ID);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.should_open_porthole, WATCH_INFO_ID);
 
     handle_alarm(model, pdata);
     update_page(model, pdata);
@@ -326,6 +344,12 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                 case TIMER_RESTORE_LANGUAGE_ID: {
                     model_reset_temporary_language(model);
+                    break;
+                }
+
+                case TIMER_BLINK_MESSAGE_ID: {
+                    pdata->blink = !pdata->blink;
+                    update_page(model, pdata);
                     break;
                 }
 
@@ -487,6 +511,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 static void update_page(model_t *model, struct page_data *pdata) {
     language_t language = model->run.temporary_language;
 
+    if (model_is_cycle_stopped(model)) {
+        lv_obj_set_width(pdata->label_status, LV_HOR_RES);
+        view_common_set_hidden(pdata->led_heating, 1);
+    } else {
+        lv_obj_set_width(pdata->label_status, LV_HOR_RES - 32);
+        view_common_set_hidden(pdata->led_heating, 0);
+    }
+
     if (model_is_cycle_paused(model)) {
         view_common_set_hidden(pdata->image_stop, 0);
         lv_image_set_src(pdata->image_stop, lv_obj_has_state(pdata->image_stop, LV_STATE_PRESSED)
@@ -522,19 +554,33 @@ static void update_page(model_t *model, struct page_data *pdata) {
         } else if (model_is_cycle_active(model)) {
             program_step_t step = model_get_current_step(model);
 
-            if (model_is_step_endless(model)) {
-                lv_label_set_text(pdata->label_status, view_common_step2str(model, step.type));
-            } else {
+            // If the cycle is running but I should advise to open the porthole alternate that and the normal status
+            // message
+            if (model_should_open_porthole(model) && pdata->blink) {
+                lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_APRIRE_OBLO));
+            }
+            // The step is neverending, just show the name
+            else if (model_is_step_endless(model)) {
+                lv_label_set_text(pdata->label_status, get_step_string(step.type, language));
+            }
+            // Show step name and time
+            else {
                 uint16_t minutes = model->run.minion.read.remaining_time_seconds / 60;
                 uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
 
                 if (model->config.parmac.abilita_visualizzazione_temperatura && step.type == PROGRAM_STEP_TYPE_DRYING) {
-                    lv_label_set_text_fmt(pdata->label_status, "%02i:%02i    %i °C", minutes, seconds,
-                                          model_get_current_setpoint(model));
+                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i  %2i/%2i °C",
+                                          get_step_string(step.type, language), minutes, seconds,
+                                          model_get_current_temperature(model), model_get_current_setpoint(model));
                 } else {
-                    lv_label_set_text_fmt(pdata->label_status, "%02i:%02i", minutes, seconds);
+                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i", get_step_string(step.type, language),
+                                          minutes, seconds);
                 }
             }
+        }
+        // Cycle is over
+        else if (model_should_open_porthole(model)) {
+            lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_APRIRE_OBLO));
         } else {
             lv_label_set_text(pdata->label_status,
                               view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
@@ -552,6 +598,18 @@ static void update_page(model_t *model, struct page_data *pdata) {
     } else {
         view_common_set_hidden(pdata->alarm_popup.blanket, 1);
     }
+
+    if (model->run.minion.read.heating) {
+        lv_led_on(pdata->led_heating);
+    } else {
+        lv_led_off(pdata->led_heating);
+    }
+}
+
+
+static const char *get_step_string(program_step_type_t type, uint16_t language) {
+    strings_t strings[] = {STRINGS_ASCIUGATURA, STRINGS_RAFFREDDAMENTO, STRINGS_ANTIPIEGA};
+    return view_intl_get_string_in_language(language, strings[type]);
 }
 
 

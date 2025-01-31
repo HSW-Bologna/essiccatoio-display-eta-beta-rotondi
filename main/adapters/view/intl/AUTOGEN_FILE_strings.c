@@ -1,4 +1,4 @@
-const char *strings[60][2] = {
+const char *strings[64][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -59,5 +59,9 @@ const char *strings[60][2] = {
     {"Aggiornamento firmware concluso; resettare il dispositivo", "Firmware update done; reset the device", },
     {"Aggiornamento firmware in corso", "Firmware update in progress", },
     {"Aggiornamento firmware fallito", "Firmware update failed", },
+    {"Allarme inverter", "Inverter alarm", },
+    {"Temperatura non raggiunta in tempo", "Temperature not reached in time", },
+    {"Aprire oblo'", "Open porthole", },
+    {"Tempo per gettone", "Time per coin", },
 };
 

@@ -30,12 +30,14 @@ static void update_page(model_t *model, struct page_data *pdata);
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
-    (void)handle;
     (void)extra;
+
+    model_t *model = view_get_model(handle);
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
-    pdata->meta = (step_modification_t *)extra;
+    pdata->meta  = (step_modification_t *)extra;
+    pdata->timer = PMAN_REGISTER_TIMER_ID(handle, model->config.parmac.reset_page_time * 1000UL, 0);
 
     return pdata;
 }
@@ -240,10 +242,10 @@ static void close_page(void *args) {
 
 
 static void destroy_page(void *args, void *extra) {
+    (void)extra;
     struct page_data *pdata = args;
     pman_timer_delete(pdata->timer);
     lv_free(pdata);
-    lv_free(extra);
 }
 
 

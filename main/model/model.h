@@ -23,6 +23,13 @@ typedef enum {
 
 
 typedef enum {
+    TEMPERATURE_PROBE_INPUT = 0,
+    TEMPERATURE_PROBE_OUTPUT,
+    TEMPERATURE_PROBE_SHT,
+} temperature_probe_t;
+
+
+typedef enum {
     REMOVABLE_DRIVE_STATE_MISSING,
     REMOVABLE_DRIVE_STATE_MOUNTED,
     REMOVABLE_DRIVE_STATE_INVALID,
@@ -52,13 +59,6 @@ typedef enum {
     MACHINE_MODEL_EDS_RV_LAB_TH_CC,
 #define MACHINE_MODELS_NUM 20
 } machine_model_t;
-
-
-typedef enum {
-    TEMPERATURE_PROBE_INPUT = 0,
-    TEMPERATURE_PROBE_OUTPUT,
-    TEMPERATURE_PROBE_HUMIDITY,
-} temperature_probe_t;
 
 
 typedef enum {
@@ -103,8 +103,10 @@ typedef enum {
     ALARM_FILTER,
     ALARM_AIR_FLOW,
     ALARM_BURNER,
-    ALARM_TEMPERATURE,
-#define ALARMS_NUM 6
+    ALARM_SAFETY_TEMPERATURE,
+    ALARM_TEMPERATURE_NOT_REACHED,
+    ALARM_INVERTER,
+#define ALARMS_NUM 8
 } alarm_t;
 
 
@@ -131,8 +133,14 @@ typedef struct {
     uint16_t access_level;
     uint16_t autostart;
     uint16_t residual_humidity_check;
-    uint16_t max_input_temperature;      // Maximum temperature to be set for the input probe
-    uint16_t max_output_temperature;     // Maximum temperature to be set for the output probe
+    uint16_t max_input_temperature;                   // Maximum temperature to be set for the input probe
+    uint16_t max_output_temperature;                  // Maximum temperature to be set for the output probe
+    uint16_t minimum_coins;                           // Minimum number of coins to insert to start the drying cycle
+    uint16_t time_per_coin;                           // Drying time to add for each credit unit
+    uint16_t credit_request_type;                     // Message to show when requiring payment
+    uint16_t number_of_cycles_before_maintenance;     // Number of cycles after which to show a maintenance request
+    uint16_t maintenance_notice_delay;                // Time in between maintenance notices are shown
+    uint16_t maintenance_notice_duration;             // Time for which maintenance notices are shown
 
     /* Parametri da inviare alla macchina */
     uint16_t tipo_sonda_temperatura;
@@ -143,6 +151,7 @@ typedef struct {
     uint16_t temperature_probe;
     uint16_t allarme_inverter_off_on;
     uint16_t allarme_filtro_off_on;
+    uint16_t emergency_alarm_nc_na;
     uint16_t air_flow_alarm_time;
     uint16_t tipo_macchina_occupata;
     uint16_t tipo_riscaldamento;
@@ -154,6 +163,7 @@ typedef struct {
     uint16_t busy_signal_nc_na;
     uint16_t fan_with_open_porthole_time;
     uint16_t invert_fan_drum_pwm;
+    uint16_t cycle_reset_time;
 } parmac_t;
 
 
@@ -179,6 +189,7 @@ struct model {
                 uint8_t firmware_version_patch;
 
                 uint16_t inputs;
+                uint8_t  heating;
                 int16_t  temperature_1_adc;
                 int16_t  temperature_1;
                 int16_t  temperature_2_adc;
@@ -206,6 +217,7 @@ struct model {
 
         language_t              temporary_language;
         uint8_t                 temporary_access_level;
+        uint8_t                 should_open_porthole;
         uint16_t                current_program_index;
         program_t               current_program;
         uint16_t                current_step_index;
@@ -252,6 +264,8 @@ void             model_reset_program(mut_model_t *model);
 uint8_t          model_is_step_endless(model_t *model);
 uint16_t         model_get_maximum_temperature(model_t *model);
 void             model_check_parameters(mut_model_t *model);
+int16_t          model_get_current_temperature(model_t *model);
+uint8_t          model_should_open_porthole(model_t *model);
 
 
 #endif
