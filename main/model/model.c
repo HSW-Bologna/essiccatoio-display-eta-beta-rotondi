@@ -16,6 +16,9 @@
 #define INPUT_PORTHOLE        6
 
 
+static const uint16_t coin_values[] = {10, 20, 50, 100, 200};
+
+
 void model_init(mut_model_t *model) {
     assert(model != NULL);
     memset(model, 0, sizeof(mut_model_t));
@@ -92,14 +95,7 @@ uint8_t model_is_alarm_active(model_t *model, alarm_t alarm) {
 
 int16_t model_get_current_temperature(model_t *model) {
     assert(model != NULL);
-    switch (model->config.parmac.tipo_sonda_temperatura) {
-        case TEMPERATURE_PROBE_INPUT:
-            return model->run.minion.read.temperature_1;
-        case TEMPERATURE_PROBE_OUTPUT:
-            return model->run.minion.read.temperature_2;
-        default:
-            return model->run.minion.read.temperature_probe;
-    }
+    return model->run.minion.read.default_temperature;
 }
 
 
@@ -152,7 +148,7 @@ uint8_t model_is_cycle_active(model_t *model) {
     assert(model != NULL);
 
     switch (model->run.minion.read.cycle_state) {
-        case CYCLE_STATE_ACTIVE:
+        case CYCLE_STATE_STANDBY:
         case CYCLE_STATE_RUNNING:
         case CYCLE_STATE_WAIT_START:
         case CYCLE_STATE_PAUSED:
@@ -176,6 +172,13 @@ uint8_t model_is_cycle_running(model_t *model) {
     assert(model != NULL);
     return model->run.minion.read.cycle_state == CYCLE_STATE_RUNNING;
 }
+
+
+uint8_t model_is_cycle_waiting_to_start(model_t *model) {
+    assert(model != NULL);
+    return model->run.minion.read.cycle_state == CYCLE_STATE_WAIT_START;
+}
+
 
 uint8_t model_is_cycle_stopped(model_t *model) {
     assert(model != NULL);
@@ -286,7 +289,6 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->reset_language_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->pause_button_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->stop_button_time);
-    i += serialize_uint16_be(&buffer[i], (uint16_t)p->tempo_stop_automatico);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->temperature_probe);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_input_temperature);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->safety_input_temperature);
@@ -295,6 +297,7 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_alarm_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_speed);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->maximum_speed);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->payment_type);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_coins);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->time_per_coin);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->credit_request_type);
@@ -343,7 +346,6 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     i += UNPACK_UINT16_BE(p->reset_language_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->pause_button_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->stop_button_time, &buffer[i]);
-    i += UNPACK_UINT16_BE(p->tempo_stop_automatico, &buffer[i]);
     i += UNPACK_UINT16_BE(p->temperature_probe, &buffer[i]);
     i += UNPACK_UINT16_BE(p->max_input_temperature, &buffer[i]);
     i += UNPACK_UINT16_BE(p->safety_input_temperature, &buffer[i]);
@@ -352,6 +354,7 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     i += UNPACK_UINT16_BE(p->air_flow_alarm_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->minimum_speed, &buffer[i]);
     i += UNPACK_UINT16_BE(p->maximum_speed, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->payment_type, &buffer[i]);
     i += UNPACK_UINT16_BE(p->minimum_coins, &buffer[i]);
     i += UNPACK_UINT16_BE(p->time_per_coin, &buffer[i]);
     i += UNPACK_UINT16_BE(p->credit_request_type, &buffer[i]);
@@ -372,7 +375,7 @@ uint8_t model_waiting_for_next_step(model_t *model) {
     assert(model != NULL);
     const program_t *program = model_get_program(model, model->run.current_program_index);
 
-    return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE &&
+    return model->run.minion.read.cycle_state == CYCLE_STATE_STANDBY &&
            model->run.minion.read.remaining_time_seconds == 0 &&
            model->run.current_step_index < program_num_steps(program);
 }
@@ -382,7 +385,7 @@ uint8_t model_is_program_done(model_t *model) {
     assert(model != NULL);
     const program_t *program = model_get_program(model, model->run.current_program_index);
 
-    return model->run.minion.read.cycle_state == CYCLE_STATE_ACTIVE &&
+    return model->run.minion.read.cycle_state == CYCLE_STATE_STANDBY &&
            model->run.minion.read.remaining_time_seconds == 0 &&
            model->run.current_step_index + 1 >= program_num_steps(program);
 }
@@ -392,9 +395,26 @@ uint8_t model_should_enable_coin_reader(model_t *model) {
     assert(model != NULL);
     if (model->run.minion.write.test_mode) {
         return model->run.test_enable_coin_reader;
-    } else {
+    } else if (model->config.parmac.payment_type != PAYMENT_TYPE_COIN_READER) {
         return 0;
+    } else {
+        switch (model->run.minion.read.cycle_state) {
+            case CYCLE_STATE_STOPPED:
+                return 1;
+
+            case CYCLE_STATE_PAUSED:
+            case CYCLE_STATE_RUNNING:
+            case CYCLE_STATE_WAIT_START: {
+                program_step_t step = model_get_current_step(model);
+                return step.type == PROGRAM_STEP_TYPE_DRYING;
+            }
+
+            case CYCLE_STATE_STANDBY:
+                return 0;
+        }
     }
+
+    return 0;
 }
 
 
@@ -512,10 +532,114 @@ uint16_t model_get_maximum_temperature(model_t *model) {
 
 
 uint8_t model_should_open_porthole(model_t *model) {
-    if (model_is_cycle_stopped(model)) {
+    assert(model != NULL);
+
+    if (model_get_time_for_credit(model) > 0) {
+        return 0;
+    } else if (model_is_cycle_stopped(model)) {
         return model->run.should_open_porthole;
     } else {
         program_step_t step = model_get_current_step(model);
         return step.type == PROGRAM_STEP_TYPE_ANTIFOLD;
+    }
+}
+
+
+uint8_t model_is_minimum_credit_reached(model_t *model) {
+    assert(model != NULL);
+
+    switch (model->config.parmac.payment_type) {
+        case PAYMENT_TYPE_NONE:
+            return 1;
+
+        case PAYMENT_TYPE_NC:
+        case PAYMENT_TYPE_NO:
+            if (model->config.parmac.minimum_coins > 0) {
+                return model->run.minion.read.payment >= model->config.parmac.minimum_coins;
+            } else {
+                return model->run.minion.read.payment > 0;
+            }
+
+        case PAYMENT_TYPE_COIN_READER: {
+            uint16_t total = 0;
+            for (uint16_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
+                total += model->run.minion.read.coins[i] * coin_values[i];
+            }
+            total /= 10;
+
+            if (model->config.parmac.minimum_coins > 0) {
+                return total >= model->config.parmac.minimum_coins;
+            } else {
+                return total > 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+uint16_t model_get_time_for_credit(model_t *model) {
+    assert(model != NULL);
+
+    return model_get_credit(model) * model->config.parmac.time_per_coin;
+}
+
+
+uint16_t model_get_credit(model_t *model) {
+    assert(model != NULL);
+
+    switch (model->config.parmac.payment_type) {
+        case PAYMENT_TYPE_NONE:
+            return 0;
+
+        case PAYMENT_TYPE_NC:
+        case PAYMENT_TYPE_NO:
+            return model->run.minion.read.payment;
+
+        case PAYMENT_TYPE_COIN_READER: {
+            uint16_t total = 0;
+            for (uint16_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
+                total += model->run.minion.read.coins[i] * coin_values[i];
+            }
+            return total / 10;
+        }
+    }
+
+    return 0;
+}
+
+
+int16_t model_get_temperature_setpoint(model_t *model) {
+    assert(model != NULL);
+
+    program_step_t step = model_get_current_step(model);
+    switch (step.type) {
+        case PROGRAM_STEP_TYPE_DRYING: {
+            if (step.drying.progressive_heating_time > 0) {
+                uint16_t elapsed_time_seconds = model->run.minion.read.elapsed_time_seconds;
+
+                // If the time is fully elapsed just aim for the required temperature
+                if (elapsed_time_seconds > step.drying.progressive_heating_time) {
+                    return step.drying.temperature;
+                }
+                // Reaching temperature as smoothly as possible
+                else if (model->run.starting_temperature < step.drying.temperature) {
+                    int16_t temperature_delta = step.drying.temperature - model->run.starting_temperature;
+                    return model->run.starting_temperature +
+                           ((temperature_delta * elapsed_time_seconds) / step.drying.progressive_heating_time);
+                }
+                // The starting temperature was lower than the setpoint; just return the setpoint
+                else {
+                    return step.drying.temperature;
+                }
+            } else {
+                return step.drying.temperature;
+            }
+        }
+
+        default:
+            return 0;
+            break;
     }
 }

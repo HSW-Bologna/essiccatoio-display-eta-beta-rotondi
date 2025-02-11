@@ -66,8 +66,12 @@ typedef enum {
     STRINGS_TEMPERATURA_NON_RAGGIUNTA_IN_TEMPO,
     STRINGS_APRIRE_OBLO,
     STRINGS_TEMPO_PER_GETTONE,
+    STRINGS_PAGARE_CASSA,
+    STRINGS_INSERIRE_GETTONE,
+    STRINGS_INSERIRE_MONETA,
+    STRINGS_PAUSA_LAVORO,
 } strings_t;
 
-extern const char *strings[64][2];
+extern const char *strings[68][2];
 
 #endif

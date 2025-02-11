@@ -1,4 +1,4 @@
-const char *strings[64][2] = {
+const char *strings[68][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -63,5 +63,9 @@ const char *strings[64][2] = {
     {"Temperatura non raggiunta in tempo", "Temperature not reached in time", },
     {"Aprire oblo'", "Open porthole", },
     {"Tempo per gettone", "Time per coin", },
+    {"Pagare cassa", "Pay at desk", },
+    {"Inserire gettone", "Insert token", },
+    {"Inserire moneta", "Insert coin", },
+    {"Pausa lavoro", "Paused", },
 };
 

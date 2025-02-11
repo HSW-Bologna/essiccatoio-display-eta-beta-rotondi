@@ -2,13 +2,61 @@
 #define AUTOGEN_FILE_PARS_H_INCLUDED
 
 typedef enum {
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_0 = 0,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_1,
+    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_2,
+} pars_tipo_macchina_occupata_t;
+
+extern const char *pars_tipo_macchina_occupata[3][2];
+typedef enum {
+    PARS_NOSI_NO = 0,
+    PARS_NOSI_SI,
+} pars_nosi_t;
+
+extern const char *pars_nosi[2][2];
+typedef enum {
+    PARS_LOGHI_NESSUNO = 0,
+    PARS_LOGHI_MSGROUP,
+    PARS_LOGHI_ROTONDI,
+    PARS_LOGHI_HOOVER,
+    PARS_LOGHI_UNITYLAUNDRY,
+} pars_loghi_t;
+
+extern const char *pars_loghi[5][2];
+typedef enum {
+    PARS_TIPO_RISCALDAMENTO_ELETTRICO = 0,
+    PARS_TIPO_RISCALDAMENTO_GAS,
+} pars_tipo_riscaldamento_t;
+
+extern const char *pars_tipo_riscaldamento[2][2];
+typedef enum {
+    PARS_TIPO_RICHIESTA_PAGAMENTO_INSERIRE_GETTONE = 0,
+    PARS_TIPO_RICHIESTA_PAGAMENTO_INSERIRE_MONETE,
+    PARS_TIPO_RICHIESTA_PAGAMENTO_PAGARE_CASSA,
+} pars_tipo_richiesta_pagamento_t;
+
+extern const char *pars_tipo_richiesta_pagamento[3][2];
+typedef enum {
+    PARS_TIPO_PAGAMENTO_NESSUNO = 0,
+    PARS_TIPO_PAGAMENTO_NORMALMENTE_APERTO,
+    PARS_TIPO_PAGAMENTO_NORMALMENTE_CHIUSO,
+    PARS_TIPO_PAGAMENTO_GETTONIERA,
+} pars_tipo_pagamento_t;
+
+extern const char *pars_tipo_pagamento[4][2];
+typedef enum {
+    PARS_MANUALE_AUTOMATICO_MANUALE = 0,
+    PARS_MANUALE_AUTOMATICO_AUTOMATICO,
+} pars_manuale_automatico_t;
+
+extern const char *pars_manuale_automatico[2][2];
+typedef enum {
     PARS_DESCRIPTIONS_LINGUA = 0,
     PARS_DESCRIPTIONS_LIVELLO_ACCESSO,
     PARS_DESCRIPTIONS_VISUALIZZARE_TEMPERATURA,
     PARS_DESCRIPTIONS_TASTO_MENU,
     PARS_DESCRIPTIONS_TEMPO_TASTO_PAUSA,
     PARS_DESCRIPTIONS_TEMPO_TASTO_STOP,
-    PARS_DESCRIPTIONS_TEMPO_STOP_AUTOMATICO,
     PARS_DESCRIPTIONS_DISABILITA_ALLARMI,
     PARS_DESCRIPTIONS_TEMPO_ALLARME_TEMPERATURA,
     PARS_DESCRIPTIONS_TEMPERATURA_DI_SICUREZZA,
@@ -59,9 +107,17 @@ typedef enum {
     PARS_DESCRIPTIONS_NUMERO_DI_CICLI_PRIMA_DELLA_MANUTENZIONE,
     PARS_DESCRIPTIONS_CADENZA_AVVISO_MANUTENZIONE,
     PARS_DESCRIPTIONS_DURATA_AVVISO_MANUTENZIONE,
+    PARS_DESCRIPTIONS_TIPO_PAGAMENTO,
 } pars_descriptions_t;
 
 extern const char *pars_descriptions[57][2];
+typedef enum {
+    PARS_SONDA_TEMPERATURA_INGRESSO = 0,
+    PARS_SONDA_TEMPERATURA_USCITA,
+    PARS_SONDA_TEMPERATURA_TEMPERATURA_UMIDITA,
+} pars_sonda_temperatura_t;
+
+extern const char *pars_sonda_temperatura[3][2];
 typedef enum {
     PARS_NC_NA_NC = 0,
     PARS_NC_NA_NA,
@@ -69,11 +125,11 @@ typedef enum {
 
 extern const char *pars_nc_na[2][2];
 typedef enum {
-    PARS_MANUALE_AUTOMATICO_MANUALE = 0,
-    PARS_MANUALE_AUTOMATICO_AUTOMATICO,
-} pars_manuale_automatico_t;
+    PARS_LIVELLO_ACCESSO_UTENTE = 0,
+    PARS_LIVELLO_ACCESSO_TECNICO,
+} pars_livello_accesso_t;
 
-extern const char *pars_manuale_automatico[2][2];
+extern const char *pars_livello_accesso[2][2];
 typedef enum {
     PARS_LINGUE_ITALIANO = 0,
     PARS_LINGUE_INGLESE,
@@ -83,53 +139,5 @@ typedef enum {
 } pars_lingue_t;
 
 extern const char *pars_lingue[5][5];
-typedef enum {
-    PARS_TIPO_RICHIESTA_PAGAMENTO_INSERIRE_GETTONE = 0,
-    PARS_TIPO_RICHIESTA_PAGAMENTO_INSERIRE_MONETE,
-    PARS_TIPO_RICHIESTA_PAGAMENTO_PAGARE_CASSA,
-} pars_tipo_richiesta_pagamento_t;
-
-extern const char *pars_tipo_richiesta_pagamento[3][2];
-typedef enum {
-    PARS_LIVELLO_ACCESSO_UTENTE = 0,
-    PARS_LIVELLO_ACCESSO_TECNICO,
-} pars_livello_accesso_t;
-
-extern const char *pars_livello_accesso[2][2];
-typedef enum {
-    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_0 = 0,
-    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_1,
-    PARS_TIPO_MACCHINA_OCCUPATA_TIPO_2,
-} pars_tipo_macchina_occupata_t;
-
-extern const char *pars_tipo_macchina_occupata[3][2];
-typedef enum {
-    PARS_TIPO_RISCALDAMENTO_ELETTRICO = 0,
-    PARS_TIPO_RISCALDAMENTO_GAS,
-} pars_tipo_riscaldamento_t;
-
-extern const char *pars_tipo_riscaldamento[2][2];
-typedef enum {
-    PARS_SONDA_TEMPERATURA_INGRESSO = 0,
-    PARS_SONDA_TEMPERATURA_USCITA,
-    PARS_SONDA_TEMPERATURA_TEMPERATURA_UMIDITA,
-} pars_sonda_temperatura_t;
-
-extern const char *pars_sonda_temperatura[3][2];
-typedef enum {
-    PARS_NOSI_NO = 0,
-    PARS_NOSI_SI,
-} pars_nosi_t;
-
-extern const char *pars_nosi[2][2];
-typedef enum {
-    PARS_LOGHI_NESSUNO = 0,
-    PARS_LOGHI_MSGROUP,
-    PARS_LOGHI_ROTONDI,
-    PARS_LOGHI_HOOVER,
-    PARS_LOGHI_UNITYLAUNDRY,
-} pars_loghi_t;
-
-extern const char *pars_loghi[5][2];
 
 #endif

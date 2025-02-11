@@ -24,6 +24,7 @@ static parameter_handle_t *get_actual_parameter(model_t *pmodel, size_t paramete
 
 
 static parameter_handle_t parameters[NUM_PARAMETERS];
+static const char        *TAG = __FILE_NAME__;
 
 
 void parmac_init(mut_model_t *model, int reset) {
@@ -49,7 +50,6 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->reset_language_time,                      1,                              250,                        5,                              FTIME(PARS_DESCRIPTIONS_TEMPO_DI_RITORNO_LINGUA_INIZIALE),                          USER_BITS);
     ps[i++] = PARAMETER(&p->pause_button_time,                        1,                              60,                         1,                              FTIME(PARS_DESCRIPTIONS_TEMPO_TASTO_PAUSA),                                USER_BITS);
     ps[i++] = PARAMETER(&p->stop_button_time,                         1,                              60,                         2,                              FTIME(PARS_DESCRIPTIONS_TEMPO_TASTO_STOP),                                 USER_BITS);
-    ps[i++] = PARAMETER(&p->tempo_stop_automatico,                    0,                              10,                         0,                              FTIME(PARS_DESCRIPTIONS_TEMPO_STOP_AUTOMATICO),                                   USER_BITS);
     ps[i++] = PARAMETER(&p->temperature_probe,                        0,                              2,                          1,                              FOPT(PARS_DESCRIPTIONS_SONDA_TEMPERATURA, pars_sonda_temperatura),                USER_BITS);
     ps[i++] = PARAMETER(&p->max_input_temperature,                    1,                              125,                        115,                            FFINT(PARS_DESCRIPTIONS_TEMPERATURA_MASSIMA_IN_INGRESSO, fmt_c),                USER_BITS);
     ps[i++] = PARAMETER(&p->safety_input_temperature,                 1,                              145,                        135,                            FFINT(PARS_DESCRIPTIONS_TEMPERATURA_DI_SICUREZZA_IN_INGRESSO, fmt_c),                       USER_BITS);
@@ -58,6 +58,7 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->air_flow_alarm_time,                      1,                              250,                        5,                              FTIME(PARS_DESCRIPTIONS_TEMPO_ALLARME_FLUSSO_ARIA),                               USER_BITS);
     ps[i++] = PARAMETER(&p->minimum_speed,                            10,                             25,                         15,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MINIMA, fmt_rpm),                               USER_BITS);
     ps[i++] = PARAMETER(&p->maximum_speed,                            25,                             70,                         60,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MASSIMA, fmt_rpm),                               USER_BITS);
+    ps[i++] = PARAMETER(&p->payment_type,                            0,                             3,                         1,                             FOPT(PARS_DESCRIPTIONS_TIPO_PAGAMENTO, pars_tipo_pagamento),                               USER_BITS);
     ps[i++] = PARAMETER(&p->minimum_coins,                            0,                              10,                         1,                              FINT(PARS_DESCRIPTIONS_NUMERO_MINIMO_DI_GETTONI),                               USER_BITS);
     ps[i++] = PARAMETER(&p->time_per_coin,                            1,                              3600,                       60,                             FTIME(PARS_DESCRIPTIONS_TEMPO_PER_GETTONE),                               USER_BITS);
     ps[i++] = PARAMETER(&p->credit_request_type,                      0,                              2,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_DI_RICHIESTA_PAGAMENTO, pars_tipo_richiesta_pagamento),                               USER_BITS);

@@ -8,6 +8,7 @@
 #include "configuration/configuration.h"
 #include "adapters/view/common.h"
 #include "bsp/msc.h"
+#include "bsp/system.h"
 #include "services/fup.h"
 
 
@@ -52,6 +53,9 @@ void controller_manage(mut_model_t *model) {
                     break;
 
                 case MINION_RESPONSE_TAG_SYNC: {
+                    uint16_t previous_credit = model_get_credit(model);
+                    cycle_state_t previous_cycle_state = model->run.minion.read.cycle_state;
+
                     model->run.minion.read.firmware_version_major = response.as.sync.firmware_version_major;
                     model->run.minion.read.firmware_version_minor = response.as.sync.firmware_version_minor;
                     model->run.minion.read.firmware_version_patch = response.as.sync.firmware_version_patch;
@@ -67,19 +71,35 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.pressure               = response.as.sync.pressure;
                     model->run.minion.read.cycle_state            = response.as.sync.cycle_state;
                     model->run.minion.read.default_temperature    = response.as.sync.default_temperature;
+                    model->run.minion.read.elapsed_time_seconds   = response.as.sync.elapsed_time_seconds;
                     model->run.minion.read.remaining_time_seconds = response.as.sync.remaining_time_seconds;
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
                     model->run.minion.read.payment                = response.as.sync.payment;
-                    memcpy(model->run.minion.read.coins, response.as.sync.coins, sizeof(model->run.minion.read.coins));
+
+                    const uint16_t tf[] = {0, 4, 3, 2, 1};
+                    for (size_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
+                        model->run.minion.read.coins[tf[i]] = response.as.sync.coins[i];
+                    }
+                    uint16_t current_credit = model_get_credit(model);
+
+                    // A coin was received, increase the running time
+                    if (current_credit > previous_credit) {
+                        if (model_is_cycle_paused(model) || model_is_cycle_running(model) ||
+                            model_is_cycle_waiting_to_start(model)) {
+                            minion_increase_duration((current_credit - previous_credit) *
+                                                     model->config.parmac.time_per_coin);
+                            minion_sync(model);
+                        }
+                    }
+
+                    // The cycle has started
+                    if (previous_cycle_state != model->run.minion.read.cycle_state && previous_cycle_state == CYCLE_STATE_STOPPED) {
+                        model->run.starting_temperature = model->run.minion.read.default_temperature;
+                    }
 
                     if (model_is_porthole_open(model)) {
                         model->run.should_open_porthole = 0;
                     }
-
-                    ESP_LOGI(TAG, "Cycle state %i, inputs 0x%02X, alarms 0x%02X, remaining %i, step %i",
-                             model->run.minion.read.cycle_state, model->run.minion.read.inputs,
-                             model->run.minion.read.alarms, model->run.minion.read.remaining_time_seconds,
-                             model->run.current_step_index);
 
                     // Program finished
                     if (model_is_program_done(model)) {
@@ -163,6 +183,14 @@ void controller_manage(mut_model_t *model) {
         }
 
         model->run.removable_drive_state = msc_is_device_mounted();
+    }
+
+    {
+        static unsigned long ts = 0;
+        if (timestamp_is_expired(ts, 10000)) {
+            bsp_system_memory_dump();
+            ts = timestamp_get();
+        }
     }
 
     fup_manage();

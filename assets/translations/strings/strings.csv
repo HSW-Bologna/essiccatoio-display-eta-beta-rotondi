@@ -65,3 +65,7 @@ ALLARME_INVERTER, Allarme inverter, Inverter alarm
 TEMPERATURA_NON_RAGGIUNTA_IN_TEMPO, Temperatura non raggiunta in tempo, Temperature not reached in time
 APRIRE_OBLO, Aprire oblo', Open porthole
 TEMPO_PER_GETTONE, Tempo per gettone, Time per coin
+PAGARE_CASSA, Pagare cassa, Pay at desk
+INSERIRE_GETTONE, Inserire gettone, Insert token
+INSERIRE_MONETA, Inserire moneta, Insert coin
+PAUSA_LAVORO, Pausa lavoro, Paused

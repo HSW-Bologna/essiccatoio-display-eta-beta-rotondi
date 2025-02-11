@@ -36,6 +36,7 @@ typedef struct {
             cycle_state_t cycle_state;
             int16_t       default_temperature;
             uint16_t      remaining_time_seconds;
+            uint16_t      elapsed_time_seconds;
             uint16_t      alarms;
         } sync;
 
@@ -58,6 +59,7 @@ void    minion_program_done(model_t *model);
 void    minion_resume_program(model_t *model, uint8_t clear_alarms);
 void    minion_handshake(void);
 void    minion_clear_coins(void);
+void    minion_increase_duration(uint16_t seconds);
 
 
 #endif

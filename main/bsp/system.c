@@ -22,8 +22,8 @@ void bsp_system_init(void) {
         .data6_io_num    = GPIO_NUM_NC,
         .data7_io_num    = GPIO_NUM_NC,
         .max_transfer_sz = SPI_MAX_TRANSFER_SIZE,
-        .flags = SPICOMMON_BUSFLAG_SCLK | SPICOMMON_BUSFLAG_MOSI | SPICOMMON_BUSFLAG_MASTER,
-        .intr_flags = ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM,
+        .flags           = SPICOMMON_BUSFLAG_SCLK | SPICOMMON_BUSFLAG_MOSI | SPICOMMON_BUSFLAG_MASTER,
+        .intr_flags      = ESP_INTR_FLAG_LOWMED | ESP_INTR_FLAG_IRAM,
     };
 
     ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &bus, SPI_DMA_CH_AUTO));
@@ -46,4 +46,13 @@ void bsp_system_init(void) {
 
 void bsp_system_reset(void) {
     esp_restart();
+}
+
+
+void bsp_system_memory_dump(void) {
+    ESP_LOGI(TAG, "Internal RAM: LWM = %u, free = %u, biggest = %u",
+             heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL), heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+    ESP_LOGI(TAG, "PSRAM       : LWM = %zu, free = %zu\n", heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
+             heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 }

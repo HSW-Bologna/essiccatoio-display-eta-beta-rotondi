@@ -121,11 +121,12 @@ static void *create_page(pman_handle_t handle, void *extra) {
 
 static void open_page(pman_handle_t handle, void *state) {
     struct page_data *pdata = state;
-    (void)pdata;
 
     pman_timer_resume(pdata->timer_blink_message);
 
     model_t *model = pman_get_user_data(handle);
+
+    lv_obj_remove_flag(lv_screen_active(), LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *cont = lv_obj_create(lv_screen_active());
     lv_obj_remove_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
@@ -137,7 +138,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_t *top_cont = lv_obj_create(cont);
     lv_obj_remove_flag(top_cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_style(top_cont, &style_transparent_cont, LV_STATE_DEFAULT);
-    lv_obj_set_size(top_cont, LV_HOR_RES, 164);
+    lv_obj_set_size(top_cont, LV_HOR_RES, 160);
     lv_obj_align(top_cont, LV_ALIGN_TOP_MID, 0, -28);
     lv_obj_set_style_pad_column(top_cont, 8, LV_STATE_DEFAULT);
     lv_obj_set_style_pad_hor(top_cont, 8, LV_STATE_DEFAULT);
@@ -178,7 +179,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_t *bottom_cont = lv_obj_create(cont);
     lv_obj_remove_flag(bottom_cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_style(bottom_cont, &style_transparent_cont, LV_STATE_DEFAULT);
-    lv_obj_set_size(bottom_cont, LV_HOR_RES, 164);
+    lv_obj_set_size(bottom_cont, LV_HOR_RES, 160);
     lv_obj_align(bottom_cont, LV_ALIGN_BOTTOM_MID, 0, 28);
     lv_obj_set_style_pad_column(bottom_cont, 8, LV_STATE_DEFAULT);
     lv_obj_set_style_pad_hor(bottom_cont, 8, LV_STATE_DEFAULT);
@@ -240,7 +241,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_style_text_font(lbl, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(lbl, lv_color_black(), LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
-    lv_label_set_long_mode(lbl, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(lbl, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(lbl, LV_HOR_RES);
     lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
     pdata->label_status = lbl;
@@ -284,7 +285,9 @@ static void open_page(pman_handle_t handle, void *state) {
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.default_temperature, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.remaining_time_seconds, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.alarms, WATCH_INFO_ID);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.payment, WATCH_INFO_ID);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.should_open_porthole, WATCH_INFO_ID);
+    VIEW_ADD_WATCHED_ARRAY(model->run.minion.read.coins, DIGITAL_COIN_LINES_NUM, WATCH_INFO_ID);
 
     handle_alarm(model, pdata);
     update_page(model, pdata);
@@ -339,6 +342,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                     password_page_options_t *opts =
                         view_common_default_password_page_options(pw_msg, (const char *)APP_CONFIG_PASSWORD);
                     msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
+                    pman_timer_pause(pdata->timer_change_page);
                     break;
                 }
 
@@ -387,7 +391,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                         case BTN_PROGRAM_ID:
                             if (model_is_cycle_paused(model) && obj_data->number == model->run.current_program_index) {
                                 view_get_protocol(handle)->resume_cycle(handle);
-                            } else {
+                            } else if (model_is_cycle_active(model) || model_is_minimum_credit_reached(model) > 0) {
                                 view_get_protocol(handle)->start_program(handle, obj_data->number);
                             }
                             break;
@@ -430,10 +434,11 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 timestamp_is_expired(pdata->button_ts,
                                                      model->config.parmac.stop_button_time * 1000UL)) {
                                 view_get_protocol(handle)->stop_cycle(handle);
-                            } else if (model_is_cycle_paused(model) &&
+                            } else if (model_is_cycle_running(model) &&
                                        timestamp_is_expired(pdata->button_ts,
                                                             model->config.parmac.pause_button_time * 1000UL)) {
                                 view_get_protocol(handle)->pause_cycle(handle);
+                                pdata->button_ts = timestamp_get();
                             }
                             break;
 
@@ -538,13 +543,18 @@ static void update_page(model_t *model, struct page_data *pdata) {
                               model_get_program_display_temperature(model, program_index));
 
         if (model_is_cycle_active(model)) {
+            lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_DISABLED);
             if (program_index == model->run.current_program_index) {
                 lv_obj_add_state(pdata->buttons[program_index], LV_STATE_CHECKED);
             } else {
                 lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_CHECKED);
             }
+        } else if (model_is_minimum_credit_reached(model)) {
+            lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_CHECKED);
+            lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_DISABLED);
         } else {
             lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_CHECKED);
+            lv_obj_add_state(pdata->buttons[program_index], LV_STATE_DISABLED);
         }
     }
 
@@ -559,6 +569,10 @@ static void update_page(model_t *model, struct page_data *pdata) {
             if (model_should_open_porthole(model) && pdata->blink) {
                 lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_APRIRE_OBLO));
             }
+            // Paused
+            else if (model_is_cycle_paused(model)) {
+                lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_PAUSA_LAVORO));
+            }
             // The step is neverending, just show the name
             else if (model_is_step_endless(model)) {
                 lv_label_set_text(pdata->label_status, get_step_string(step.type, language));
@@ -569,7 +583,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
 
                 if (model->config.parmac.abilita_visualizzazione_temperatura && step.type == PROGRAM_STEP_TYPE_DRYING) {
-                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i  %2i/%2i °C",
+                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i\n%2i/%2i °C",
                                           get_step_string(step.type, language), minutes, seconds,
                                           model_get_current_temperature(model), model_get_current_setpoint(model));
                 } else {
@@ -581,20 +595,42 @@ static void update_page(model_t *model, struct page_data *pdata) {
         // Cycle is over
         else if (model_should_open_porthole(model)) {
             lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_APRIRE_OBLO));
+        }
+        // There is enough credit to work
+        else if (model_is_minimum_credit_reached(model) &&
+                 (model->config.parmac.minimum_coins > 0 || model_get_credit(model) > 0)) {
+            if (model->config.parmac.payment_type == PAYMENT_TYPE_NONE) {
+                lv_label_set_text(pdata->label_status,
+                                  view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
+            } else {
+                uint16_t seconds = model_get_time_for_credit(model);
+                lv_label_set_text_fmt(pdata->label_status, "%02i:%02i", seconds / 60, seconds % 60);
+            }
         } else {
-            lv_label_set_text(pdata->label_status,
-                              view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
+            switch (model->config.parmac.credit_request_type) {
+                case CREDIT_REQUEST_TYPE_INSERT_TOKEN:
+                    lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_INSERIRE_GETTONE));
+                    break;
+
+                case CREDIT_REQUEST_TYPE_INSERT_COIN:
+                    lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_INSERIRE_MONETA));
+                    break;
+
+                case CREDIT_REQUEST_TYPE_PAY_AT_DESK:
+                    lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_PAGARE_CASSA));
+                    break;
+            }
         }
     } else {
-        view_common_format_alarm(pdata->label_status, model, language);
+        view_common_format_alarm(pdata->label_status, pdata->last_alarm, language);
     }
 
     const lv_img_dsc_t *language_icons[2] = {&img_marble_italiano, &img_marble_english};
     lv_img_set_src(pdata->image_language, language_icons[model->run.temporary_language]);
 
-    if (!pdata->alarm_pacified && model_is_any_alarm_active(model)) {
+    if (!pdata->alarm_pacified && pdata->last_alarm) {
         view_common_set_hidden(pdata->alarm_popup.blanket, 0);
-        view_common_alarm_popup_update(model, &pdata->alarm_popup, model->run.temporary_language);
+        view_common_alarm_popup_update(pdata->last_alarm, &pdata->alarm_popup, model->run.temporary_language);
     } else {
         view_common_set_hidden(pdata->alarm_popup.blanket, 1);
     }
@@ -631,7 +667,8 @@ static void close_page(void *state) {
     struct page_data *pdata = state;
     pman_timer_pause(pdata->timer_change_page);
     pman_timer_pause(pdata->timer_restore_language);
-    lv_obj_clean(lv_scr_act());
+    pman_timer_pause(pdata->timer_blink_message);
+    lv_obj_clean(lv_screen_active());
 }
 
 
@@ -640,6 +677,7 @@ static void destroy_page(void *state, void *extra) {
     struct page_data *pdata = state;
     pman_timer_delete(pdata->timer_change_page);
     pman_timer_delete(pdata->timer_restore_language);
+    pman_timer_delete(pdata->timer_blink_message);
     lv_free(state);
 }
 

@@ -40,7 +40,7 @@ void parlav_init_drying(mut_model_t *model, program_drying_parameters_t *p) {
     ps[i++] = PARAMETER(&p->cooling_hysteresis,    0,     20,     2,     FFINT(PARS_DESCRIPTIONS_ISTERESI_RAFFREDDAMENTO, fmt_degrees),        USER_BITS);
     ps[i++] = PARAMETER(&p->heating_hysteresis,    0,     20,     2,     FFINT(PARS_DESCRIPTIONS_ISTERESI_RISCALDAMENTO, fmt_degrees),        USER_BITS);
     ps[i++] = PARAMETER(&p->humidity,    5,     50,     30,     FFINT(PARS_DESCRIPTIONS_UMIDITA, "%i %%"),        USER_BITS);
-    ps[i++] = PARAMETER(&p->progressive_heating_time,    0,     99,     0,     FFINT(PARS_DESCRIPTIONS_RISCALDAMENTO_PROGRESSIVO, fmt_min),        USER_BITS);
+    ps[i++] = PARAMETER(&p->progressive_heating_time,    0,     3600,     0,     FFINT(PARS_DESCRIPTIONS_RISCALDAMENTO_PROGRESSIVO, fmt_min),        USER_BITS);
     // clang-format on
 
     assert(i <= NUM_PARAMETERS);

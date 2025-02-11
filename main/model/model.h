@@ -14,6 +14,21 @@
 
 
 typedef enum {
+    CREDIT_REQUEST_TYPE_INSERT_TOKEN = 0,
+    CREDIT_REQUEST_TYPE_INSERT_COIN,
+    CREDIT_REQUEST_TYPE_PAY_AT_DESK,
+} credit_request_type_t;
+
+
+typedef enum {
+    PAYMENT_TYPE_NONE = 0,
+    PAYMENT_TYPE_NO,
+    PAYMENT_TYPE_NC,
+    PAYMENT_TYPE_COIN_READER,
+} payment_type_t;
+
+
+typedef enum {
     FIRMWARE_UPDATE_STATE_NONE = 0,
     FIRMWARE_UPDATE_STATE_AVAILABLE,
     FIRMWARE_UPDATE_STATE_UPDATING,
@@ -90,7 +105,7 @@ typedef enum {
 
 typedef enum {
     CYCLE_STATE_STOPPED = 0,
-    CYCLE_STATE_ACTIVE,
+    CYCLE_STATE_STANDBY,
     CYCLE_STATE_WAIT_START,
     CYCLE_STATE_RUNNING,
     CYCLE_STATE_PAUSED,
@@ -119,7 +134,6 @@ typedef struct {
     uint16_t abilita_visualizzazione_temperatura;
     uint16_t abilita_tasto_menu;
     uint16_t display_cycles_statistics;
-    uint16_t tempo_stop_automatico;
     uint16_t tempo_attesa_partenza_ciclo;
     uint16_t reset_page_time;
     uint16_t reset_language_time;
@@ -127,6 +141,7 @@ typedef struct {
     uint16_t stop_button_time;
     uint16_t minimum_speed;
     uint16_t maximum_speed;
+    uint16_t payment_type;
     uint16_t tempo_gettone;
     uint16_t velocita_antipiega;
     uint16_t tipo_pagamento;
@@ -201,6 +216,7 @@ struct model {
 
                 cycle_state_t cycle_state;
                 int16_t       default_temperature;
+                uint16_t      elapsed_time_seconds;
                 uint16_t      remaining_time_seconds;
                 uint16_t      alarms;
                 uint16_t      payment;
@@ -224,6 +240,7 @@ struct model {
         uint8_t                 test_enable_coin_reader;
         removable_drive_state_t removable_drive_state;
         firmware_update_state_t firmware_update_state;
+        int16_t                 starting_temperature;
     } run;
 };
 
@@ -266,6 +283,11 @@ uint16_t         model_get_maximum_temperature(model_t *model);
 void             model_check_parameters(mut_model_t *model);
 int16_t          model_get_current_temperature(model_t *model);
 uint8_t          model_should_open_porthole(model_t *model);
+uint8_t          model_is_minimum_credit_reached(model_t *model);
+uint16_t         model_get_time_for_credit(model_t *model);
+uint16_t         model_get_credit(model_t *model);
+uint8_t          model_is_cycle_waiting_to_start(model_t *model);
+int16_t          model_get_temperature_setpoint(model_t *model);
 
 
 #endif

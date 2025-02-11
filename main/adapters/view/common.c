@@ -5,7 +5,7 @@
 #include "intl/intl.h"
 
 
-static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code);
+static const char *get_alarm_description(uint32_t alarms, uint16_t language, alarm_t *alarm_code);
 
 
 #define SQUARE_BUTTON_SIZE 48
@@ -29,8 +29,8 @@ void view_common_set_disabled(lv_obj_t *obj, uint8_t disabled) {
 }
 
 
-void view_common_format_alarm(lv_obj_t *label, model_t *model, language_t language) {
-    lv_label_set_text(label, get_alarm_description(model, language, NULL));
+void view_common_format_alarm(lv_obj_t *label, uint32_t alarms, language_t language) {
+    lv_label_set_text(label, get_alarm_description(alarms, language, NULL));
 }
 
 
@@ -164,9 +164,9 @@ communication_error_popup_t view_common_communication_error_popup(lv_obj_t *pare
 }
 
 
-void view_common_alarm_popup_update(model_t *model, popup_t *alarm_popup, uint16_t language) {
+void view_common_alarm_popup_update(uint32_t alarms, popup_t *alarm_popup, uint16_t language) {
     alarm_t     alarm_code  = 0;
-    const char *description = get_alarm_description(model, language, &alarm_code);
+    const char *description = get_alarm_description(alarms, language, &alarm_code);
     lv_label_set_text_fmt(alarm_popup->lbl_description, "%s\n\n%s: %i", description,
                           view_intl_get_string_in_language(language, STRINGS_CODICE), alarm_code);
 }
@@ -254,24 +254,23 @@ const char *view_common_modello_str(model_t *model) {
 }
 
 
-static const char *get_alarm_description(model_t *model, uint16_t language, alarm_t *alarm_code) {
+static const char *get_alarm_description(uint32_t alarms, uint16_t language, alarm_t *alarm_code) {
     strings_t string_codes[] = {
         STRINGS_OBLO_APERTO,
         STRINGS_ALLARME_EMERGENZA,
         STRINGS_CASSETTO_DEL_FILTRO_APERTO,
         STRINGS_FLUSSO_D_ARIA_ASSENTE,
         STRINGS_BLOCCO_BRUCIATORE,
-        STRINGS_ALLARME_INVERTER,
         STRINGS_SURRISCALDAMENTO,
         STRINGS_TEMPERATURA_NON_RAGGIUNTA_IN_TEMPO,
-
+        STRINGS_ALLARME_INVERTER,
     };
-    for (alarm_t alarm = 0; alarm < ALARMS_NUM; alarm++) {
-        if (model_is_alarm_active(model, alarm)) {
+    for (alarm_t code = 0; code < ALARMS_NUM; code++) {
+        if (alarms & (1 << code)) {
             if (alarm_code) {
-                *alarm_code = alarm;
+                *alarm_code = code;
             }
-            return view_intl_get_string_in_language(language, string_codes[alarm]);
+            return view_intl_get_string_in_language(language, string_codes[code]);
         }
     }
     return view_intl_get_string_in_language(language, STRINGS_ALLARME);

@@ -144,6 +144,7 @@ static void clear_test_outputs(pman_handle_t handle) {
 static void save_parmac(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
 
+    model_reset_temporary_language(model);
     configuration_save_parmac(&model->config.parmac);
     controller_sync_minion(model);
 }

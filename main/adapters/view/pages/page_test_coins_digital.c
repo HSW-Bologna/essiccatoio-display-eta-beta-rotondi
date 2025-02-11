@@ -184,8 +184,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    const uint16_t tf[]     = {4, 0, 1, 2, 3};
-    const uint16_t values[] = {200, 100, 50, 20, 10};
+    const uint16_t values[] = {10, 20, 50, 100, 200};
     uint16_t       total    = 0;
 
     {
@@ -196,8 +195,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
 
     for (size_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
         char string[8] = {0};
-        snprintf(string, sizeof(string), "%i", model->run.minion.read.coins[tf[i]]);
-        total += model->run.minion.read.coins[tf[i]] * values[i];
+        snprintf(string, sizeof(string), "%i", model->run.minion.read.coins[i]);
+        total += model->run.minion.read.coins[i] * values[i];
         lv_table_set_cell_value(pdata->table_digital, i + 2, 1, string);
     }
 

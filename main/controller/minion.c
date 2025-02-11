@@ -21,9 +21,10 @@
 #define MODBUS_IR_DEVICE_MODEL 0
 #define MODBUS_IR_CYCLE_STATE  9
 
-#define MODBUS_HR_TEST_MODE      0
-#define MODBUS_HR_PROGRAM_NUMBER 10
-#define MODBUS_HR_COMMAND        29
+#define MODBUS_HR_TEST_MODE         0
+#define MODBUS_HR_PROGRAM_NUMBER    10
+#define MODBUS_HR_COMMAND           29
+#define MODBUS_HR_INCREASE_DURATION 30
 
 #define MINION_ADDR 1
 
@@ -39,6 +40,7 @@ typedef enum {
     TASK_MESSAGE_TAG_SYNC,
     TASK_MESSAGE_TAG_HANDSHAKE,
     TASK_MESSAGE_TAG_COMMAND,
+    TASK_MESSAGE_TAG_INCREASE_DURATION,
     TASK_MESSAGE_TAG_RETRY_COMMUNICATION,
 } task_message_tag_t;
 
@@ -74,7 +76,6 @@ struct __attribute__((packed)) task_message {
             uint16_t setpoint_humidity;
             uint16_t temperature_cooling_hysteresis;
             uint16_t temperature_heating_hysteresis;
-            uint16_t progressive_heating_time;
             uint16_t drying_type;
             uint16_t program_number;
             uint16_t step_number;
@@ -83,6 +84,7 @@ struct __attribute__((packed)) task_message {
         } sync;
 
         uint16_t command;
+        uint16_t duration;
     } as;
 };
 
@@ -90,24 +92,24 @@ struct __attribute__((packed)) task_message {
 typedef struct {
     uint16_t start;
     void    *pointer;
-} master_context_t;
+} network_context_t;
 
 
 static void        minion_task(void *args);
-uint8_t            handle_message(ModbusMaster *master, struct task_message message);
-static ModbusError exception_callback(const ModbusMaster *master, uint8_t address, uint8_t function,
+uint8_t            handle_message(ModbusMaster *network, struct task_message message);
+static ModbusError exception_callback(const ModbusMaster *network, uint8_t address, uint8_t function,
                                       ModbusExceptionCode code);
-static ModbusError data_callback(const ModbusMaster *master, const ModbusDataCallbackArgs *args);
-static int  write_holding_registers(ModbusMaster *master, uint8_t address, uint16_t starting_address, uint16_t *data,
+static ModbusError data_callback(const ModbusMaster *network, const ModbusDataCallbackArgs *args);
+static int  write_holding_registers(ModbusMaster *network, uint8_t address, uint16_t starting_address, uint16_t *data,
                                     size_t num);
-static int  read_holding_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+static int  read_holding_registers(ModbusMaster *network, uint16_t *registers, uint8_t address, uint16_t start,
                                    uint16_t count);
-static int  read_input_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+static int  read_input_registers(ModbusMaster *network, uint16_t *registers, uint8_t address, uint16_t start,
                                  uint16_t count);
 static void sync_with_command(model_t *model, uint16_t command);
 
 
-static const char   *TAG       = "Modbus";
+static const char   *TAG       = __FILE_NAME__;
 static QueueHandle_t messageq  = NULL;
 static QueueHandle_t responseq = NULL;
 
@@ -129,6 +131,12 @@ void minion_init(void) {
 
 void minion_retry_communication(void) {
     struct task_message msg = {.tag = TASK_MESSAGE_TAG_RETRY_COMMUNICATION};
+    xQueueSend(messageq, &msg, 0);
+}
+
+
+void minion_increase_duration(uint16_t seconds) {
+    struct task_message msg = {.tag = TASK_MESSAGE_TAG_INCREASE_DURATION, .as = {.duration = seconds}};
     xQueueSend(messageq, &msg, 0);
 }
 
@@ -208,6 +216,7 @@ static void sync_with_command(model_t *model, uint16_t command) {
                         .gas_ignition_attempts           = model->config.parmac.gas_ignition_attempts,
                         .fan_with_open_porthole_time     = model->config.parmac.fan_with_open_porthole_time,
                         .program_number                  = model->run.current_program_index,
+                        .setpoint_temperature            = model_get_temperature_setpoint(model),
                         .step_number                     = model->run.current_step_index,
                         .step_type                       = step.type,
                         .command                         = command,
@@ -220,13 +229,13 @@ static void sync_with_command(model_t *model, uint16_t command) {
             msg.as.sync.rotation_running_time          = step.drying.rotation_time;
             msg.as.sync.rotation_pause_time            = step.drying.pause_time;
             msg.as.sync.rotation_speed                 = step.drying.speed;
-            msg.as.sync.duration                       = step.drying.duration;
+            msg.as.sync.duration                       = model->config.parmac.payment_type == PAYMENT_TYPE_NONE
+                                                             ? step.drying.duration * 60
+                                                             : model_get_time_for_credit(model);
             msg.as.sync.drying_type                    = step.drying.type;
-            msg.as.sync.setpoint_temperature           = step.drying.temperature;
             msg.as.sync.setpoint_humidity              = step.drying.humidity;
             msg.as.sync.temperature_cooling_hysteresis = step.drying.cooling_hysteresis;
             msg.as.sync.temperature_heating_hysteresis = step.drying.heating_hysteresis;
-            msg.as.sync.progressive_heating_time       = step.drying.progressive_heating_time;
 
             msg.as.sync.flags |=
                 ((step.drying.enable_reverse > 0) << 8) | ((step.drying.enable_waiting_for_temperature << 9));
@@ -259,8 +268,8 @@ static void sync_with_command(model_t *model, uint16_t command) {
 
 static void minion_task(void *args) {
     (void)args;
-    ModbusMaster    master;
-    ModbusErrorInfo err = modbusMasterInit(&master,
+    ModbusMaster    network;
+    ModbusErrorInfo err = modbusMasterInit(&network,
                                            data_callback,              // Callback for handling incoming data
                                            exception_callback,         // Exception callback (optional)
                                            modbusDefaultAllocator,     // Memory allocator used to allocate request
@@ -280,12 +289,12 @@ static void minion_task(void *args) {
         if (xQueueReceive(messageq, &message, pdMS_TO_TICKS(100))) {
             if (communication_error) {
                 if (message.tag == TASK_MESSAGE_TAG_RETRY_COMMUNICATION) {
-                    communication_error = handle_message(&master, last_unsuccessful_message);
+                    communication_error = handle_message(&network, last_unsuccessful_message);
                     vTaskDelay(pdMS_TO_TICKS(MODBUS_TIMEOUT / 2));
                 }
             } else {
                 last_unsuccessful_message = message;
-                communication_error       = handle_message(&master, message);
+                communication_error       = handle_message(&network, message);
                 vTaskDelay(pdMS_TO_TICKS(MODBUS_TIMEOUT / 2));
             }
         }
@@ -295,15 +304,28 @@ static void minion_task(void *args) {
 }
 
 
-uint8_t handle_message(ModbusMaster *master, struct task_message message) {
+uint8_t handle_message(ModbusMaster *network, struct task_message message) {
     uint8_t           error    = 0;
     minion_response_t response = {};
 
     switch (message.tag) {
         case TASK_MESSAGE_TAG_COMMAND: {
             uint16_t command = message.as.command;
-            ESP_LOGI(TAG, "Sending command %i to minion", command);
-            if (write_holding_registers(master, MINION_ADDR, MODBUS_HR_COMMAND, &command, 1)) {
+            if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_COMMAND, &command, 1)) {
+                response.tag = MINION_RESPONSE_TAG_ERROR;
+                xQueueSend(responseq, &response, portMAX_DELAY);
+            }
+            break;
+        }
+
+        case TASK_MESSAGE_TAG_INCREASE_DURATION: {
+            uint16_t values[2] = {
+                COMMAND_REGISTER_CLEAR_COINS,
+                message.as.duration,
+            };     // Clear credit and increase duration in one sweep
+
+            if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_COMMAND, values,
+                                        sizeof(values) / sizeof(values[0]))) {
                 response.tag = MINION_RESPONSE_TAG_ERROR;
                 xQueueSend(responseq, &response, portMAX_DELAY);
             }
@@ -314,14 +336,14 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
             response.tag = MINION_RESPONSE_TAG_HANDSHAKE;
 
             uint16_t cycle_state = 0;
-            if (read_input_registers(master, &cycle_state, MINION_ADDR, MODBUS_IR_CYCLE_STATE, 1)) {
+            if (read_input_registers(network, &cycle_state, MINION_ADDR, MODBUS_IR_CYCLE_STATE, 1)) {
                 error = 1;
             } else {
                 response.as.handshake.cycle_state = cycle_state;
 
                 uint16_t values[2] = {0};
 
-                if (read_holding_registers(master, values, MINION_ADDR, MODBUS_HR_PROGRAM_NUMBER,
+                if (read_holding_registers(network, values, MINION_ADDR, MODBUS_HR_PROGRAM_NUMBER,
                                            sizeof(values) / sizeof(values[0]))) {
                     error = 1;
                 } else {
@@ -367,7 +389,6 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
                     message.as.sync.setpoint_humidity,
                     message.as.sync.temperature_cooling_hysteresis,
                     message.as.sync.temperature_heating_hysteresis,
-                    message.as.sync.progressive_heating_time,
                     message.as.sync.drying_type,
                     message.as.sync.start_delay,
                     message.as.sync.max_cycles,
@@ -377,15 +398,15 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
                     message.as.sync.command,
                 };
 
-                if (write_holding_registers(master, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
+                if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
                                             sizeof(values) / sizeof(values[0]))) {
                     error = 1;
                 }
             }
 
             if (!error) {
-                uint16_t values[22] = {0};
-                if (read_input_registers(master, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
+                uint16_t values[23] = {0};
+                if (read_input_registers(network, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
                                          sizeof(values) / sizeof(values[0]))) {
                     error = 1;
                 } else {
@@ -410,8 +431,9 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
                     response.as.sync.coins[4]               = values[17];
                     response.as.sync.cycle_state            = values[18];
                     response.as.sync.default_temperature    = values[19];
-                    response.as.sync.remaining_time_seconds = values[20];
-                    response.as.sync.alarms                 = values[21];
+                    response.as.sync.elapsed_time_seconds   = values[20];
+                    response.as.sync.remaining_time_seconds = values[21];
+                    response.as.sync.alarms                 = values[22];
                 }
             }
 
@@ -431,8 +453,8 @@ uint8_t handle_message(ModbusMaster *master, struct task_message message) {
 }
 
 
-static ModbusError data_callback(const ModbusMaster *master, const ModbusDataCallbackArgs *args) {
-    master_context_t *ctx = modbusMasterGetUserPointer(master);
+static ModbusError data_callback(const ModbusMaster *network, const ModbusDataCallbackArgs *args) {
+    network_context_t *ctx = modbusMasterGetUserPointer(network);
 
     if (ctx != NULL) {
         switch (args->type) {
@@ -466,16 +488,16 @@ static ModbusError data_callback(const ModbusMaster *master, const ModbusDataCal
 }
 
 
-static ModbusError exception_callback(const ModbusMaster *master, uint8_t address, uint8_t function,
+static ModbusError exception_callback(const ModbusMaster *network, uint8_t address, uint8_t function,
                                       ModbusExceptionCode code) {
-    (void)master;
+    (void)network;
     ESP_LOGI(TAG, "Received exception (function %d) from slave %d code %d", function, address, code);
 
     return MODBUS_OK;
 }
 
 
-static int write_holding_registers(ModbusMaster *master, uint8_t address, uint16_t starting_address, uint16_t *data,
+static int write_holding_registers(ModbusMaster *network, uint8_t address, uint16_t starting_address, uint16_t *data,
                                    size_t num) {
     uint8_t buffer[MODBUS_MAX_PACKET_SIZE] = {0};
     int     res                            = 0;
@@ -485,13 +507,13 @@ static int write_holding_registers(ModbusMaster *master, uint8_t address, uint16
 
     do {
         res                 = 0;
-        ModbusErrorInfo err = modbusBuildRequest16RTU(master, address, starting_address, num, data);
+        ModbusErrorInfo err = modbusBuildRequest16RTU(network, address, starting_address, num, data);
         assert(modbusIsOk(err));
-        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(master), modbusMasterGetRequestLength(master));
+        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(network), modbusMasterGetRequestLength(network));
 
         int len = bsp_rs232_read(buffer, sizeof(buffer));
-        err     = modbusParseResponseRTU(master, modbusMasterGetRequest(master), modbusMasterGetRequestLength(master),
-                                         buffer, len);
+        err = modbusParseResponseRTU(network, modbusMasterGetRequest(network), modbusMasterGetRequestLength(network),
+                                     buffer, len);
 
         if (!modbusIsOk(err)) {
             ESP_LOGW(TAG, "Write holding registers for %i error (%i): %i %i", address, len, err.source, err.error);
@@ -510,7 +532,7 @@ static int write_holding_registers(ModbusMaster *master, uint8_t address, uint16
 }
 
 
-static int read_holding_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+static int read_holding_registers(ModbusMaster *network, uint16_t *registers, uint8_t address, uint16_t start,
                                   uint16_t count) {
     ModbusErrorInfo err;
     int             res                            = 0;
@@ -519,23 +541,23 @@ static int read_holding_registers(ModbusMaster *master, uint16_t *registers, uin
 
     bsp_rs232_flush();
 
-    master_context_t ctx = {.pointer = registers, .start = start};
+    network_context_t ctx = {.pointer = registers, .start = start};
     if (registers == NULL) {
-        modbusMasterSetUserPointer(master, NULL);
+        modbusMasterSetUserPointer(network, NULL);
     } else {
-        modbusMasterSetUserPointer(master, &ctx);
+        modbusMasterSetUserPointer(network, &ctx);
     }
 
     do {
         res = 0;
-        err = modbusBuildRequest03RTU(master, address, start, count);
+        err = modbusBuildRequest03RTU(network, address, start, count);
         assert(modbusIsOk(err));
 
-        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(master), modbusMasterGetRequestLength(master));
+        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(network), modbusMasterGetRequestLength(network));
 
         int len = bsp_rs232_read(buffer, MODBUS_RESPONSE_03_LEN(count));
-        err     = modbusParseResponseRTU(master, modbusMasterGetRequest(master), modbusMasterGetRequestLength(master),
-                                         buffer, len);
+        err = modbusParseResponseRTU(network, modbusMasterGetRequest(network), modbusMasterGetRequestLength(network),
+                                     buffer, len);
 
         if (!modbusIsOk(err)) {
             ESP_LOGW(TAG, "Read holding registers for %i error (%i): %i %i", address, len, err.source, err.error);
@@ -548,32 +570,32 @@ static int read_holding_registers(ModbusMaster *master, uint16_t *registers, uin
 }
 
 
-static int read_input_registers(ModbusMaster *master, uint16_t *registers, uint8_t address, uint16_t start,
+static int read_input_registers(ModbusMaster *network, uint16_t *registers, uint8_t address, uint16_t start,
                                 uint16_t count) {
     ModbusErrorInfo err;
     int             res                            = 0;
     size_t          counter                        = 0;
     uint8_t         buffer[MODBUS_MAX_PACKET_SIZE] = {0};
 
-    master_context_t ctx = {.pointer = registers, .start = start};
+    network_context_t ctx = {.pointer = registers, .start = start};
     if (registers == NULL) {
-        modbusMasterSetUserPointer(master, NULL);
+        modbusMasterSetUserPointer(network, NULL);
     } else {
-        modbusMasterSetUserPointer(master, &ctx);
+        modbusMasterSetUserPointer(network, &ctx);
     }
 
     bsp_rs232_flush();
 
     do {
         res = 0;
-        err = modbusBuildRequest04RTU(master, address, start, count);
+        err = modbusBuildRequest04RTU(network, address, start, count);
         assert(modbusIsOk(err));
 
-        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(master), modbusMasterGetRequestLength(master));
+        bsp_rs232_write((uint8_t *)modbusMasterGetRequest(network), modbusMasterGetRequestLength(network));
 
         int len = bsp_rs232_read(buffer, sizeof(buffer));
-        err     = modbusParseResponseRTU(master, modbusMasterGetRequest(master), modbusMasterGetRequestLength(master),
-                                         buffer, len);
+        err = modbusParseResponseRTU(network, modbusMasterGetRequest(network), modbusMasterGetRequestLength(network),
+                                     buffer, len);
 
         if (!modbusIsOk(err)) {
             ESP_LOGW(TAG, "Read input registers for %i error (%i): %i %i", address, len, err.source, err.error);

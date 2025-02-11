@@ -6,6 +6,7 @@
 #include "../common.h"
 #include "config/app_config.h"
 #include "services/timestamp.h"
+#include <esp_log.h>
 
 
 LV_IMG_DECLARE(img_lock);
@@ -27,6 +28,9 @@ struct page_data {
 
     lv_obj_t *textarea;
 };
+
+
+static const char *TAG = __FILE_NAME__;
 
 
 static void *create_page(pman_handle_t handle, void *extra) {

@@ -67,6 +67,7 @@ static void open_page(pman_handle_t handle, void *state) {
         view_common_create_title(lv_scr_act(), view_intl_get_string(model, STRINGS_PARAMETRI), BTN_BACK_ID, -1);
 
     lv_obj_t *cont = lv_obj_create(lv_scr_act());
+    lv_obj_set_style_pad_ver(cont, 4, LV_STATE_DEFAULT);
     lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES - 56);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
 
@@ -80,14 +81,14 @@ static void open_page(pman_handle_t handle, void *state) {
 
     lv_obj_t *ldesc = lv_label_create(cont);
     lv_obj_set_style_text_align(ldesc, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
-    lv_label_set_long_mode(ldesc, LV_LABEL_LONG_SCROLL_CIRCULAR);
+    lv_label_set_long_mode(ldesc, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(ldesc, LV_PCT(95));
-    lv_obj_align(ldesc, LV_ALIGN_TOP_MID, 0, 72);
+    lv_obj_align(ldesc, LV_ALIGN_TOP_MID, 0, 64);
     pdata->label_description = ldesc;
 
     {
         lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 128, 56);
+        lv_obj_set_size(btn, 96, 48);
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, LV_SYMBOL_LEFT);
         lv_obj_center(lbl);
@@ -97,7 +98,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 128, 56);
+        lv_obj_set_size(btn, 96, 48);
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, LV_SYMBOL_RIGHT);
         lv_obj_center(lbl);
@@ -109,12 +110,12 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_style_text_align(lval, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
     lv_label_set_long_mode(lval, LV_LABEL_LONG_WRAP);
     lv_obj_set_width(lval, LV_PCT(95));
-    lv_obj_align(lval, LV_ALIGN_BOTTOM_MID, 0, -72);
+    lv_obj_align(lval, LV_ALIGN_BOTTOM_MID, 0, -64);
     pdata->label_value = lval;
 
     {
         lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 128, 56);
+        lv_obj_set_size(btn, 96, 48);
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, LV_SYMBOL_MINUS);
         lv_obj_center(lbl);
@@ -124,7 +125,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 128, 56);
+        lv_obj_set_size(btn, 96, 48);
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, LV_SYMBOL_PLUS);
         lv_obj_center(lbl);

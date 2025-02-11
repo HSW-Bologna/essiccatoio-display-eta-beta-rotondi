@@ -574,8 +574,9 @@ static void update_page(model_t *model, struct page_data *pdata) {
             if (absolute_index < program->num_drying_steps) {
                 const program_drying_parameters_t *step = &program->steps[absolute_index];
 
-                char string[32] = {0};
-                snprintf(string, sizeof(string), "%i C", step->temperature);
+                char string[64] = {0};
+                snprintf(string, sizeof(string), "%s %i °C", view_intl_get_string(model, STRINGS_ASCIUGATURA),
+                         step->temperature);
                 if (strcmp(lv_label_get_text(pdata->label_names[i]), string)) {
                     lv_label_set_text(pdata->label_names[i], string);
                 }
