@@ -597,8 +597,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
             lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_APRIRE_OBLO));
         }
         // There is enough credit to work
-        else if (model_is_minimum_credit_reached(model) &&
-                 (model->config.parmac.minimum_coins > 0 || model_get_credit(model) > 0)) {
+        else if (model_is_free(model) || (model_is_minimum_credit_reached(model) &&
+                                          (model->config.parmac.minimum_coins > 0 || model_get_credit(model) > 0))) {
             if (model->config.parmac.payment_type == PAYMENT_TYPE_NONE) {
                 lv_label_set_text(pdata->label_status,
                                   view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
@@ -650,8 +650,6 @@ static const char *get_step_string(program_step_type_t type, uint16_t language) 
 
 
 static void handle_alarm(model_t *model, struct page_data *pdata) {
-    ESP_LOGI(TAG, "Alarm %i 0x%02X %i", pdata->last_alarm, model->run.minion.read.alarms, pdata->alarm_pacified);
-
     if (pdata->alarm_pacified && model_is_any_alarm_active(model)) {
         pdata->last_alarm = model->run.minion.read.alarms;
     } else if (pdata->last_alarm != model->run.minion.read.alarms) {

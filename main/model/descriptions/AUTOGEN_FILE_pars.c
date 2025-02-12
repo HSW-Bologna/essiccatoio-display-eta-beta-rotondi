@@ -1,45 +1,3 @@
-const char *pars_tipo_macchina_occupata[3][2] = {
-    {"Segnalazione allarmi e attivita'", "Signal alarms and activity", },
-    {"Segnalazione allarmi", "Signal alarms", },
-    {"Segnalazione attivita'", "Signal activity", },
-};
-
-const char *pars_nosi[2][2] = {
-    {"No", "No", },
-    {"Si", "Yes", },
-};
-
-const char *pars_loghi[5][2] = {
-    {"Nessuno", "None", },
-    {"MSGroup", "MSGroup", },
-    {"Rotondi", "Rotondi", },
-    {"Hoover", "Hoover", },
-    {"Unity Laundry", "Unity Laundry", },
-};
-
-const char *pars_tipo_riscaldamento[2][2] = {
-    {"Electtrico", "Electric", },
-    {"Gas", "Gas", },
-};
-
-const char *pars_tipo_richiesta_pagamento[3][2] = {
-    {"Inserire gettone", "Insert token", },
-    {"Inserire monete", "Insert coin", },
-    {"Pagare cassa", "Pay at desk", },
-};
-
-const char *pars_tipo_pagamento[4][2] = {
-    {"Nessuno", "None", },
-    {"Normalmente aperto", "Normally open", },
-    {"Normalmente chiuso", "Normally closed", },
-    {"Gettoniera", "Coin reader", },
-};
-
-const char *pars_manuale_automatico[2][2] = {
-    {"Manuale", "Manual", },
-    {"Automatico", "Automatic", },
-};
-
 const char *pars_descriptions[57][2] = {
     {"Lingua", "Language", },
     {"Livello di accesso", "Access level", },
@@ -100,20 +58,14 @@ const char *pars_descriptions[57][2] = {
     {"Tipo pagamento", "Payment type", },
 };
 
-const char *pars_sonda_temperatura[3][2] = {
-    {"Ingresso", "Input", },
-    {"Uscita", "Output", },
-    {"Temperatura/umidita'", "Temperature/humidity", },
-};
-
 const char *pars_nc_na[2][2] = {
     {"NC", "NC", },
     {"NA", "NO", },
 };
 
-const char *pars_livello_accesso[2][2] = {
-    {"Utente", "User", },
-    {"Tecnico", "Technician", },
+const char *pars_manuale_automatico[2][2] = {
+    {"Manuale", "Manual", },
+    {"Automatico", "Automatic", },
 };
 
 const char *pars_lingue[5][5] = {
@@ -122,5 +74,53 @@ const char *pars_lingue[5][5] = {
     {"Spagnolo", "Spanish", "Español", "Espagnol", "Spanisch", },
     {"Francese", "French", "Francés", "Français", "Französisch", },
     {"Tedesco", "German", "Alemán", "Allemand", "Deutsch", },
+};
+
+const char *pars_tipo_richiesta_pagamento[3][2] = {
+    {"Inserire gettone", "Insert token", },
+    {"Inserire monete", "Insert coin", },
+    {"Pagare cassa", "Pay at desk", },
+};
+
+const char *pars_livello_accesso[2][2] = {
+    {"Utente", "User", },
+    {"Tecnico", "Technician", },
+};
+
+const char *pars_tipo_pagamento[4][2] = {
+    {"Nessuno", "None", },
+    {"Normalmente aperto", "Normally open", },
+    {"Normalmente chiuso", "Normally closed", },
+    {"Gettoniera", "Coin reader", },
+};
+
+const char *pars_tipo_macchina_occupata[3][2] = {
+    {"Segnalazione allarmi e attivita'", "Signal alarms and activity", },
+    {"Segnalazione allarmi", "Signal alarms", },
+    {"Segnalazione attivita'", "Signal activity", },
+};
+
+const char *pars_tipo_riscaldamento[2][2] = {
+    {"Electtrico", "Electric", },
+    {"Gas", "Gas", },
+};
+
+const char *pars_sonda_temperatura[3][2] = {
+    {"Ingresso", "Input", },
+    {"Uscita", "Output", },
+    {"Temperatura/umidita'", "Temperature/humidity", },
+};
+
+const char *pars_nosi[2][2] = {
+    {"No", "No", },
+    {"Si", "Yes", },
+};
+
+const char *pars_loghi[5][2] = {
+    {"Nessuno", "None", },
+    {"MSGroup", "MSGroup", },
+    {"Rotondi", "Rotondi", },
+    {"Hoover", "Hoover", },
+    {"Unity Laundry", "Unity Laundry", },
 };
 

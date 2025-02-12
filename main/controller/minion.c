@@ -245,16 +245,16 @@ static void sync_with_command(model_t *model, uint16_t command) {
         case PROGRAM_STEP_TYPE_COOLING: {
             msg.as.sync.rotation_running_time = step.cooling.rotation_time;
             msg.as.sync.rotation_pause_time   = step.cooling.pause_time;
-            msg.as.sync.duration              = step.cooling.duration;
+            msg.as.sync.duration              = step.cooling.duration * 60;
 
             msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 8);
             break;
         }
 
         case PROGRAM_STEP_TYPE_ANTIFOLD: {
-            msg.as.sync.duration              = step.antifold.max_duration == 0 ? 0xFFFF : step.antifold.max_duration;
-            msg.as.sync.start_delay           = step.antifold.start_delay;
-            msg.as.sync.max_cycles            = step.antifold.max_cycles;
+            msg.as.sync.duration    = step.antifold.max_duration == 0 ? 0xFFFF : step.antifold.max_duration * 60;
+            msg.as.sync.start_delay = step.antifold.start_delay;
+            msg.as.sync.max_cycles  = step.antifold.max_cycles;
             msg.as.sync.rotation_running_time = step.antifold.rotation_time;
             msg.as.sync.rotation_pause_time   = step.antifold.pause_time;
             msg.as.sync.rotation_speed        = step.antifold.speed;
@@ -397,6 +397,8 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
                     message.as.sync.step_type,
                     message.as.sync.command,
                 };
+
+                // ESP_LOGI(TAG, "test %i", message.as.sync.test_mode);
 
                 if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
                                             sizeof(values) / sizeof(values[0]))) {

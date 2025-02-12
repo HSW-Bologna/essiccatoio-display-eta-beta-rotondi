@@ -545,6 +545,18 @@ uint8_t model_should_open_porthole(model_t *model) {
 }
 
 
+uint8_t model_is_free(model_t *model) {
+    assert(model != NULL);
+
+    switch (model->config.parmac.payment_type) {
+        case PAYMENT_TYPE_NONE:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+
 uint8_t model_is_minimum_credit_reached(model_t *model) {
     assert(model != NULL);
 

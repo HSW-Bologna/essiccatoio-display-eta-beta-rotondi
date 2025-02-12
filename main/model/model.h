@@ -288,6 +288,7 @@ uint16_t         model_get_time_for_credit(model_t *model);
 uint16_t         model_get_credit(model_t *model);
 uint8_t          model_is_cycle_waiting_to_start(model_t *model);
 int16_t          model_get_temperature_setpoint(model_t *model);
+uint8_t          model_is_free(model_t *model);
 
 
 #endif
