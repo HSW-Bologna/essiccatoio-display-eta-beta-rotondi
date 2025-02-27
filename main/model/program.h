@@ -57,11 +57,9 @@ typedef struct {
 
 typedef struct {
     uint16_t max_duration;
-    uint16_t max_cycles;
     uint16_t speed;
     uint16_t rotation_time;
     uint16_t pause_time;
-    uint16_t start_delay;
 } program_antifold_parameters_t;
 
 

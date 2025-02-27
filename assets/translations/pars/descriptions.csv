@@ -26,7 +26,6 @@ ISTERESI_RAFFREDDAMENTO, Isteresi raffreddamento, Cooling hysteresis
 UMIDITA, Umidita, Humidity
 RISCALDAMENTO_PROGRESSIVO, Riscaldamento progressivo, Progressive heating
 DURATA_MASSIMA, Durata massima, Max duration
-CICLI_MASSIMI, Cicli massimi, Max cycles
 TEMPO_DI_RITARDO, Tempo di ritardo, Delay time
 VELOCITA, Velocita', Speed
 TIPO, Tipo, Type

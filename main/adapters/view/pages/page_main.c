@@ -238,7 +238,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case VIEW_EVENT_TAG_PAGE_WATCHER: {
                     switch (view_event->as.page_watcher.code) {
                         case WATCH_STATE_ID:
-                            if (model_is_cycle_active(model)) {
+                            if (!model_is_cycle_stopped(model)) {
                                 pman_timer_reset(pdata->timer_restore_language);
                                 pman_timer_pause(pdata->timer_restore_language);
                             } else {
@@ -624,7 +624,7 @@ static void update_info(model_t *model, struct page_data *pdata) {
     lv_label_set_text_fmt(pdata->label_time, "%02i:%02i", minutes, seconds);
 
     if (model->run.minion.read.alarms == 0) {
-        if (model_is_cycle_active(model)) {
+        if (!model_is_cycle_stopped(model)) {
             lv_label_set_text(pdata->label_status,
                               view_intl_get_string_in_language(language, STRINGS_ASCIUGATURA_IN_CORSO));
         } else {

@@ -32,7 +32,6 @@ static void save_program(pman_handle_t handle, uint16_t program_index);
 static void commissioning_done(pman_handle_t handle);
 static void factory_reset(pman_handle_t handle);
 static void update_firmware(pman_handle_t handle);
-static void reset(pman_handle_t handle);
 
 
 static const char *TAG = "Gui";
@@ -146,7 +145,7 @@ static void save_parmac(pman_handle_t handle) {
 
     model_reset_temporary_language(model);
     configuration_save_parmac(&model->config.parmac);
-    controller_sync_minion(model);
+    minion_clear_alarms(model);
 }
 
 
@@ -157,6 +156,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
     model_select_program(model, program_index);
     controller_sync_minion(model);
     if (model_is_cycle_stopped(model) && model->run.minion.communication_enabled) {
+        model->run.should_open_porthole = 1;
         minion_resume_program(model, 1);
     }
 }
@@ -165,6 +165,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index) {
 static void resume_cycle(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
     if (model->run.minion.communication_enabled) {
+        model->run.should_open_porthole = 1;
         minion_resume_program(model, 1);
     }
 }
@@ -248,8 +249,24 @@ static void save_program(pman_handle_t handle, uint16_t program_index) {
 
 static void commissioning_done(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
+
+    // Save just the logo and language options, set during commissioning
+    uint16_t logo     = model->config.parmac.logo;
+    uint16_t language = model->config.parmac.language;
+    model_init_parameters(model);
+    model->config.parmac.logo     = logo;
+    model->config.parmac.language = language;
+
     configuration_save_parmac(&model->config.parmac);
+    for (uint16_t i = 0; i < BASE_PROGRAMS_NUM; i++) {
+        configuration_update_program(model_get_program(model, i));
+    }
+    configuration_update_index(model->config.programs, model->config.num_programs);
+
     configuration_commissioned(1);
+
+    minion_clear_alarms(model);
+    bsp_system_reset();
 }
 
 
@@ -266,10 +283,4 @@ static void factory_reset(pman_handle_t handle) {
 static void update_firmware(pman_handle_t handle) {
     (void)handle;
     fup_proceed();
-}
-
-
-static void reset(pman_handle_t handle) {
-    (void)handle;
-    bsp_system_reset();
 }

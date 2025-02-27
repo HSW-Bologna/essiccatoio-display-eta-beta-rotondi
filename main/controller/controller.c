@@ -15,6 +15,7 @@
 static struct {
     timestamp_t minion_sync_ts;
     uint8_t     handshook;
+    uint16_t    postpone_alarms_counter;
 } state = {0};
 
 
@@ -39,8 +40,6 @@ void controller_process_message(pman_handle_t handle, void *msg) {
 
 
 void controller_manage(mut_model_t *model) {
-    (void)model;
-
     controller_gui_manage();
     view_manage(model);
 
@@ -53,7 +52,7 @@ void controller_manage(mut_model_t *model) {
                     break;
 
                 case MINION_RESPONSE_TAG_SYNC: {
-                    uint16_t previous_credit = model_get_credit(model);
+                    uint16_t      previous_credit      = model_get_credit(model);
                     cycle_state_t previous_cycle_state = model->run.minion.read.cycle_state;
 
                     model->run.minion.read.firmware_version_major = response.as.sync.firmware_version_major;
@@ -84,17 +83,42 @@ void controller_manage(mut_model_t *model) {
 
                     // A coin was received, increase the running time
                     if (current_credit > previous_credit) {
-                        if (model_is_cycle_paused(model) || model_is_cycle_running(model) ||
-                            model_is_cycle_waiting_to_start(model)) {
-                            minion_increase_duration((current_credit - previous_credit) *
-                                                     model->config.parmac.time_per_coin);
-                            minion_sync(model);
+                        if (!model_is_cycle_stopped(model)) {
+                            switch (model_get_current_step(model).type) {
+                                // If we are already drying just increase the duration
+                                case PROGRAM_STEP_TYPE_DRYING: {
+                                    minion_increase_duration((current_credit - previous_credit) *
+                                                             model->config.parmac.time_per_coin);
+                                    minion_sync(model);
+                                    break;
+                                }
+
+                                // In cooling go back to drying with the specified credit
+                                case PROGRAM_STEP_TYPE_COOLING: {
+                                    model_return_to_drying(model);
+                                    minion_change_step(model);
+                                    minion_sync(model);
+                                    break;
+                                }
+
+                                // In antifold do nothing; the credit should be kept for the next cycle
+                                case PROGRAM_STEP_TYPE_ANTIFOLD: {
+                                    break;
+                                }
+                            }
                         }
                     }
 
                     // The cycle has started
-                    if (previous_cycle_state != model->run.minion.read.cycle_state && previous_cycle_state == CYCLE_STATE_STOPPED) {
-                        model->run.starting_temperature = model->run.minion.read.default_temperature;
+                    if (previous_cycle_state != model->run.minion.read.cycle_state) {
+                        switch (previous_cycle_state) {
+                            case CYCLE_STATE_STOPPED:
+                                model->run.starting_temperature = model->run.minion.read.default_temperature;
+                                break;
+
+                            default:
+                                break;
+                        }
                     }
 
                     if (model_is_porthole_open(model)) {
@@ -104,7 +128,6 @@ void controller_manage(mut_model_t *model) {
                     // Program finished
                     if (model_is_program_done(model)) {
                         ESP_LOGI(TAG, "Program done!");
-                        model_reset_program(model);
                         minion_program_done(model);
                     }
                     // Currently waiting
@@ -113,10 +136,16 @@ void controller_manage(mut_model_t *model) {
                         model_move_to_next_step(model);
                         minion_resume_program(model, 0);
                     }
+
+                    if (model_is_cycle_stopped(model)) {
+                        model_reset_program(model);
+                    }
                     break;
                 }
 
                 case MINION_RESPONSE_TAG_HANDSHAKE: {
+                    ESP_LOGI(TAG, "Handshake: %i %i %i", response.as.handshake.cycle_state,
+                             response.as.handshake.program_index, response.as.handshake.step_index);
                     if (response.as.handshake.cycle_state != CYCLE_STATE_STOPPED) {
                         model_select_program(model, response.as.handshake.program_index);
                         model_select_step(model, response.as.handshake.step_index);
@@ -172,7 +201,7 @@ void controller_manage(mut_model_t *model) {
         }
         // Handshake message
         else if (boot_wait_counter > boot_target_counter) {
-            minion_handshake();
+            minion_handshake(model);
             initialized          = 1;
             state.minion_sync_ts = timestamp_get();
         }

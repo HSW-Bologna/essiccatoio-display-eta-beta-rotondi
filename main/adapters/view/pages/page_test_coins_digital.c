@@ -98,6 +98,7 @@ static void open_page(pman_handle_t handle, void *state) {
     }
 
     VIEW_ADD_WATCHED_VARIABLE(&model->run.test_enable_coin_reader, 0);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.payment, 0);
     VIEW_ADD_WATCHED_ARRAY(model->run.minion.read.coins, DIGITAL_COIN_LINES_NUM, 0);
 
     update_page(model, pdata);

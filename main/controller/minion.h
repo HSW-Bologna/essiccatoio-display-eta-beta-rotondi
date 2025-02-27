@@ -31,6 +31,8 @@ typedef struct {
             uint16_t humidity_probe;
             uint16_t pressure;
             uint16_t payment;
+            uint16_t program_number;
+            uint16_t step_number;
             uint16_t coins[DIGITAL_COIN_LINES_NUM];
 
             cycle_state_t cycle_state;
@@ -57,9 +59,11 @@ void    minion_retry_communication(void);
 void    minion_pause_program(void);
 void    minion_program_done(model_t *model);
 void    minion_resume_program(model_t *model, uint8_t clear_alarms);
-void    minion_handshake(void);
 void    minion_clear_coins(void);
 void    minion_increase_duration(uint16_t seconds);
+void    minion_change_step(model_t *model);
+void    minion_clear_alarms(model_t *model);
+void    minion_handshake(model_t *model);
 
 
 #endif

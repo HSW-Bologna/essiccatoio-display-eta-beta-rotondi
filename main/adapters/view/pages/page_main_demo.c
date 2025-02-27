@@ -28,7 +28,7 @@ LV_IMG_DECLARE(img_stop_released_demo);
 
 #define SETTINGS_DRAG_WIDTH    64
 #define SETTINGS_DRAG_HEIGHT   32
-#define SETTINGS_DRAWER_WIDTH  128
+#define SETTINGS_DRAWER_WIDTH  100
 #define SETTINGS_DRAWER_HEIGHT 100
 #define SETTINGS_BTN_WIDTH     64
 
@@ -309,7 +309,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case VIEW_EVENT_TAG_PAGE_WATCHER: {
                     switch (view_event->as.page_watcher.code) {
                         case WATCH_STATE_ID:
-                            if (model_is_cycle_active(model)) {
+                            if (!model_is_cycle_stopped(model)) {
                                 pman_timer_reset(pdata->timer_restore_language);
                                 pman_timer_pause(pdata->timer_restore_language);
                             } else {
@@ -389,9 +389,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                         }
 
                         case BTN_PROGRAM_ID:
+                            pdata->alarm_pacified = 1;
                             if (model_is_cycle_paused(model) && obj_data->number == model->run.current_program_index) {
                                 view_get_protocol(handle)->resume_cycle(handle);
-                            } else if (model_is_cycle_active(model) || model_is_minimum_credit_reached(model) > 0) {
+                            } else if (!model_is_cycle_stopped(model) || model_is_minimum_credit_reached(model) > 0) {
                                 view_get_protocol(handle)->start_program(handle, obj_data->number);
                             }
                             break;
@@ -434,7 +435,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 timestamp_is_expired(pdata->button_ts,
                                                      model->config.parmac.stop_button_time * 1000UL)) {
                                 view_get_protocol(handle)->stop_cycle(handle);
-                            } else if (model_is_cycle_running(model) &&
+                            } else if (model_is_cycle_active(model) &&
                                        timestamp_is_expired(pdata->button_ts,
                                                             model->config.parmac.pause_button_time * 1000UL)) {
                                 view_get_protocol(handle)->pause_cycle(handle);
@@ -443,7 +444,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             break;
 
                         case OBJ_SETTINGS_ID: {
-                            if (model_is_cycle_active(model)) {
+                            if (!model_is_cycle_stopped(model)) {
 
                             } else {
                                 lv_indev_t *indev = lv_indev_get_act();
@@ -471,10 +472,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_RELEASED: {
                     switch (obj_data->id) {
                         case BTN_STOP_ID: {
-                            if (model_is_cycle_running(model)) {
-                                lv_image_set_src(pdata->image_stop, &img_pause_released_demo);
-                            } else {
+                            if (model_is_cycle_paused(model)) {
                                 lv_image_set_src(pdata->image_stop, &img_stop_released_demo);
+                            } else {
+                                lv_image_set_src(pdata->image_stop, &img_pause_released_demo);
                             }
                             break;
                         }
@@ -529,7 +530,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
         lv_image_set_src(pdata->image_stop, lv_obj_has_state(pdata->image_stop, LV_STATE_PRESSED)
                                                 ? &img_stop_pressed_demo
                                                 : &img_stop_released_demo);
-    } else if (model_is_cycle_active(model)) {
+    } else if (!model_is_cycle_stopped(model)) {
         view_common_set_hidden(pdata->image_stop, 0);
         lv_image_set_src(pdata->image_stop, lv_obj_has_state(pdata->image_stop, LV_STATE_PRESSED)
                                                 ? &img_pause_pressed_demo
@@ -542,7 +543,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
         lv_label_set_text_fmt(pdata->labels[program_index], "%i°",
                               model_get_program_display_temperature(model, program_index));
 
-        if (model_is_cycle_active(model)) {
+        if (!model_is_cycle_stopped(model)) {
             lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_DISABLED);
             if (program_index == model->run.current_program_index) {
                 lv_obj_add_state(pdata->buttons[program_index], LV_STATE_CHECKED);
@@ -561,7 +562,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
     if (model->run.minion.read.alarms == 0) {
         if (model_is_porthole_open(model)) {
             lv_label_set_text(pdata->label_status, view_intl_get_string_in_language(language, STRINGS_OBLO_APERTO));
-        } else if (model_is_cycle_active(model)) {
+        } else if (!model_is_cycle_stopped(model)) {
             program_step_t step = model_get_current_step(model);
 
             // If the cycle is running but I should advise to open the porthole alternate that and the normal status
@@ -571,7 +572,15 @@ static void update_page(model_t *model, struct page_data *pdata) {
             }
             // Paused
             else if (model_is_cycle_paused(model)) {
-                lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_PAUSA_LAVORO));
+                if (step.type == PROGRAM_STEP_TYPE_ANTIFOLD) {
+                    lv_label_set_text(pdata->label_status, view_intl_get_string(model, STRINGS_PAUSA_LAVORO));
+                } else {
+                    uint16_t minutes = model->run.minion.read.remaining_time_seconds / 60;
+                    uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
+
+                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i",
+                                          view_intl_get_string(model, STRINGS_PAUSA_LAVORO), minutes, seconds);
+                }
             }
             // The step is neverending, just show the name
             else if (model_is_step_endless(model)) {
@@ -622,7 +631,15 @@ static void update_page(model_t *model, struct page_data *pdata) {
             }
         }
     } else {
-        view_common_format_alarm(pdata->label_status, pdata->last_alarm, language);
+        if (!model_is_free(model) &&
+            (model_is_minimum_credit_reached(model) &&
+             (model->config.parmac.minimum_coins > 0 || model_get_credit(model) > 0)) &&
+            pdata->blink) {
+            uint16_t seconds = model_get_time_for_credit(model);
+            lv_label_set_text_fmt(pdata->label_status, "%02i:%02i", seconds / 60, seconds % 60);
+        } else {
+            view_common_format_alarm(pdata->label_status, pdata->last_alarm, language);
+        }
     }
 
     const lv_img_dsc_t *language_icons[2] = {&img_marble_italiano, &img_marble_english};
@@ -652,7 +669,7 @@ static const char *get_step_string(program_step_type_t type, uint16_t language) 
 static void handle_alarm(model_t *model, struct page_data *pdata) {
     if (pdata->alarm_pacified && model_is_any_alarm_active(model)) {
         pdata->last_alarm = model->run.minion.read.alarms;
-    } else if (pdata->last_alarm != model->run.minion.read.alarms) {
+    } else if (pdata->last_alarm != model->run.minion.read.alarms && model_is_any_alarm_active(model)) {
         pdata->alarm_pacified = 0;
     }
     if (model_is_any_alarm_active(model)) {

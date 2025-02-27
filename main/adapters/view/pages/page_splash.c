@@ -58,7 +58,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_style_bg_color(cont, VIEW_STYLE_COLOR_WHITE, LV_STATE_DEFAULT);
 
     if (model->config.parmac.logo > 0 &&
-        model->config.parmac.logo < (sizeof(img_dsc_logos) / sizeof(img_dsc_logos[0]))) {
+        model->config.parmac.logo <= (sizeof(img_dsc_logos) / sizeof(img_dsc_logos[0]))) {
         lv_obj_t *image = lv_image_create(cont);
         lv_img_set_src(image, img_dsc_logos[model->config.parmac.logo - 1]);
         lv_obj_center(image);
@@ -142,8 +142,8 @@ static void close_page(void *state) {
 
 void destroy_page(void *state, void *extra) {
     (void)extra;
-    struct page_data *pdata = state;
-    pman_timer_delete(pdata->timer);
+    //struct page_data *pdata = state;
+    //pman_timer_delete(pdata->timer);
     lv_free(state);
 }
 

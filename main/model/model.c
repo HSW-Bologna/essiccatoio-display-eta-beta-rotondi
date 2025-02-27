@@ -151,7 +151,6 @@ uint8_t model_is_cycle_active(model_t *model) {
         case CYCLE_STATE_STANDBY:
         case CYCLE_STATE_RUNNING:
         case CYCLE_STATE_WAIT_START:
-        case CYCLE_STATE_PAUSED:
             return 1;
 
         default:
@@ -159,6 +158,12 @@ uint8_t model_is_cycle_active(model_t *model) {
     }
 
     return 0;
+}
+
+
+uint8_t model_is_cycle_stopped(model_t *model) {
+    assert(model != NULL);
+    return model->run.minion.read.cycle_state == CYCLE_STATE_STOPPED;
 }
 
 
@@ -177,12 +182,6 @@ uint8_t model_is_cycle_running(model_t *model) {
 uint8_t model_is_cycle_waiting_to_start(model_t *model) {
     assert(model != NULL);
     return model->run.minion.read.cycle_state == CYCLE_STATE_WAIT_START;
-}
-
-
-uint8_t model_is_cycle_stopped(model_t *model) {
-    assert(model != NULL);
-    return model->run.minion.read.cycle_state == CYCLE_STATE_STOPPED;
 }
 
 
@@ -418,6 +417,14 @@ uint8_t model_should_enable_coin_reader(model_t *model) {
 }
 
 
+void model_return_to_drying(mut_model_t *model) {
+    assert(model);
+    if (model->run.minion.read.cycle_state != CYCLE_STATE_STOPPED) {
+        model->run.current_step_index = 0;
+    }
+}
+
+
 void model_move_to_next_step(mut_model_t *model) {
     assert(model);
     const program_t *program = model_get_program(model, model->run.current_program_index);
@@ -429,8 +436,7 @@ void model_move_to_next_step(mut_model_t *model) {
 
 void model_reset_program(mut_model_t *model) {
     assert(model);
-    model->run.should_open_porthole = 1;
-    model->run.current_step_index   = 0;
+    model->run.current_step_index = 0;
 }
 
 
@@ -534,7 +540,8 @@ uint16_t model_get_maximum_temperature(model_t *model) {
 uint8_t model_should_open_porthole(model_t *model) {
     assert(model != NULL);
 
-    if (model_get_time_for_credit(model) > 0) {
+    // If I have credit while stopped I should never show this message
+    if (model_get_time_for_credit(model) > 0 && model->run.minion.read.cycle_state == CYCLE_STATE_STOPPED) {
         return 0;
     } else if (model_is_cycle_stopped(model)) {
         return model->run.should_open_porthole;
@@ -653,5 +660,299 @@ int16_t model_get_temperature_setpoint(model_t *model) {
         default:
             return 0;
             break;
+    }
+}
+
+
+static void parameter_initialization_1(mut_model_t *model) {     // SELF
+    model->config.parmac.payment_type = PAYMENT_TYPE_NC;
+    // model->pmac.abilita_tasto_menu                  = 0;
+    model->config.parmac.abilita_visualizzazione_temperatura = 0;
+    model->config.parmac.cycle_reset_time                    = 5 * 60;
+}
+
+static void parameter_initialization_2(mut_model_t *model) {     // OPL/LAB
+    model->config.parmac.payment_type = PAYMENT_TYPE_NONE;
+    // model->pmac.abilita_tasto_menu                  = 1;
+    model->config.parmac.abilita_visualizzazione_temperatura = 1;
+    model->config.parmac.cycle_reset_time                    = 3 * 60;
+}
+
+
+void model_init_parameters(mut_model_t *model) {
+    assert(model != NULL);
+
+    parmac_init(model, 1);
+
+    uint8_t tipo = 0;
+    uint8_t self = 0;
+    switch (model->config.machine_model) {
+        case MACHINE_MODEL_TEST: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 1;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.cycle_reset_time   = 0;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_SELF_CA: {
+            self                                    = 1;
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_GAS;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_LAB_CA: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RG_SELF_CA: {
+            self                                    = 1;
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_GAS;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RG_LAB_CA: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_GAS;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_SELF_CA: {
+            self                                    = 1;
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_LAB_CA: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_SELF_CC: {
+            self                                    = 1;
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_SELF_CC: {
+            self                                    = 1;
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_LAB_CC: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_LAB_CC: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RP_SELF_CA: {
+            self                                    = 1;
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RP_LAB_CA: {
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RP_SELF_CC: {
+            self                                    = 1;
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_1(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RP_LAB_CC: {
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_OUTPUT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_LAB_TH_CA: {
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_SHT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RG_LAB_TH_CA: {
+            tipo                                    = 0;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_GAS;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_SHT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_LAB_TH_CA: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_SHT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RE_LAB_TH_CC: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_SHT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        case MACHINE_MODEL_EDS_RV_LAB_TH_CC: {
+            tipo                                    = 1;
+            model->config.parmac.stop_time_in_pause = 0;     // -TODO da 1 a 0 03-05-2022
+            model->config.parmac.heating_type       = HEATING_TYPE_ELECTRIC;
+            model->config.parmac.temperature_probe  = TEMPERATURE_PROBE_SHT;
+            parameter_initialization_2(model);
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    if (self) {
+        model->config.parmac.pause_button_time = 2;
+        model->config.parmac.stop_button_time  = 5;
+    }
+
+    if (model->config.machine_model != MACHINE_MODEL_TEST) {
+        model->config.parmac.cycle_reset_time          = 10 * 60;
+        model->config.parmac.time_per_coin             = 10 * 60;
+        model->config.parmac.reset_language_time       = 5;
+        model->config.parmac.access_level              = USER_ACCESS_LEVEL;
+        model->config.parmac.tempo_allarme_temperatura = 45;
+    }
+
+    uint8_t valori[BASE_PROGRAMS_NUM][16] = {
+        {0, 35, 0, 1, 95, 6, 55, 0, 1, 1, 20, 1, 2, 1, 35, 6}, {0, 40, 0, 1, 95, 6, 55, 0, 1, 1, 20, 1, 2, 1, 35, 6},
+        {0, 40, 0, 1, 95, 6, 55, 0, 1, 1, 20, 1, 2, 1, 35, 6}, {0, 20, 0, 1, 60, 6, 55, 30, 1, 1, 20, 0, 2, 1, 35, 6},
+        {0, 45, 0, 1, 95, 6, 55, 0, 1, 1, 20, 0, 2, 1, 35, 6},
+    };
+
+    if (model->config.parmac.temperature_probe == TEMPERATURE_PROBE_OUTPUT) {
+        valori[BASE_PROGRAM_HOT][7]      = 75;
+        valori[BASE_PROGRAM_WARM][7]     = 65;
+        valori[BASE_PROGRAM_LUKEWARM][7] = 55;
+
+        if (tipo == 0) {
+            valori[BASE_PROGRAM_WOOL][7] = 35;
+        } else {
+            valori[BASE_PROGRAM_WOOL][7] = 50;
+        }
+    } else {
+        valori[BASE_PROGRAM_HOT][7]      = 110;
+        valori[BASE_PROGRAM_WARM][7]     = 95;
+        valori[BASE_PROGRAM_LUKEWARM][7] = 85;
+        valori[BASE_PROGRAM_WOOL][7]     = 70;
+    }
+
+    if (model->config.machine_model >= MACHINE_MODEL_EDS_RE_LAB_TH_CA) {
+        for (size_t i = 0; i < BASE_PROGRAMS_NUM; i++) {
+            valori[i][0] = 1;
+            valori[i][1] = 3;
+        }
+    }
+
+    model_init_default_programs(model);
+
+    for (size_t i = 0; i < BASE_PROGRAMS_NUM; i++) {
+        size_t j = 0;
+
+        program_t *program = &model->config.programs[i];
+
+        program->num_drying_steps = 1;
+
+        program->antifold_step.max_duration  = 3;
+        program->antifold_step.rotation_time = 5;
+        program->antifold_step.pause_time    = 40;
+        program->antifold_step.speed         = 55;
+
+        program->steps[0].type                           = valori[i][j++];
+        program->steps[0].duration                       = valori[i][j++];
+        program->steps[0].enable_waiting_for_temperature = valori[i][j++];
+        program->steps[0].enable_reverse                 = valori[i][j++];
+        program->steps[0].rotation_time                  = valori[i][j++];
+        program->steps[0].pause_time                     = valori[i][j++];
+        program->steps[0].speed                          = valori[i][j++];
+        program->steps[0].temperature                    = valori[i][j++];
+        program->steps[0].heating_hysteresis             = valori[i][j++];
+        program->steps[0].cooling_hysteresis             = valori[i][j++];
+        program->steps[0].humidity                       = valori[i][j++];
+
+        program->cooling_enabled             = valori[i][j++];
+        program->cooling_step.duration       = valori[i][j++];
+        program->cooling_step.enable_reverse = valori[i][j++];
+        program->cooling_step.rotation_time  = valori[i][j++];
+        program->cooling_step.pause_time     = valori[i][j++];
+
+        program->antifold_enabled = 1;
     }
 }

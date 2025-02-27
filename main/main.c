@@ -34,6 +34,7 @@ void app_main(void) {
     bsp_tft_touch_init();
     bsp_rs232_init();
     msc_init();
+    ESP_LOGI(TAG, "BSP initialized");
 
     model_init(model);
     view_init(model, controller_process_message, bsp_tft_display_lvgl_flush_cb, bsp_tft_touch_read,

@@ -206,11 +206,9 @@ static int serialize_antifold_step(uint8_t *buffer, const program_antifold_param
     int i = 0;
 
     i += serialize_uint16_be(&buffer[i], s->max_duration);
-    i += serialize_uint16_be(&buffer[i], s->max_cycles);
     i += serialize_uint16_be(&buffer[i], s->speed);
     i += serialize_uint16_be(&buffer[i], s->rotation_time);
     i += serialize_uint16_be(&buffer[i], s->pause_time);
-    i += serialize_uint16_be(&buffer[i], s->start_delay);
 
     assert(i <= STEP_SIZE);
     return STEP_SIZE;     // Allow for some margin
@@ -221,11 +219,9 @@ int deserialize_antifold_step(program_antifold_parameters_t *s, uint8_t *buffer)
     int i = 0;
 
     i += deserialize_uint16_be(&s->max_duration, &buffer[i]);
-    i += deserialize_uint16_be(&s->max_cycles, &buffer[i]);
     i += deserialize_uint16_be(&s->speed, &buffer[i]);
     i += deserialize_uint16_be(&s->rotation_time, &buffer[i]);
     i += deserialize_uint16_be(&s->pause_time, &buffer[i]);
-    i += deserialize_uint16_be(&s->start_delay, &buffer[i]);
 
     assert(i <= STEP_SIZE);
     return STEP_SIZE;     // Allow for some margin

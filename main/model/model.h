@@ -14,6 +14,16 @@
 
 
 typedef enum {
+    DIRECTION_NC = 0,
+    DIRECTION_NA = 1,
+} direction_t;
+
+typedef enum {
+    HEATING_TYPE_ELECTRIC = 0,
+    HEATING_TYPE_GAS,
+} heating_type_t;
+
+typedef enum {
     CREDIT_REQUEST_TYPE_INSERT_TOKEN = 0,
     CREDIT_REQUEST_TYPE_INSERT_COIN,
     CREDIT_REQUEST_TYPE_PAY_AT_DESK,
@@ -87,11 +97,11 @@ typedef enum {
 
 
 typedef enum {
-    BASE_PROGRAM_WOOL = 0,
-    BASE_PROGRAM_COLD,
-    BASE_PROGRAM_LUKEWARM,
+    BASE_PROGRAM_HOT = 0,
     BASE_PROGRAM_WARM,
-    BASE_PROGRAM_HOT,
+    BASE_PROGRAM_LUKEWARM,
+    BASE_PROGRAM_COLD,
+    BASE_PROGRAM_WOOL,
 #define BASE_PROGRAMS_NUM 5
 } base_program_t;
 
@@ -289,6 +299,8 @@ uint16_t         model_get_credit(model_t *model);
 uint8_t          model_is_cycle_waiting_to_start(model_t *model);
 int16_t          model_get_temperature_setpoint(model_t *model);
 uint8_t          model_is_free(model_t *model);
+void             model_return_to_drying(mut_model_t *model);
+void             model_init_parameters(mut_model_t *model);
 
 
 #endif

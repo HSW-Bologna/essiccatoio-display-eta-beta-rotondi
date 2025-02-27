@@ -387,7 +387,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                         case BTN_MODIFY_ID: {
                             if (pdata->selected_step >= 0) {
                                 uint16_t absolute_index = absolute_step_index(pdata);
-                                ESP_LOGI(TAG, "%i %i", absolute_index, program->num_drying_steps);
 
                                 // Drying step
                                 if (absolute_index < program->num_drying_steps) {

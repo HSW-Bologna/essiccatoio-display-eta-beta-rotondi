@@ -73,11 +73,9 @@ void parlav_init_antifold(mut_model_t *model, program_antifold_parameters_t *p) 
 
     // clang-format off
     ps[i++] = PARAMETER(&p->max_duration,                          0,     250,    0,    FFINT(PARS_DESCRIPTIONS_DURATA_MASSIMA, fmt_min),          USER_BITS);
-    ps[i++] = PARAMETER(&p->max_cycles,                          0,     20,    2,    FINT(PARS_DESCRIPTIONS_CICLI_MASSIMI),          USER_BITS);
     ps[i++] = PARAMETER(&p->speed,    model->config.parmac.minimum_speed,     model->config.parmac.maximum_speed,     15,     FFINT(PARS_DESCRIPTIONS_VELOCITA, "%i rpm"),        USER_BITS);
     ps[i++] = PARAMETER(&p->rotation_time,    1,     99,     4,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_ROTAZIONE),        USER_BITS);
     ps[i++] = PARAMETER(&p->pause_time,    0,     99,     1,     FTIME(PARS_DESCRIPTIONS_TEMPO_DI_PAUSA),        USER_BITS);
-    ps[i++] = PARAMETER(&p->start_delay,                          0,     250,    5,    FFINT(PARS_DESCRIPTIONS_TEMPO_DI_RITARDO, fmt_min),          USER_BITS);
     // clang-format on
 
     assert(i <= NUM_PARAMETERS);
