@@ -69,3 +69,19 @@ PAGARE_CASSA, Pagare cassa, Pay at desk
 INSERIRE_GETTONE, Inserire gettone, Insert token
 INSERIRE_MONETA, Inserire moneta, Insert coin
 PAUSA_LAVORO, Pausa lavoro, Paused
+NESSUN_PARAMETRO, Nessun parametro, No parameter
+PASSWORD, Password, Password
+ATTESA_TEMPERATURA, Attesa temp., Waiting for temp.
+CONTROLLO_UMIDITA, Controllo umidita', Dry control
+STATISTICHE, Statistiche, Statistics
+CICLI_COMPLETI, Cicli completi, Complete cycles
+CICLI_PARZIALI, Cicli parziali, Partial cycles
+TEMPO_DI_ATTIVITA, Tempo di attivita', Activity time
+TEMPO_DI_LAVORO, Tempo di lavoro, Work time
+TEMPO_DI_ROTAZIONE, Tempo di rotazione, Rotation time
+TEMPO_DI_VENTILAZIONE, Tempo di ventilazione, Ventilation time
+TEMPO_DI_RISCALDAMENTO, Tempo di riscaldamento, Heating time
+UMIDITA, Umidita', Humidity
+VELOCITA, Velocita', Speed
+DURATA, Durata, Duration
+AZZERARE_I_CICLI, Azzerare le statistiche dei cicli?, Clear cycles statistics?

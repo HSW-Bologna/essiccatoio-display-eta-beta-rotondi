@@ -130,6 +130,12 @@ typedef enum {
 
 extern const char *pars_livello_accesso[2][2];
 typedef enum {
+    PARS_TIPO_RISCALDAMENTO_VAPORE_VAPORE = 0,
+    PARS_TIPO_RISCALDAMENTO_VAPORE_GAS,
+} pars_tipo_riscaldamento_vapore_t;
+
+extern const char *pars_tipo_riscaldamento_vapore[2][2];
+typedef enum {
     PARS_LINGUE_ITALIANO = 0,
     PARS_LINGUE_INGLESE,
     PARS_LINGUE_SPAGNOLO,

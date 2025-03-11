@@ -24,6 +24,7 @@ LV_IMG_DECLARE(img_pause_pressed_demo);
 LV_IMG_DECLARE(img_pause_released_demo);
 LV_IMG_DECLARE(img_stop_pressed_demo);
 LV_IMG_DECLARE(img_stop_released_demo);
+LV_IMG_DECLARE(img_menu);
 
 
 #define SETTINGS_DRAG_WIDTH    64
@@ -51,6 +52,7 @@ LV_IMG_DECLARE(img_stop_released_demo);
 enum {
     BTN_PROGRAM_ID,
     BTN_LANGUAGE_ID,
+    BTN_MENU_ID,
     BTN_STOP_ID,
     BTN_ALARM_ID,
     TIMER_CHANGE_PAGE_ID,
@@ -71,6 +73,7 @@ struct page_data {
     lv_obj_t *labels[BASE_PROGRAMS_NUM];
 
     lv_obj_t *image_language;
+    lv_obj_t *image_menu;
     lv_obj_t *image_stop;
 
     lv_obj_t *label_status;
@@ -96,7 +99,7 @@ struct page_data {
 
 static void        update_page(model_t *model, struct page_data *pdata);
 static void        handle_alarm(model_t *model, struct page_data *pdata);
-static const char *get_step_string(program_step_type_t type, uint16_t language);
+static const char *get_step_string(model_t *model, program_step_type_t type, uint16_t language);
 
 
 static void *create_page(pman_handle_t handle, void *extra) {
@@ -226,6 +229,18 @@ static void open_page(pman_handle_t handle, void *state) {
 
             {
                 lv_obj_t *image = lv_image_create(button);
+
+                lv_obj_align(image, LV_ALIGN_TOP_MID, 4, -8);
+                lv_obj_remove_flag(button, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_add_flag(image, LV_OBJ_FLAG_CLICKABLE);
+                view_register_object_default_callback(image, BTN_MENU_ID);
+                lv_image_set_src(image, &img_menu);
+
+                pdata->image_menu = image;
+            }
+
+            {
+                lv_obj_t *image = lv_image_create(button);
                 lv_image_set_src(image, &img_pause_released_demo);
                 lv_obj_add_flag(image, LV_OBJ_FLAG_CLICKABLE);
                 view_register_object_default_callback(image, BTN_STOP_ID);
@@ -238,7 +253,7 @@ static void open_page(pman_handle_t handle, void *state) {
     }
 
     lv_obj_t *lbl = lv_label_create(cont);
-    lv_obj_set_style_text_font(lbl, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(lbl, STYLE_FONT_COMPACT, LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(lbl, lv_color_black(), LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
     lv_label_set_long_mode(lbl, LV_LABEL_LONG_WRAP);
@@ -338,11 +353,15 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
         case PMAN_EVENT_TAG_TIMER: {
             switch ((int)(uintptr_t)event.as.timer->user_data) {
                 case TIMER_CHANGE_PAGE_ID: {
-                    pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_menu);
-                    password_page_options_t *opts =
-                        view_common_default_password_page_options(pw_msg, (const char *)APP_CONFIG_PASSWORD);
-                    msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
-                    pman_timer_pause(pdata->timer_change_page);
+                    if (strlen(model->config.password) > 0) {
+                        pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_menu);
+                        password_page_options_t *opts =
+                            view_common_default_password_page_options(pw_msg, model->config.password);
+                        msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
+                        pman_timer_pause(pdata->timer_change_page);
+                    } else {
+                        msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_menu);
+                    }
                     break;
                 }
 
@@ -390,10 +409,16 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_PROGRAM_ID:
                             pdata->alarm_pacified = 1;
-                            if (model_is_cycle_paused(model) && obj_data->number == model->run.current_program_index) {
-                                view_get_protocol(handle)->resume_cycle(handle);
-                            } else if (!model_is_cycle_stopped(model) || model_is_minimum_credit_reached(model) > 0) {
-                                view_get_protocol(handle)->start_program(handle, obj_data->number);
+                            if (model_is_any_alarm_active(model)) {
+                                view_get_protocol(handle)->clear_alarms(handle);
+                            } else if (model_is_minimum_credit_reached(model) || !model_is_cycle_stopped(model)) {
+                                if (model_is_cycle_paused(model) &&
+                                    obj_data->number == model->run.current_program_index) {
+                                    view_get_protocol(handle)->resume_cycle(handle);
+                                } else if (!model_is_cycle_stopped(model) ||
+                                           model_is_minimum_credit_reached(model) > 0) {
+                                    view_get_protocol(handle)->start_program(handle, obj_data->number);
+                                }
                             }
                             break;
 
@@ -401,6 +426,13 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             pman_timer_resume(pdata->timer_restore_language);
                             model->run.temporary_language = (model->run.temporary_language + 1) % LANGUAGES_NUM;
                             update_page(model, pdata);
+                            break;
+                        }
+
+                        case BTN_MENU_ID: {
+                            if (!model_is_cycle_stopped(model)) {
+                                msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_work_parameters);
+                            }
                             break;
                         }
 
@@ -515,7 +547,9 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    language_t language = model->run.temporary_language;
+    // In self service you can change the main page language separately; in all other scenarios use the system's
+    // language
+    language_t language = model_is_self_service(model) ? model->run.temporary_language : model->config.parmac.language;
 
     if (model_is_cycle_stopped(model)) {
         lv_obj_set_width(pdata->label_status, LV_HOR_RES);
@@ -543,8 +577,15 @@ static void update_page(model_t *model, struct page_data *pdata) {
         lv_label_set_text_fmt(pdata->labels[program_index], "%i°",
                               model_get_program_display_temperature(model, program_index));
 
+        const program_t *program = model_get_program(model, program_index);
+        // Automatic programs are colored light green
+        if (model->config.parmac.temperature_probe == TEMPERATURE_PROBE_SHT && program_is_automatic(program)) {
+            lv_obj_set_style_bg_color(pdata->buttons[program_index], VIEW_STYLE_COLOR_LIGHT_GREEN, LV_STATE_DEFAULT);
+        } else {
+            lv_obj_set_style_bg_color(pdata->buttons[program_index], VIEW_STYLE_COLOR_WHITE, LV_STATE_DEFAULT);
+        }
+
         if (!model_is_cycle_stopped(model)) {
-            lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_DISABLED);
             if (program_index == model->run.current_program_index) {
                 lv_obj_add_state(pdata->buttons[program_index], LV_STATE_CHECKED);
             } else {
@@ -552,10 +593,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
             }
         } else if (model_is_minimum_credit_reached(model)) {
             lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_CHECKED);
-            lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_DISABLED);
         } else {
             lv_obj_remove_state(pdata->buttons[program_index], LV_STATE_CHECKED);
-            lv_obj_add_state(pdata->buttons[program_index], LV_STATE_DISABLED);
         }
     }
 
@@ -584,7 +623,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
             }
             // The step is neverending, just show the name
             else if (model_is_step_endless(model)) {
-                lv_label_set_text(pdata->label_status, get_step_string(step.type, language));
+                lv_label_set_text(pdata->label_status, get_step_string(model, step.type, language));
             }
             // Show step name and time
             else {
@@ -592,12 +631,21 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 uint16_t seconds = model->run.minion.read.remaining_time_seconds % 60;
 
                 if (model->config.parmac.abilita_visualizzazione_temperatura && step.type == PROGRAM_STEP_TYPE_DRYING) {
-                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i\n%2i/%2i °C",
-                                          get_step_string(step.type, language), minutes, seconds,
-                                          model_get_current_temperature(model), model_get_current_setpoint(model));
+                    if (model->config.parmac.temperature_probe == TEMPERATURE_PROBE_SHT) {
+                        lv_label_set_text_fmt(pdata->label_status, "%s\n%02i:%02i %2i/%2i °C  %i%%",
+                                              get_step_string(model, step.type, language), minutes, seconds,
+                                              model_get_current_temperature(model),
+                                              model_get_temperature_setpoint(model),
+                                              model->run.minion.read.humidity_probe / 100);
+                    } else {
+                        lv_label_set_text_fmt(pdata->label_status, "%s\n%02i:%02i %2i/%2i °C",
+                                              get_step_string(model, step.type, language), minutes, seconds,
+                                              model_get_current_temperature(model),
+                                              model_get_temperature_setpoint(model));
+                    }
                 } else {
-                    lv_label_set_text_fmt(pdata->label_status, "%s %02i:%02i", get_step_string(step.type, language),
-                                          minutes, seconds);
+                    lv_label_set_text_fmt(pdata->label_status, "%s\n%02i:%02i",
+                                          get_step_string(model, step.type, language), minutes, seconds);
                 }
             }
         }
@@ -643,7 +691,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
     }
 
     const lv_img_dsc_t *language_icons[2] = {&img_marble_italiano, &img_marble_english};
-    lv_img_set_src(pdata->image_language, language_icons[model->run.temporary_language]);
+    lv_image_set_src(pdata->image_language, language_icons[model->run.temporary_language]);
 
     if (!pdata->alarm_pacified && pdata->last_alarm) {
         view_common_set_hidden(pdata->alarm_popup.blanket, 0);
@@ -657,12 +705,31 @@ static void update_page(model_t *model, struct page_data *pdata) {
     } else {
         lv_led_off(pdata->led_heating);
     }
+
+    if (model_is_self_service(model)) {
+        view_common_set_hidden(pdata->image_language, 0);
+        view_common_set_hidden(pdata->image_menu, 1);
+    } else {
+        view_common_set_hidden(pdata->image_language, 1);
+
+        if (model_is_cycle_stopped(model)) {
+            view_common_set_hidden(pdata->image_menu, 1);
+        } else {
+            view_common_set_hidden(pdata->image_menu, 0);
+        }
+    }
 }
 
 
-static const char *get_step_string(program_step_type_t type, uint16_t language) {
-    strings_t strings[] = {STRINGS_ASCIUGATURA, STRINGS_RAFFREDDAMENTO, STRINGS_ANTIPIEGA};
-    return view_intl_get_string_in_language(language, strings[type]);
+static const char *get_step_string(model_t *model, program_step_type_t type, uint16_t language) {
+    if (model->run.minion.read.held_by_humidity) {
+        return view_intl_get_string_in_language(language, STRINGS_CONTROLLO_UMIDITA);
+    } else if (model->run.minion.read.held_by_temperature) {
+        return view_intl_get_string_in_language(language, STRINGS_ATTESA_TEMPERATURA);
+    } else {
+        strings_t strings[] = {STRINGS_ASCIUGATURA, STRINGS_RAFFREDDAMENTO, STRINGS_ANTIPIEGA};
+        return view_intl_get_string_in_language(language, strings[type]);
+    }
 }
 
 

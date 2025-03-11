@@ -103,6 +103,36 @@ void storage_save_uint64(uint64_t *value, const char *key) {
 }
 
 
+int storage_load_str(void *value, size_t len, const char *key) {
+    (void)len;
+    cJSON *json    = read_database();
+    cJSON *encoded = cJSON_GetObjectItemCaseSensitive(json, key);
+    if (!cJSON_IsString(encoded)) {
+        printf("Mi aspettavo una stringa (b64) per %s\n", key);
+        cJSON_free(encoded);
+        cJSON_free(json);
+        return -1;
+    } else {
+        strcpy(value, encoded->valuestring);
+        cJSON_free(encoded);
+        cJSON_free(json);
+        return 0;
+    }
+}
+
+
+void storage_save_str(void *value, const char *key) {
+    cJSON *json = read_database();
+    cJSON_DeleteItemFromObjectCaseSensitive(json, key);
+    if (cJSON_AddStringToObject(json, key, value) == NULL) {
+        printf("Non sono riuscito ad aggiungere %s", key);
+    } else {
+        write_database(json);
+    }
+    cJSON_free(json);
+}
+
+
 int storage_load_blob(void *value, size_t len, const char *key) {
     cJSON *json    = read_database();
     cJSON *encoded = cJSON_GetObjectItemCaseSensitive(json, key);
@@ -123,7 +153,7 @@ int storage_load_blob(void *value, size_t len, const char *key) {
 
 
 void storage_save_blob(void *value, size_t len, const char *key) {
-    char * encoded = b64_encode((unsigned char *)value, len);
+    char  *encoded = b64_encode((unsigned char *)value, len);
     cJSON *json    = read_database();
     cJSON_DeleteItemFromObjectCaseSensitive(json, key);
     if (cJSON_AddStringToObject(json, key, encoded) == NULL) {

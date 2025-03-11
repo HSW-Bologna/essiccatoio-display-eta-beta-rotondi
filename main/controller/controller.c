@@ -9,7 +9,9 @@
 #include "adapters/view/common.h"
 #include "bsp/msc.h"
 #include "bsp/system.h"
+#include "bsp/tft/display.h"
 #include "services/fup.h"
+#include "observer.h"
 
 
 static struct {
@@ -23,9 +25,10 @@ static const char *TAG = "Controller";
 
 
 void controller_init(mut_model_t *model) {
-    configuration_init();
+    configuration_init(model);
     configuration_load_all_data(model);
     model_check_parameters(model);
+    observer_init(model);
 
     minion_init();
 
@@ -40,6 +43,7 @@ void controller_process_message(pman_handle_t handle, void *msg) {
 
 
 void controller_manage(mut_model_t *model) {
+    observer_manage(model);
     controller_gui_manage();
     view_manage(model);
 
@@ -60,6 +64,8 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.firmware_version_patch = response.as.sync.firmware_version_patch;
                     model->run.minion.read.inputs                 = response.as.sync.inputs;
                     model->run.minion.read.heating                = response.as.sync.heating;
+                    model->run.minion.read.held_by_temperature    = response.as.sync.held_by_temperature;
+                    model->run.minion.read.held_by_humidity       = response.as.sync.held_by_humidity;
                     model->run.minion.read.temperature_1          = response.as.sync.temperature_1;
                     model->run.minion.read.temperature_1_adc      = response.as.sync.temperature_1_adc;
                     model->run.minion.read.temperature_2          = response.as.sync.temperature_2;
@@ -74,6 +80,14 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.remaining_time_seconds = response.as.sync.remaining_time_seconds;
                     model->run.minion.read.alarms                 = response.as.sync.alarms;
                     model->run.minion.read.payment                = response.as.sync.payment;
+
+                    model->run.minion.read.stats.complete_cycles          = response.as.sync.complete_cycles;
+                    model->run.minion.read.stats.partial_cycles           = response.as.sync.partial_cycles;
+                    model->run.minion.read.stats.active_time_seconds      = response.as.sync.active_time_seconds;
+                    model->run.minion.read.stats.work_time_seconds        = response.as.sync.work_time_seconds;
+                    model->run.minion.read.stats.rotation_time_seconds    = response.as.sync.rotation_time_seconds;
+                    model->run.minion.read.stats.ventilation_time_seconds = response.as.sync.ventilation_time_seconds;
+                    model->run.minion.read.stats.heating_time_seconds     = response.as.sync.heating_time_seconds;
 
                     const uint16_t tf[] = {0, 4, 3, 2, 1};
                     for (size_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {

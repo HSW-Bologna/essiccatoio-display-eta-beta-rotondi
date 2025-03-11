@@ -268,7 +268,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case TIMER_CHANGE_PAGE_ID: {
                     pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_menu);
                     password_page_options_t *opts =
-                        view_common_default_password_page_options(pw_msg, (const char *)APP_CONFIG_PASSWORD);
+                        view_common_default_password_page_options(pw_msg, (const char *)model->config.password);
                     msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
                     break;
                 }
@@ -632,7 +632,7 @@ static void update_info(model_t *model, struct page_data *pdata) {
                               view_intl_get_string_in_language(language, STRINGS_SCELTA_PROGRAMMA));
         }
     } else {
-        view_common_format_alarm(pdata->label_status, model, language);
+        view_common_format_alarm(pdata->label_status, model->run.minion.read.alarms, language);
     }
 }
 

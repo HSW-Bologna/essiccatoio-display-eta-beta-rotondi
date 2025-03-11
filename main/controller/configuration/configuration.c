@@ -20,10 +20,9 @@
 #include "services/timestamp.h"
 
 
-#define BASENAME(x) (strrchr(x, '/') + 1)
+#define BASENAME(x)  (strrchr(x, '/') + 1)
+#define PASSWORD_KEY "PASSWORD"
 
-
-#define CONTRAST_KEY "CONTRAST"
 
 #define DIR_CHECK(x)                                                                                                   \
     {                                                                                                                  \
@@ -144,10 +143,12 @@ int configuration_copy_from_tar(mtar_t *tar, const char *name, size_t total) {
  *  Inizializzazione
  */
 
-void configuration_init(void) {
+void configuration_init(mut_model_t *model) {
     (void)is_dir;
     (void)nth_strrchr;
     (void)count_occurrences;
+
+    storage_load_str(model->config.password, MAX_NAME_LENGTH, PASSWORD_KEY);
 
     if (!dir_exists(DATA_PATH)) {
         create_dir(DATA_PATH);
@@ -161,6 +162,11 @@ void configuration_init(void) {
     if (!is_file(PATH_FILE_DATA_VERSION)) {
         configuration_save_data_version();
     }
+}
+
+
+void configuration_save_password(const char* password) {
+    storage_save_str(password, PASSWORD_KEY);
 }
 
 /*

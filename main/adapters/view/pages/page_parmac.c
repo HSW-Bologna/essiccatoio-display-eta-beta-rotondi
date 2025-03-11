@@ -8,6 +8,7 @@
 #include "src/widgets/led/lv_led.h"
 #include "../intl/intl.h"
 #include "model/parmac.h"
+#include <esp_log.h>
 
 
 struct page_data {
@@ -36,22 +37,21 @@ enum {
 static void update_page(model_t *model, struct page_data *pdata);
 
 
+static const char *TAG = __FILE_NAME__;
+
+
 static void *create_page(pman_handle_t handle, void *extra) {
     (void)extra;
+    (void)TAG;
 
     mut_model_t *model = view_get_model(handle);
+    parmac_init(model, 0);
 
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
 
-    pdata->par_to_save = 0;
-    if (model->run.temporary_access_level > 0) {
-        pdata->livello_accesso            = model->run.temporary_access_level;
-        model->run.temporary_access_level = 0;
-    } else {
-        pdata->livello_accesso = model->config.parmac.access_level;
-    }
-    pdata->livello_accesso = 1;
+    pdata->par_to_save     = 0;
+    pdata->livello_accesso = model->config.parmac.access_level;
     pdata->timer           = PMAN_REGISTER_TIMER_ID(handle, model->config.parmac.reset_page_time * 1000UL, 0);
 
     return pdata;

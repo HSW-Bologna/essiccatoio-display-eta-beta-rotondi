@@ -19,7 +19,7 @@ typedef struct __attribute__((__packed__)) {
 #define FFINT(i, fmt) parameter_user_data_new((parameter_user_data_t){pars_descriptions[i], formatta_int, fmt, NULL})
 #define FINT(i)       parameter_user_data_new((parameter_user_data_t){pars_descriptions[i], formatta_int, NULL, NULL})
 #define FOPT(i, vals)                                                                                                  \
-    parameter_user_data_new((parameter_user_data_t){pars_descriptions[i], formatta_opt, NULL, (const char ***)vals})
+    parameter_user_data_new((parameter_user_data_t){pars_descriptions[i], formatta_opt, NULL, (const char ***)(vals)})
 #define FNULL     NULL
 
 

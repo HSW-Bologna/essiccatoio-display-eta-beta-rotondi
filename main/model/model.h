@@ -11,6 +11,8 @@
 #define TECHNICIAN_ACCESS_LEVEL 1
 #define PARMAC_SIZE             279
 #define NUM_LOGOS               5
+#define TECH_BITS               (1 << TECHNICIAN_ACCESS_LEVEL)
+#define USER_BITS               (TECH_BITS | (1 << USER_ACCESS_LEVEL))
 
 
 typedef enum {
@@ -69,20 +71,10 @@ typedef enum {
     MACHINE_MODEL_EDS_RG_LAB_CA,
     MACHINE_MODEL_EDS_RV_SELF_CA,
     MACHINE_MODEL_EDS_RV_LAB_CA,
-    MACHINE_MODEL_EDS_RE_SELF_CC,
-    MACHINE_MODEL_EDS_RV_SELF_CC,
-    MACHINE_MODEL_EDS_RE_LAB_CC,
-    MACHINE_MODEL_EDS_RV_LAB_CC,
-    MACHINE_MODEL_EDS_RP_SELF_CA,
-    MACHINE_MODEL_EDS_RP_LAB_CA,
-    MACHINE_MODEL_EDS_RP_SELF_CC,
-    MACHINE_MODEL_EDS_RP_LAB_CC,
     MACHINE_MODEL_EDS_RE_LAB_TH_CA,
     MACHINE_MODEL_EDS_RG_LAB_TH_CA,
     MACHINE_MODEL_EDS_RV_LAB_TH_CA,
-    MACHINE_MODEL_EDS_RE_LAB_TH_CC,
-    MACHINE_MODEL_EDS_RV_LAB_TH_CC,
-#define MACHINE_MODELS_NUM 20
+#define MACHINE_MODELS_NUM 10
 } machine_model_t;
 
 
@@ -134,16 +126,25 @@ typedef enum {
 #define ALARMS_NUM 8
 } alarm_t;
 
+typedef struct {
+    uint16_t complete_cycles;
+    uint16_t partial_cycles;
+    uint32_t active_time_seconds;
+    uint32_t work_time_seconds;
+    uint32_t rotation_time_seconds;
+    uint32_t ventilation_time_seconds;
+    uint32_t heating_time_seconds;
+} statistics_t;
 
 typedef struct {
-    name_t nome;
+    name_t   nome;
+    uint16_t machine_model;
 
     uint16_t language;
     uint16_t max_user_language;
     uint16_t logo;
     uint16_t abilita_visualizzazione_temperatura;
     uint16_t abilita_tasto_menu;
-    uint16_t display_cycles_statistics;
     uint16_t tempo_attesa_partenza_ciclo;
     uint16_t reset_page_time;
     uint16_t reset_language_time;
@@ -158,14 +159,11 @@ typedef struct {
     uint16_t access_level;
     uint16_t autostart;
     uint16_t residual_humidity_check;
-    uint16_t max_input_temperature;                   // Maximum temperature to be set for the input probe
-    uint16_t max_output_temperature;                  // Maximum temperature to be set for the output probe
-    uint16_t minimum_coins;                           // Minimum number of coins to insert to start the drying cycle
-    uint16_t time_per_coin;                           // Drying time to add for each credit unit
-    uint16_t credit_request_type;                     // Message to show when requiring payment
-    uint16_t number_of_cycles_before_maintenance;     // Number of cycles after which to show a maintenance request
-    uint16_t maintenance_notice_delay;                // Time in between maintenance notices are shown
-    uint16_t maintenance_notice_duration;             // Time for which maintenance notices are shown
+    uint16_t max_input_temperature;      // Maximum temperature to be set for the input probe
+    uint16_t max_output_temperature;     // Maximum temperature to be set for the output probe
+    uint16_t minimum_coins;              // Minimum number of coins to insert to start the drying cycle
+    uint16_t time_per_coin;              // Drying time to add for each credit unit
+    uint16_t credit_request_type;        // Message to show when requiring payment
 
     /* Parametri da inviare alla macchina */
     uint16_t tipo_sonda_temperatura;
@@ -187,17 +185,16 @@ typedef struct {
     uint16_t porthole_nc_na;
     uint16_t busy_signal_nc_na;
     uint16_t fan_with_open_porthole_time;
-    uint16_t invert_fan_drum_pwm;
     uint16_t cycle_reset_time;
 } parmac_t;
 
 
 struct model {
     struct {
-        uint16_t machine_model;
-        uint8_t  commissioned;
+        uint8_t commissioned;
 
         parmac_t parmac;
+        name_t   password;
 
         uint16_t  num_programs;
         program_t programs[MAX_PROGRAMMI];
@@ -215,6 +212,8 @@ struct model {
 
                 uint16_t inputs;
                 uint8_t  heating;
+                uint8_t  held_by_temperature;
+                uint8_t  held_by_humidity;
                 int16_t  temperature_1_adc;
                 int16_t  temperature_1;
                 int16_t  temperature_2_adc;
@@ -231,6 +230,8 @@ struct model {
                 uint16_t      alarms;
                 uint16_t      payment;
                 uint16_t      coins[DIGITAL_COIN_LINES_NUM];
+
+                statistics_t stats;
             } read;
 
             struct {
@@ -242,7 +243,6 @@ struct model {
         } minion;
 
         language_t              temporary_language;
-        uint8_t                 temporary_access_level;
         uint8_t                 should_open_porthole;
         uint16_t                current_program_index;
         program_t               current_program;
@@ -251,6 +251,10 @@ struct model {
         removable_drive_state_t removable_drive_state;
         firmware_update_state_t firmware_update_state;
         int16_t                 starting_temperature;
+
+        int16_t temperature_delta;
+        int16_t humidity_delta;
+        int16_t speed_delta;
     } run;
 };
 
@@ -286,7 +290,6 @@ uint8_t          model_swap_programs(mut_model_t *model, size_t first, size_t se
 void             model_init_default_programs(mut_model_t *model);
 uint8_t          model_waiting_for_next_step(model_t *model);
 void             model_move_to_next_step(mut_model_t *model);
-int16_t          model_get_current_setpoint(model_t *model);
 void             model_reset_program(mut_model_t *model);
 uint8_t          model_is_step_endless(model_t *model);
 uint16_t         model_get_maximum_temperature(model_t *model);
@@ -301,6 +304,17 @@ int16_t          model_get_temperature_setpoint(model_t *model);
 uint8_t          model_is_free(model_t *model);
 void             model_return_to_drying(mut_model_t *model);
 void             model_init_parameters(mut_model_t *model);
+uint8_t          model_is_steam_model(model_t *model);
+uint8_t          model_is_self_service(model_t *model);
+uint8_t          model_is_tech_level(model_t *model);
+uint16_t         model_get_program_num_steps(model_t *model, uint16_t program_index);
+uint16_t         model_get_program_num_drying_steps(model_t *model, uint16_t program_index);
+uint16_t         model_get_last_drying_speed(model_t *model);
+uint16_t         model_get_humidity_setpoint(model_t *model);
+uint16_t         model_get_speed(model_t *model);
+void             model_modify_temperature_setpoint(mut_model_t *model, int16_t modification);
+void             model_modify_humidity_setpoint(mut_model_t *model, int16_t modification);
+void             model_modify_speed(mut_model_t *model, int16_t modification);
 
 
 #endif

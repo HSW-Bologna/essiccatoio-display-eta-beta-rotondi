@@ -18,7 +18,7 @@
 #define PATH_FILE_DATA_VERSION              (DATA_PATH "/version.txt")
 
 
-void configuration_init(void);
+void configuration_init(mut_model_t *model);
 int  configuration_load_all_data(mut_model_t *pmodel);
 int  configuration_save_data_version(void);
 void configuration_remove_program(program_t *programs, size_t len, size_t num);
@@ -35,5 +35,6 @@ int  configuration_load_programs(model_t *pmodel, program_t *programs);
 void configuration_clear_orphan_programs(program_t *programs, uint16_t num);
 void configuration_clear_all_programs(void);
 void configuration_commissioned(uint8_t commissioned);
+void configuration_save_password(const char *password);
 
 #endif

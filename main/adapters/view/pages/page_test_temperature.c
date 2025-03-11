@@ -65,6 +65,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
     switch (event.tag) {
         case PMAN_EVENT_TAG_OPEN:
+            view_get_protocol(handle)->set_test_mode(handle, 1);
             break;
 
         case PMAN_EVENT_TAG_USER: {
@@ -89,6 +90,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_CLICKED: {
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
+                            view_get_protocol(handle)->set_test_mode(handle, 0);
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
                             break;
 
@@ -125,11 +127,11 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 static void update_page(model_t *model, struct page_data *pdata) {
     const char *temperature_string = view_intl_get_string(model, STRINGS_TEMPERATURA);
     lv_label_set_text_fmt(
-        pdata->label_temperature, "%s 1: %3i °C [%04i]\n%s 2: %3i °C [%04i]\n%s: %2.1f\n%s: %2.1f%%", temperature_string,
-        model->run.minion.read.temperature_1, model->run.minion.read.temperature_1_adc, temperature_string,
-        model->run.minion.read.temperature_2, model->run.minion.read.temperature_2_adc,
-        view_intl_get_string(model, STRINGS_TEMPERATURA_SONDA), (float)model->run.minion.read.temperature_probe/10.,
-        view_intl_get_string(model, STRINGS_UMIDITA_SONDA), (float)model->run.minion.read.humidity_probe/10.);
+        pdata->label_temperature, "%s 1: %3i °C [%04i]\n%s 2: %3i °C [%04i]\n%s: %2.1f\n%s: %2.1f%%",
+        temperature_string, model->run.minion.read.temperature_1, model->run.minion.read.temperature_1_adc,
+        temperature_string, model->run.minion.read.temperature_2, model->run.minion.read.temperature_2_adc,
+        view_intl_get_string(model, STRINGS_TEMPERATURA_SONDA), (float)model->run.minion.read.temperature_probe / 100.,
+        view_intl_get_string(model, STRINGS_UMIDITA_SONDA), (float)model->run.minion.read.humidity_probe / 100.);
 }
 
 

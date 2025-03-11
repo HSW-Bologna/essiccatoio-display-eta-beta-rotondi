@@ -200,6 +200,44 @@ void storage_save_uint64(uint64_t *value, char *key) {
 }
 
 
+int storage_load_str(char *value, size_t len, char *key) {
+    nvs_handle_t handle;
+    esp_err_t    err;
+    assert(strlen(key) <= 15);
+
+    ESP_ERROR_CHECK(nvs_open("storage", NVS_READONLY, &handle));
+    err = nvs_get_str(handle, key, value, &len);
+    nvs_close(handle);
+    if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGE(TAG, "NVS error (%s) while reading %s", esp_err_to_name(err), key);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+void storage_save_str(const char *value, char *key) {
+    nvs_handle_t handle;
+    ESP_LOGI(TAG, "Trying to save key %s", key);
+    assert(strlen(key) <= 15);
+
+    esp_err_t err = nvs_open("storage", NVS_READWRITE, &handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Error (%i) opening NVS handle!\n", err);
+        return;
+    }
+
+    err = nvs_set_str(handle, key, value);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "NVS error (%i) while writing %s", err, key);
+    } else {
+        ESP_ERROR_CHECK(nvs_commit(handle));
+        nvs_close(handle);
+    }
+}
+
+
 int storage_load_blob(void *value, size_t len, char *key) {
     nvs_handle_t handle;
     esp_err_t    err;

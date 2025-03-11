@@ -19,7 +19,6 @@
 typedef enum {
     PAGE_STATE_SELECTION = 0,
     PAGE_STATE_DELETE,
-    PAGE_STATE_NEW,
 } page_state_t;
 
 
@@ -32,15 +31,11 @@ struct page_data {
     lv_obj_t *button_delete;
     lv_obj_t *button_modify;
     lv_obj_t *button_copy;
-    lv_obj_t *button_new;
 
     lv_obj_t *label_names[STEP_WINDOW_SIZE];
     lv_obj_t *label_numbers[STEP_WINDOW_SIZE];
 
     lv_obj_t *obj_delete;
-    lv_obj_t *obj_new;
-
-    lv_obj_t *roller_step_type;
 
     uint16_t     step_window_index;
     int16_t      selected_step;
@@ -59,7 +54,6 @@ enum {
     BTN_MOVE_DOWN_ID,
     BTN_COPY_ID,
     BTN_DELETE_ID,
-    BTN_NEW_ID,
     BTN_MODIFY_ID,
     BTN_STEP_ID,
     BTN_INFO_ID,
@@ -173,7 +167,6 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_align(obj_button_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
 
         pdata->button_down   = view_common_icon_button_create(obj_button_bar, LV_SYMBOL_DOWN, BTN_DOWN_ID);
-        pdata->button_new    = view_common_icon_button_create(obj_button_bar, LV_SYMBOL_PLUS, BTN_NEW_ID);
         pdata->button_modify = view_common_icon_button_create(obj_button_bar, LV_SYMBOL_EDIT, BTN_MODIFY_ID);
 
         {
@@ -234,59 +227,6 @@ static void open_page(pman_handle_t handle, void *state) {
     }
 
     {
-        lv_obj_t *obj_new = lv_obj_create(cont);
-        lv_obj_set_size(obj_new, LV_PCT(100), LV_HOR_RES - 56 - button_height * 2 - 30);
-        lv_obj_remove_flag(obj_new, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_add_style(obj_new, &style_transparent_cont, LV_STATE_DEFAULT);
-        lv_obj_align(obj_new, LV_ALIGN_CENTER, 0, -2);
-
-        lv_obj_t *roller = lv_roller_create(obj_new);
-        lv_obj_set_style_text_font(roller, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-
-        const size_t max_length = 128;
-        char        *string     = malloc(max_length);
-        assert(string);
-
-        const strings_t step_types[BASE_PROGRAMS_NUM] = {
-            STRINGS_CALDO, STRINGS_MEDIO, STRINGS_TIEPIDO, STRINGS_FREDDO, STRINGS_LANA,
-        };
-        memset(string, 0, max_length);
-        for (int i = 0; i < BASE_PROGRAMS_NUM; i++) {
-            const char *string_step_type = view_intl_get_string(model, step_types[i]);
-            assert(strlen(string) + strlen(string_step_type) < max_length);
-            strcat(string, string_step_type);
-            string[strlen(string)] = '\n';
-        }
-        string[strlen(string) - 1] = '\0';
-
-        lv_roller_set_options(roller, string, LV_ROLLER_MODE_INFINITE);
-        lv_obj_set_width(roller, 170);
-        lv_roller_set_visible_row_cnt(roller, 3);
-        lv_obj_align(roller, LV_ALIGN_LEFT_MID, 4, 0);
-        pdata->roller_step_type = roller;
-
-        lv_obj_t *button_ok = lv_button_create(obj_new);
-        lv_obj_set_size(button_ok, 48, 48);
-        lv_obj_t *lbl = lv_label_create(button_ok);
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
-        lv_label_set_text(lbl, LV_SYMBOL_OK);
-        lv_obj_center(lbl);
-        lv_obj_align(button_ok, LV_ALIGN_BOTTOM_RIGHT, -4, -12);
-        view_register_object_default_callback(button_ok, POPUP_CONFIRM_ID);
-
-        lv_obj_t *button_cancel = lv_button_create(obj_new);
-        lv_obj_set_size(button_cancel, 48, 48);
-        lbl = lv_label_create(button_cancel);
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
-        lv_label_set_text(lbl, LV_SYMBOL_CLOSE);
-        lv_obj_center(lbl);
-        lv_obj_align(button_cancel, LV_ALIGN_BOTTOM_RIGHT, -76, -12);
-        view_register_object_default_callback(button_cancel, POPUP_CANCEL_ID);
-
-        pdata->obj_new = obj_new;
-    }
-
-    {
         lv_obj_t *obj_delete = lv_obj_create(cont);
         lv_obj_set_size(obj_delete, LV_PCT(100), LV_HOR_RES - 56 - button_height * 2 - 30);
         lv_obj_remove_flag(obj_delete, LV_OBJ_FLAG_SCROLLABLE);
@@ -329,8 +269,9 @@ static void open_page(pman_handle_t handle, void *state) {
 static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t event) {
     struct page_data *pdata = state;
 
-    mut_model_t *model   = view_get_model(handle);
-    program_t   *program = model_get_mut_program(model, pdata->meta.program_index);
+    mut_model_t *model            = view_get_model(handle);
+    program_t   *program          = model_get_mut_program(model, pdata->meta.program_index);
+    uint16_t     num_drying_steps = model_get_program_num_drying_steps(model, pdata->meta.program_index);
 
     pman_msg_t msg = PMAN_MSG_NULL;
 
@@ -389,19 +330,19 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 uint16_t absolute_index = absolute_step_index(pdata);
 
                                 // Drying step
-                                if (absolute_index < program->num_drying_steps) {
+                                if (absolute_index < num_drying_steps) {
                                     pdata->meta.type = PROGRAM_STEP_TYPE_DRYING;
                                     parlav_init_drying(model, &program->steps[absolute_index]);
                                 }
                                 // Cooling step
-                                else if (absolute_index == program->num_drying_steps && program->cooling_enabled) {
+                                else if (absolute_index == num_drying_steps && program->cooling_enabled) {
                                     pdata->meta.type = PROGRAM_STEP_TYPE_COOLING;
                                     parlav_init_cooling(model, &program->cooling_step);
                                 }
                                 // Antifold step
-                                else if ((absolute_index == program->num_drying_steps && !program->cooling_enabled &&
+                                else if ((absolute_index == num_drying_steps && !program->cooling_enabled &&
                                           program->antifold_enabled) ||
-                                         (absolute_index == program->num_drying_steps + 1 && program->cooling_enabled &&
+                                         (absolute_index == num_drying_steps + 1 && program->cooling_enabled &&
                                           program->antifold_enabled)) {
                                     pdata->meta.type = PROGRAM_STEP_TYPE_ANTIFOLD;
                                     parlav_init_antifold(model, &program->antifold_step);
@@ -433,9 +374,9 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_MOVE_DOWN_ID:
                             if (pdata->selected_step >= 0) {
-                                uint16_t absolute_index = absolute_step_index(pdata);
+                                uint16_t absolute_index   = absolute_step_index(pdata);
 
-                                if (absolute_index < program->num_drying_steps &&
+                                if (absolute_index < num_drying_steps &&
                                     program_swap_steps(program, absolute_index, absolute_index + 1)) {
                                     if (pdata->selected_step + 1 < STEP_WINDOW_SIZE) {
                                         pdata->selected_step++;
@@ -452,9 +393,9 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_MOVE_UP_ID: {
                             if (pdata->selected_step >= 0) {
-                                uint16_t absolute_index = absolute_step_index(pdata);
+                                uint16_t absolute_index   = absolute_step_index(pdata);
 
-                                if (absolute_index < program->num_drying_steps && absolute_index >= 1) {
+                                if (absolute_index < num_drying_steps && absolute_index >= 1) {
                                     if (program_swap_steps(program, absolute_index - 1, absolute_index)) {
                                         if (pdata->selected_step > 0) {
                                             pdata->selected_step--;
@@ -469,11 +410,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             }
                             break;
                         }
-
-                        case BTN_NEW_ID:
-                            pdata->page_state = PAGE_STATE_NEW;
-                            update_page(model, pdata);
-                            break;
 
                         case BTN_DELETE_ID:
                             if (pdata->selected_step >= 0) {
@@ -500,29 +436,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 uint16_t absolute_index = absolute_step_index(pdata);
                                 program_remove_step(program, absolute_index);
 
-                                if (program->num_drying_steps == 0) {
+                                if (num_drying_steps == 0) {
                                     pdata->selected_step = -1;
-                                } else if (absolute_index >= (uint16_t)program->num_drying_steps) {
-                                    pdata->selected_step = (program->num_drying_steps % STEP_WINDOW_SIZE) - 1;
-                                }
-                            } else if (pdata->page_state == PAGE_STATE_NEW) {
-                                uint16_t step_type = lv_roller_get_selected(pdata->roller_step_type);
-                                if (pdata->selected_step >= 0) {
-                                    uint16_t absolute_index = absolute_step_index(pdata);
-
-                                    program_insert_step(program, step_type, absolute_index + 1);
-
-                                    if (pdata->selected_step <
-                                        (int)model_get_program(model, pdata->selected_step)->num_drying_steps) {
-                                        pdata->selected_step++;
-                                        if (pdata->selected_step >= STEP_WINDOW_SIZE) {
-                                            move_window_down(model, pdata);
-                                            pdata->selected_step = 0;
-                                        }
-                                    }
-                                } else {
-                                    program_insert_step(program, step_type, 0);
-                                    pdata->selected_step = 0;
+                                } else if (absolute_index >= num_drying_steps) {
+                                    pdata->selected_step = (num_drying_steps % STEP_WINDOW_SIZE) - 1;
                                 }
                             }
 
@@ -556,7 +473,9 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    const program_t *program = model_get_program(model, pdata->meta.program_index);
+    const program_t *program          = model_get_program(model, pdata->meta.program_index);
+    uint16_t         num_drying_steps = model_get_program_num_drying_steps(model, pdata->meta.program_index);
+    uint16_t         num_steps        = model_get_program_num_steps(model, pdata->meta.program_index);
 
     for (uint16_t i = 0; i < STEP_WINDOW_SIZE; i++) {
         uint16_t absolute_index = pdata->step_window_index * STEP_WINDOW_SIZE + i;
@@ -570,7 +489,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
             }
 
             // Normal step
-            if (absolute_index < program->num_drying_steps) {
+            if (absolute_index < num_drying_steps) {
                 const program_drying_parameters_t *step = &program->steps[absolute_index];
 
                 char string[64] = {0};
@@ -584,7 +503,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 view_common_set_hidden(pdata->button_programs[i], 0);
             }
             // First additional step, cooling
-            else if (absolute_index == program->num_drying_steps && program->cooling_enabled) {
+            else if (absolute_index == num_drying_steps && program->cooling_enabled) {
                 const char *string = view_common_step2str(model, PROGRAM_STEP_TYPE_COOLING);
                 if (strcmp(lv_label_get_text(pdata->label_names[i]), string)) {
                     lv_label_set_text(pdata->label_names[i], string);
@@ -594,9 +513,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 view_common_set_hidden(pdata->button_programs[i], 0);
             }
             // First (or second) additional step, not cooling but antifold
-            else if ((absolute_index == program->num_drying_steps && program->antifold_enabled &&
-                      !program->cooling_enabled) ||
-                     (absolute_index == program->num_drying_steps + 1 && program->antifold_enabled &&
+            else if ((absolute_index == num_drying_steps && program->antifold_enabled && !program->cooling_enabled) ||
+                     (absolute_index == num_drying_steps + 1 && program->antifold_enabled &&
                       program->cooling_enabled)) {
                 const char *string = view_common_step2str(model, PROGRAM_STEP_TYPE_ANTIFOLD);
                 if (strcmp(lv_label_get_text(pdata->label_names[i]), string)) {
@@ -619,11 +537,16 @@ static void update_page(model_t *model, struct page_data *pdata) {
 
     switch (pdata->page_state) {
         case PAGE_STATE_SELECTION: {
-            if (pdata->selected_step >= 0 && pdata->selected_step < (int)program->num_drying_steps) {
+            if (pdata->selected_step >= 0 && pdata->selected_step < (int)num_steps) {
                 lv_obj_remove_state(pdata->button_move_up, LV_STATE_DISABLED);
                 lv_obj_remove_state(pdata->button_move_down, LV_STATE_DISABLED);
-                lv_obj_remove_state(pdata->button_copy, LV_STATE_DISABLED);
                 lv_obj_remove_state(pdata->button_delete, LV_STATE_DISABLED);
+
+                if (!model_is_self_service(model)) {
+                    lv_obj_remove_state(pdata->button_copy, LV_STATE_DISABLED);
+                } else {
+                    lv_obj_add_state(pdata->button_copy, LV_STATE_DISABLED);
+                }
             } else {
                 lv_obj_add_state(pdata->button_move_up, LV_STATE_DISABLED);
                 lv_obj_add_state(pdata->button_move_down, LV_STATE_DISABLED);
@@ -637,7 +560,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 lv_obj_add_state(pdata->button_modify, LV_STATE_DISABLED);
             }
 
-            if (program->num_drying_steps < STEP_WINDOW_SIZE) {
+            if (num_steps <= STEP_WINDOW_SIZE) {
                 lv_obj_add_state(pdata->button_up, LV_STATE_DISABLED);
                 lv_obj_add_state(pdata->button_down, LV_STATE_DISABLED);
             } else {
@@ -645,14 +568,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
                 lv_obj_remove_state(pdata->button_down, LV_STATE_DISABLED);
             }
 
-            if (program->num_drying_steps < MAX_STEPS) {
-                lv_obj_remove_state(pdata->button_new, LV_STATE_DISABLED);
-            } else {
-                lv_obj_add_state(pdata->button_new, LV_STATE_DISABLED);
-            }
-
             view_common_set_hidden(pdata->obj_delete, 1);
-            view_common_set_hidden(pdata->obj_new, 1);
             break;
         }
 
@@ -664,25 +580,8 @@ static void update_page(model_t *model, struct page_data *pdata) {
             lv_obj_add_state(pdata->button_delete, LV_STATE_DISABLED);
             lv_obj_add_state(pdata->button_down, LV_STATE_DISABLED);
             lv_obj_add_state(pdata->button_up, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_new, LV_STATE_DISABLED);
 
             view_common_set_hidden(pdata->obj_delete, 0);
-            view_common_set_hidden(pdata->obj_new, 1);
-            break;
-        }
-
-        case PAGE_STATE_NEW: {
-            lv_obj_add_state(pdata->button_move_up, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_move_down, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_modify, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_copy, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_delete, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_down, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_up, LV_STATE_DISABLED);
-            lv_obj_add_state(pdata->button_new, LV_STATE_DISABLED);
-
-            view_common_set_hidden(pdata->obj_delete, 1);
-            view_common_set_hidden(pdata->obj_new, 0);
             break;
         }
     }
@@ -705,25 +604,26 @@ static void close_page(void *state) {
 
 
 static void move_window_down(model_t *model, struct page_data *pdata) {
-    const program_t *program = model_get_program(model, pdata->meta.program_index);
+    uint16_t num_steps = model_get_program_num_steps(model, pdata->meta.program_index);
+
     pdata->step_window_index++;
-    if (pdata->step_window_index * STEP_WINDOW_SIZE > program->num_drying_steps) {
+    if (pdata->step_window_index * STEP_WINDOW_SIZE > num_steps) {
         pdata->step_window_index = 0;
     }
 }
 
 
 static void move_window_up(model_t *model, struct page_data *pdata) {
-    const program_t *program = model_get_program(model, pdata->meta.program_index);
+    uint16_t num_steps = model_get_program_num_steps(model, pdata->meta.program_index);
 
     if (pdata->step_window_index > 0) {
         pdata->step_window_index--;
     } else {
-        if (program->num_drying_steps <= STEP_WINDOW_SIZE) {
+        if (num_steps <= STEP_WINDOW_SIZE) {
             pdata->step_window_index = 0;
         } else {
-            int16_t extra_index      = (program->num_drying_steps % STEP_WINDOW_SIZE) != 0 ? 1 : 0;
-            pdata->step_window_index = (program->num_drying_steps / STEP_WINDOW_SIZE) + extra_index - 1;
+            int16_t extra_index      = (num_steps % STEP_WINDOW_SIZE) != 0 ? 1 : 0;
+            pdata->step_window_index = (num_steps / STEP_WINDOW_SIZE) + extra_index - 1;
         }
     }
 }

@@ -298,9 +298,14 @@ size_t program_serialize_empty(uint8_t *buffer, uint16_t num) {
 }
 
 
-uint16_t program_num_steps(const program_t *program) {
+uint8_t program_is_automatic(const program_t *program) {
     assert(program);
-    return program->num_drying_steps + (program->cooling_enabled > 0) + (program->antifold_enabled > 0);
+    for (uint16_t i = 0; i < program->num_drying_steps; i++) {
+        if (program->steps[i].type) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 

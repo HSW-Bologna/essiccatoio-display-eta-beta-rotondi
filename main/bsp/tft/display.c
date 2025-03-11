@@ -128,10 +128,17 @@ void bsp_tft_display_init(void (*display_flush_ready_cb)(void), size_t buffer_si
     ESP_ERROR_CHECK(esp_lcd_new_panel_ili9488(lcd_io_handle, &lcd_config, buffer_size, &lcd_handle));
     lcd_handle->init = panel_ili9488_custom_init;
 
+    bsp_tft_display_reset();
+
+    bsp_tft_display_brightness_set(60);
+}
+
+
+void bsp_tft_display_reset(void) {
     ESP_ERROR_CHECK(esp_lcd_panel_reset(lcd_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(lcd_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_invert_color(lcd_handle, true));
-    //ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(lcd_handle, false));
+    // ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(lcd_handle, false));
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(lcd_handle, false, false));
     ESP_ERROR_CHECK(esp_lcd_panel_set_gap(lcd_handle, 0, 0));
 #if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
@@ -139,8 +146,6 @@ void bsp_tft_display_init(void (*display_flush_ready_cb)(void), size_t buffer_si
 #else
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(lcd_handle, true));
 #endif
-
-    bsp_tft_display_brightness_set(60);
 }
 
 

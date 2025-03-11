@@ -100,7 +100,7 @@ size_t  program_serialize(uint8_t *buffer, const program_t *p);
 size_t  program_serialize_empty(uint8_t *buffer, uint16_t num);
 void    program_copy_step(program_t *p, uint16_t source_step_index, uint16_t destination_step_index);
 program_drying_parameters_t default_step(void);
-uint16_t                    program_num_steps(const program_t *program);
+uint8_t                     program_is_automatic(const program_t *program);
 
 
 extern const program_drying_parameters_t program_default_drying_parameters[];

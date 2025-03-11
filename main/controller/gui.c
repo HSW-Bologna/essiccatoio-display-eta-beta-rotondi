@@ -22,6 +22,7 @@ static void start_program(pman_handle_t handle, uint16_t program_index);
 static void resume_cycle(pman_handle_t handle);
 static void pause_cycle(pman_handle_t handle);
 static void stop_cycle(pman_handle_t handle);
+static void modify_duration(pman_handle_t handle, uint16_t seconds);
 static void clear_coins(pman_handle_t handle);
 static void digital_coin_reader_enable(pman_handle_t handle, uint8_t enable);
 static void save_program_index(pman_handle_t handle);
@@ -32,6 +33,8 @@ static void save_program(pman_handle_t handle, uint16_t program_index);
 static void commissioning_done(pman_handle_t handle);
 static void factory_reset(pman_handle_t handle);
 static void update_firmware(pman_handle_t handle);
+static void clear_alarms(pman_handle_t handle);
+static void clear_cycle_statistics(pman_handle_t handle);
 
 
 static const char *TAG = "Gui";
@@ -49,6 +52,7 @@ view_protocol_t controller_gui_protocol = {
     .resume_cycle               = resume_cycle,
     .pause_cycle                = pause_cycle,
     .stop_cycle                 = stop_cycle,
+    .modify_duration            = modify_duration,
     .digital_coin_reader_enable = digital_coin_reader_enable,
     .clear_coins                = clear_coins,
     .save_program_index         = save_program_index,
@@ -59,6 +63,8 @@ view_protocol_t controller_gui_protocol = {
     .commissioning_done         = commissioning_done,
     .factory_reset              = factory_reset,
     .update_firmware            = update_firmware,
+    .clear_alarms               = clear_alarms,
+    .clear_cycle_statistics     = clear_cycle_statistics,
 };
 
 
@@ -274,6 +280,7 @@ static void factory_reset(pman_handle_t handle) {
     mut_model_t *model = view_get_model(handle);
     model_init(model);
     configuration_commissioned(0);
+    configuration_save_password(model->config.password);
     configuration_save_parmac(&model->config.parmac);
     configuration_update_index(model->config.programs, model->config.num_programs);
     bsp_system_reset();
@@ -283,4 +290,22 @@ static void factory_reset(pman_handle_t handle) {
 static void update_firmware(pman_handle_t handle) {
     (void)handle;
     fup_proceed();
+}
+
+
+static void clear_alarms(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    minion_clear_alarms(model);
+}
+
+
+static void clear_cycle_statistics(pman_handle_t handle) {
+    mut_model_t *model = view_get_model(handle);
+    minion_clear_cycle_statistics(model);
+}
+
+
+static void modify_duration(pman_handle_t handle, uint16_t seconds) {
+    (void)handle;
+    minion_set_duration(seconds);
 }

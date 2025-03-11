@@ -2,6 +2,9 @@
 #include "style.h"
 
 
+static lv_color_t dark_color_filter_cb(const lv_color_filter_dsc_t *f, lv_color_t c, lv_opa_t opa);
+
+
 static const lv_style_const_prop_t style_white_icon_props[] = {
     LV_STYLE_CONST_IMAGE_RECOLOR_OPA(LV_OPA_COVER),
     LV_STYLE_CONST_IMAGE_RECOLOR(LV_COLOR_MAKE(0xFF, 0xFF, 0xFF)),
@@ -59,7 +62,12 @@ lv_style_t style_tall_button         = {0};
 lv_style_t style_tall_button_checked = {0};
 
 
+static lv_color_filter_dsc_t dark_filter;
+
+
 void style_init(void) {
+    lv_color_filter_dsc_init(&dark_filter, dark_color_filter_cb);
+
     lv_style_init(&style_tall_button);
     lv_style_set_radius(&style_tall_button, 0);
     lv_style_set_text_color(&style_tall_button, VIEW_STYLE_COLOR_BLACK);
@@ -70,7 +78,14 @@ void style_init(void) {
     lv_style_init(&style_tall_button_checked);
     lv_style_set_bg_color(&style_tall_button_checked, VIEW_STYLE_COLOR_WHITE);
     lv_style_set_text_color(&style_tall_button_checked, VIEW_STYLE_COLOR_BLACK);
-    lv_style_set_bg_color(&style_tall_button_checked, lv_color_hex(0xbdbdbd));
     lv_style_set_border_width(&style_tall_button_checked, 4);
     lv_style_set_border_color(&style_tall_button_checked, lv_color_hex(0xf79410));
+    lv_style_set_color_filter_dsc(&style_tall_button_checked, &dark_filter);
+    lv_style_set_color_filter_opa(&style_tall_button_checked, 60);
+}
+
+
+static lv_color_t dark_color_filter_cb(const lv_color_filter_dsc_t *f, lv_color_t c, lv_opa_t opa) {
+    LV_UNUSED(f);
+    return lv_color_darken(c, opa);
 }

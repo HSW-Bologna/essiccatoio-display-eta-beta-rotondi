@@ -11,6 +11,8 @@
 struct page_data {
     step_modification_t *meta;
 
+    keyboard_page_options_t keyboard_options;
+
     pman_timer_t *timer;
 
     lv_obj_t *checkbox_cooling;
@@ -164,12 +166,17 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
                             break;
 
-                        case BTN_NAME_ID:
+                        case BTN_NAME_ID: {
+                            pdata->keyboard_options.max_length = MAX_NAME_LENGTH;
+                            pdata->keyboard_options.numeric    = 0;
+                            pdata->keyboard_options.string =
+                                (void *)model_get_program(model, pdata->meta->program_index)
+                                    ->nomi[model->config.parmac.language];
+
                             pdata->meta->changed = 1;
-                            msg.stack_msg        = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(
-                                &page_keyboard, (void *)model_get_program(model, pdata->meta->program_index)
-                                                    ->nomi[model->config.parmac.language]);
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_keyboard, &pdata->keyboard_options);
                             break;
+                        }
                     }
                     break;
                 }

@@ -25,16 +25,18 @@
 #define MODBUS_HR_PROGRAM_NUMBER    24
 #define MODBUS_HR_COMMAND           27
 #define MODBUS_HR_INCREASE_DURATION 28
+#define MODBUS_HR_SET_DURATION      29
 
 #define MINION_ADDR 1
 
-#define COMMAND_REGISTER_NONE         0
-#define COMMAND_REGISTER_RESUME       1
-#define COMMAND_REGISTER_PAUSE        2
-#define COMMAND_REGISTER_STANDBY      3
-#define COMMAND_REGISTER_DONE         4
-#define COMMAND_REGISTER_CLEAR_ALARMS 5
-#define COMMAND_REGISTER_CLEAR_COINS  6
+#define COMMAND_REGISTER_NONE                   0
+#define COMMAND_REGISTER_RESUME                 1
+#define COMMAND_REGISTER_PAUSE                  2
+#define COMMAND_REGISTER_STANDBY                3
+#define COMMAND_REGISTER_DONE                   4
+#define COMMAND_REGISTER_CLEAR_ALARMS           5
+#define COMMAND_REGISTER_CLEAR_COINS            6
+#define COMMAND_REGISTER_CLEAR_CYCLE_STATISTICS 7
 
 
 typedef enum {
@@ -42,6 +44,7 @@ typedef enum {
     TASK_MESSAGE_TAG_HANDSHAKE,
     TASK_MESSAGE_TAG_COMMAND,
     TASK_MESSAGE_TAG_INCREASE_DURATION,
+    TASK_MESSAGE_TAG_SET_DURATION,
     TASK_MESSAGE_TAG_CHANGE_STEP,
     TASK_MESSAGE_TAG_RETRY_COMMUNICATION,
 } task_message_tag_t;
@@ -143,6 +146,12 @@ void minion_increase_duration(uint16_t seconds) {
 }
 
 
+void minion_set_duration(uint16_t seconds) {
+    struct task_message msg = {.tag = TASK_MESSAGE_TAG_SET_DURATION, .as = {.duration = seconds}};
+    xQueueSend(messageq, &msg, 0);
+}
+
+
 void minion_change_step(model_t *model) {
     struct task_message msg = init_sync_data(model);
     msg.tag                 = TASK_MESSAGE_TAG_CHANGE_STEP;
@@ -173,6 +182,11 @@ void minion_pause_program(void) {
 
 void minion_program_done(model_t *model) {
     sync_with_command(model, COMMAND_REGISTER_DONE);
+}
+
+
+void minion_clear_cycle_statistics(model_t *model) {
+    sync_with_command(model, COMMAND_REGISTER_CLEAR_CYCLE_STATISTICS);
 }
 
 
@@ -296,6 +310,19 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             break;
         }
 
+        case TASK_MESSAGE_TAG_SET_DURATION: {
+            uint16_t values[1] = {
+                message.as.duration,
+            };     // Clear credit and increase duration in one sweep
+
+            if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_SET_DURATION, values,
+                                        sizeof(values) / sizeof(values[0]))) {
+                response.tag = MINION_RESPONSE_TAG_ERROR;
+                xQueueSend(responseq, &response, portMAX_DELAY);
+            }
+            break;
+        }
+
         case TASK_MESSAGE_TAG_HANDSHAKE: {
             response.tag = MINION_RESPONSE_TAG_HANDSHAKE;
 
@@ -338,35 +365,44 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             }
 
             if (!error) {
-                uint16_t values[23] = {0};
+                uint16_t values[37] = {0};
                 if (read_input_registers(network, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
                                          sizeof(values) / sizeof(values[0]))) {
                     error = 1;
                 } else {
-                    response.as.sync.firmware_version_major = (values[1] >> 11) & 0x1F;
-                    response.as.sync.firmware_version_minor = (values[1] >> 6) & 0x1F;
-                    response.as.sync.firmware_version_patch = (values[1] >> 0) & 0x3F;
-                    response.as.sync.heating                = values[2];
-                    response.as.sync.inputs                 = values[3];
-                    response.as.sync.temperature_1_adc      = values[4];
-                    response.as.sync.temperature_1          = values[5];
-                    response.as.sync.temperature_2_adc      = values[6];
-                    response.as.sync.temperature_2          = values[7];
-                    response.as.sync.temperature_probe      = values[8];
-                    response.as.sync.humidity_probe         = values[9];
-                    response.as.sync.pressure_adc           = values[10];
-                    response.as.sync.pressure               = values[11];
-                    response.as.sync.payment                = values[12];
-                    response.as.sync.coins[0]               = values[13];
-                    response.as.sync.coins[1]               = values[14];
-                    response.as.sync.coins[2]               = values[15];
-                    response.as.sync.coins[3]               = values[16];
-                    response.as.sync.coins[4]               = values[17];
-                    response.as.sync.cycle_state            = values[18];
-                    response.as.sync.default_temperature    = values[19];
-                    response.as.sync.elapsed_time_seconds   = values[20];
-                    response.as.sync.remaining_time_seconds = values[21];
-                    response.as.sync.alarms                 = values[22];
+                    response.as.sync.firmware_version_major   = (values[1] >> 11) & 0x1F;
+                    response.as.sync.firmware_version_minor   = (values[1] >> 6) & 0x1F;
+                    response.as.sync.firmware_version_patch   = (values[1] >> 0) & 0x3F;
+                    response.as.sync.heating                  = (values[2] & 0x01) > 0;
+                    response.as.sync.held_by_temperature      = (values[2] & 0x02) > 0;
+                    response.as.sync.held_by_humidity         = (values[2] & 0x04) > 0;
+                    response.as.sync.inputs                   = values[3];
+                    response.as.sync.temperature_1_adc        = values[4];
+                    response.as.sync.temperature_1            = values[5];
+                    response.as.sync.temperature_2_adc        = values[6];
+                    response.as.sync.temperature_2            = values[7];
+                    response.as.sync.temperature_probe        = values[8];
+                    response.as.sync.humidity_probe           = values[9];
+                    response.as.sync.pressure_adc             = values[10];
+                    response.as.sync.pressure                 = values[11];
+                    response.as.sync.payment                  = values[12];
+                    response.as.sync.coins[0]                 = values[13];
+                    response.as.sync.coins[1]                 = values[14];
+                    response.as.sync.coins[2]                 = values[15];
+                    response.as.sync.coins[3]                 = values[16];
+                    response.as.sync.coins[4]                 = values[17];
+                    response.as.sync.cycle_state              = values[18];
+                    response.as.sync.default_temperature      = values[19];
+                    response.as.sync.elapsed_time_seconds     = values[20];
+                    response.as.sync.remaining_time_seconds   = values[21];
+                    response.as.sync.alarms                   = values[22];
+                    response.as.sync.complete_cycles          = ((uint32_t)values[23] << 16) | ((uint32_t)values[24]);
+                    response.as.sync.partial_cycles           = ((uint32_t)values[25] << 16) | ((uint32_t)values[26]);
+                    response.as.sync.active_time_seconds      = ((uint32_t)values[27] << 16) | ((uint32_t)values[28]);
+                    response.as.sync.work_time_seconds        = ((uint32_t)values[29] << 16) | ((uint32_t)values[30]);
+                    response.as.sync.rotation_time_seconds    = ((uint32_t)values[31] << 16) | ((uint32_t)values[32]);
+                    response.as.sync.ventilation_time_seconds = ((uint32_t)values[33] << 16) | ((uint32_t)values[34]);
+                    response.as.sync.heating_time_seconds     = ((uint32_t)values[35] << 16) | ((uint32_t)values[36]);
                 }
             }
 
@@ -573,15 +609,15 @@ static struct task_message init_sync_data(model_t *model) {
                                   (model->config.parmac.allarme_inverter_off_on > 0) << 3 |
                                   (model->config.parmac.allarme_filtro_off_on > 0) << 4 |
                                   (model->config.parmac.porthole_nc_na > 0) << 5 |
-                                  (model->config.parmac.busy_signal_nc_na > 0) << 6 |
-                                  (model->config.parmac.invert_fan_drum_pwm > 0) << 7     //|
-                                  ),
+                                  (model->config.parmac.busy_signal_nc_na > 0) << 6),
                         .temperature_probe               = model->config.parmac.temperature_probe,
                         .heating_type                    = model->config.parmac.heating_type,
                         .gas_ignition_attempts           = model->config.parmac.gas_ignition_attempts,
                         .fan_with_open_porthole_time     = model->config.parmac.fan_with_open_porthole_time,
                         .program_number                  = model->run.current_program_index,
                         .setpoint_temperature            = model_get_temperature_setpoint(model),
+                        .setpoint_humidity               = model_get_humidity_setpoint(model),
+                        .rotation_speed                  = model_get_speed(model),
                         .step_number                     = model->run.current_step_index,
                         .step_type                       = step.type,
                     },
@@ -592,17 +628,15 @@ static struct task_message init_sync_data(model_t *model) {
         case PROGRAM_STEP_TYPE_DRYING: {
             msg.as.sync.rotation_running_time          = step.drying.rotation_time;
             msg.as.sync.rotation_pause_time            = step.drying.pause_time;
-            msg.as.sync.rotation_speed                 = step.drying.speed;
             msg.as.sync.duration                       = model->config.parmac.payment_type == PAYMENT_TYPE_NONE
                                                              ? step.drying.duration * 60
                                                              : model_get_time_for_credit(model);
             msg.as.sync.drying_type                    = step.drying.type;
-            msg.as.sync.setpoint_humidity              = step.drying.humidity;
             msg.as.sync.temperature_cooling_hysteresis = step.drying.cooling_hysteresis;
             msg.as.sync.temperature_heating_hysteresis = step.drying.heating_hysteresis;
 
             msg.as.sync.flags |=
-                ((step.drying.enable_reverse > 0) << 8) | ((step.drying.enable_waiting_for_temperature << 9));
+                ((step.drying.enable_reverse > 0) << 7) | ((step.drying.enable_waiting_for_temperature << 8));
             break;
         }
 
@@ -611,7 +645,7 @@ static struct task_message init_sync_data(model_t *model) {
             msg.as.sync.rotation_pause_time   = step.cooling.pause_time;
             msg.as.sync.duration              = step.cooling.duration * 60;
 
-            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 8);
+            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 7);
             break;
         }
 
@@ -619,8 +653,7 @@ static struct task_message init_sync_data(model_t *model) {
             msg.as.sync.duration = step.antifold.max_duration == 0 ? 0xFFFF : step.antifold.max_duration * 60;
             msg.as.sync.rotation_running_time = step.antifold.rotation_time;
             msg.as.sync.rotation_pause_time   = step.antifold.pause_time;
-            msg.as.sync.rotation_speed        = step.antifold.speed;
-            msg.as.sync.flags |= (1 << 8);     // Always enable reverse in antifold
+            msg.as.sync.flags |= (1 << 7);     // Always enable reverse in antifold
             break;
         }
     }

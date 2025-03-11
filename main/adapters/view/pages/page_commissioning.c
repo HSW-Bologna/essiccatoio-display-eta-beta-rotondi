@@ -218,13 +218,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_MODIFY_MACHINE_MODEL_ID: {
                             if (obj_data->number < 0) {
-                                if (model->config.machine_model > 0) {
-                                    model->config.machine_model--;
+                                if (model->config.parmac.machine_model > 0) {
+                                    model->config.parmac.machine_model--;
                                 } else {
-                                    model->config.machine_model = MACHINE_MODELS_NUM - 1;
+                                    model->config.parmac.machine_model = MACHINE_MODELS_NUM - 1;
                                 }
                             } else {
-                                model->config.machine_model = (model->config.machine_model + 1) % MACHINE_MODELS_NUM;
+                                model->config.parmac.machine_model =
+                                    (model->config.parmac.machine_model + 1) % MACHINE_MODELS_NUM;
                             }
 
                             update_page(model, pdata);

@@ -63,6 +63,13 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
 
+    lv_obj_t *label_name = lv_label_create(lv_screen_active());
+    lv_label_set_long_mode(label_name, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_align(label_name, LV_TEXT_ALIGN_CENTER, LV_STATE_DEFAULT);
+    lv_obj_set_width(label_name, LV_PCT(100));
+    lv_label_set_text(label_name, view_common_modello_str(model));
+    lv_obj_align(label_name, LV_ALIGN_TOP_MID, 0, 64);
+
     {
         lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, 280);

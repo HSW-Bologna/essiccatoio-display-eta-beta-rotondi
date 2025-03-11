@@ -49,6 +49,8 @@
 struct page_data {
     lv_obj_t *btn_drive;
 
+    keyboard_page_options_t keyboard_options;
+
     pman_timer_t *timer;
 };
 
@@ -61,6 +63,8 @@ enum {
     BTN_ADVANCED_ID,
     BTN_PROGRAMS_ID,
     BTN_DRIVE_ID,
+    BTN_PASSWORD_ID,
+    BTN_STATS_ID,
 };
 
 
@@ -113,16 +117,6 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, 140);
         lv_obj_t *lbl = lv_label_create(btn);
-        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_PROGRAMMI));
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_obj_center(lbl);
-        view_register_object_default_callback(btn, BTN_PROGRAMS_ID);
-    }
-
-    {
-        lv_obj_t *btn = lv_btn_create(cont);
-        lv_obj_set_width(btn, 140);
-        lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_ARCHIVIAZIONE));
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
@@ -168,6 +162,26 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
         view_register_object_default_callback(btn, BTN_ADVANCED_ID);
+    }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_STATISTICHE));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_STATS_ID);
+    }
+
+    {
+        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_set_width(btn, 140);
+        lv_obj_t *lbl = lv_label_create(btn);
+        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_PASSWORD));
+        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_center(lbl);
+        view_register_object_default_callback(btn, BTN_PASSWORD_ID);
     }
 
     lv_obj_t *label_machine_version = lv_label_create(lv_screen_active());
@@ -255,9 +269,30 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_parmac);
                             break;
 
-                        case BTN_ADVANCED_ID:
-                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_advanced);
+                        case BTN_ADVANCED_ID: {
+                            if (model->config.parmac.access_level == TECHNICIAN_ACCESS_LEVEL) {
+                                msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_advanced);
+                            } else {
+                                pman_stack_msg_t         pw_msg = PMAN_STACK_MSG_SWAP(&page_advanced);
+                                password_page_options_t *opts   = view_common_default_password_page_options(
+                                    pw_msg, (const char *)APP_CONFIG_PASSWORD);
+                                msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_password, opts);
+                            }
                             break;
+                        }
+
+                        case BTN_STATS_ID:
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_statistics);
+                            break;
+
+                        case BTN_PASSWORD_ID: {
+                            pdata->keyboard_options.max_length = strlen(APP_CONFIG_BACKDOOR_PASSWORD);
+                            pdata->keyboard_options.numeric    = 1;
+                            pdata->keyboard_options.string     = model->config.password;
+
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE_EXTRA(&page_keyboard, &pdata->keyboard_options);
+                            break;
+                        }
                     }
                     break;
                 }

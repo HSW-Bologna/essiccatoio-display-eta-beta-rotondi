@@ -15,6 +15,11 @@ typedef struct {
     pman_stack_msg_t msg;
 } password_page_options_t;
 
+typedef struct {
+    char    *string;
+    uint8_t  numeric;
+    uint16_t max_length;
+} keyboard_page_options_t;
 
 typedef struct {
     lv_obj_t *blanket;
@@ -25,7 +30,6 @@ typedef struct {
     lv_obj_t *btn_retry;
     lv_obj_t *btn_disable;
 } communication_error_popup_t;
-
 
 typedef struct {
     lv_obj_t *obj_title;

@@ -64,7 +64,7 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES - 56);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
 
-    pdata->num_parameters = parlav_get_tot_parameters(TECHNICIAN_ACCESS_LEVEL);
+    pdata->num_parameters = parlav_get_tot_parameters(model->config.parmac.access_level);
     pdata->parameter      = 0;
 
     pdata->label_number = title.label_title;
@@ -187,16 +187,17 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             break;
 
                         case BTN_MINUS_ID:
-                            parlav_operation(model, pdata->parameter, -1, TECHNICIAN_ACCESS_LEVEL);
+                            parlav_operation(model, pdata->parameter, -1, model->config.parmac.access_level);
                             update_page(model, pdata);
                             pdata->meta->changed = 1;
                             break;
 
-                        case BTN_PLUS_ID:
-                            parlav_operation(model, pdata->parameter, +1, TECHNICIAN_ACCESS_LEVEL);
+                        case BTN_PLUS_ID: {
+                            parlav_operation(model, pdata->parameter, +1, model->config.parmac.access_level);
                             update_page(model, pdata);
                             pdata->meta->changed = 1;
                             break;
+                        }
                     }
                     break;
                 }
@@ -218,13 +219,13 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             break;
 
                         case BTN_MINUS_ID:
-                            parlav_operation(model, pdata->parameter, -10, TECHNICIAN_ACCESS_LEVEL);
+                            parlav_operation(model, pdata->parameter, -10, model->config.parmac.access_level);
                             update_page(model, pdata);
                             pdata->meta->changed = 1;
                             break;
 
                         case BTN_PLUS_ID:
-                            parlav_operation(model, pdata->parameter, +10, TECHNICIAN_ACCESS_LEVEL);
+                            parlav_operation(model, pdata->parameter, +10, model->config.parmac.access_level);
                             update_page(model, pdata);
                             pdata->meta->changed = 1;
                             break;
@@ -249,15 +250,24 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 static void update_page(model_t *model, struct page_data *pdata) {
     char string[64] = {0};
 
-    lv_label_set_text_fmt(pdata->label_number, "Param. %2" PRIuLEAST16 "/%" PRIuLEAST16, pdata->parameter + 1,
-                          pdata->num_parameters);
+    if (pdata->num_parameters > 0) {
+        view_common_set_hidden(pdata->label_description, 0);
+        view_common_set_hidden(pdata->label_value, 0);
 
-    const char *description = parlav_get_description(model, pdata->parameter, TECHNICIAN_ACCESS_LEVEL);
-    if (strcmp(lv_label_get_text(pdata->label_description), description)) {
-        lv_label_set_text(pdata->label_description, description);
+        lv_label_set_text_fmt(pdata->label_number, "Param. %2" PRIuLEAST16 "/%" PRIuLEAST16, pdata->parameter + 1,
+                              pdata->num_parameters);
+
+        const char *description = parlav_get_description(model, pdata->parameter, model->config.parmac.access_level);
+        if (strcmp(lv_label_get_text(pdata->label_description), description)) {
+            lv_label_set_text(pdata->label_description, description);
+        }
+        parlav_format_value(model, string, pdata->parameter, model->config.parmac.access_level);
+        lv_label_set_text(pdata->label_value, string);
+    } else {
+        lv_label_set_text(pdata->label_number, view_intl_get_string(model, STRINGS_NESSUN_PARAMETRO));
+        view_common_set_hidden(pdata->label_description, 1);
+        view_common_set_hidden(pdata->label_value, 1);
     }
-    parlav_format_value(model, string, pdata->parameter, TECHNICIAN_ACCESS_LEVEL);
-    lv_label_set_text(pdata->label_value, string);
 }
 
 

@@ -250,7 +250,7 @@ const char *view_common_modello_str(model_t *model) {
         "EDS RE LAB TH CA", "EDS RG LAB TH CA", "EDS RV LAB TH CA", "EDS RE LAB TH CC", "EDS RV LAB TH CC",
     };
 
-    return strings_modello[model->config.machine_model];
+    return strings_modello[model->config.parmac.machine_model];
 }
 
 

@@ -18,7 +18,7 @@ const char *pars_loghi[5][2] = {
 };
 
 const char *pars_tipo_riscaldamento[2][2] = {
-    {"Electtrico", "Electric", },
+    {"Elettrico", "Electric", },
     {"Gas", "Gas", },
 };
 
@@ -113,6 +113,11 @@ const char *pars_nc_na[2][2] = {
 const char *pars_livello_accesso[2][2] = {
     {"Utente", "User", },
     {"Tecnico", "Technician", },
+};
+
+const char *pars_tipo_riscaldamento_vapore[2][2] = {
+    {"Vapore", "Steam", },
+    {"Gas", "Gas", },
 };
 
 const char *pars_lingue[5][5] = {

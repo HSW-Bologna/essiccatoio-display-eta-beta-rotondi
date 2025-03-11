@@ -115,6 +115,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                         case BTN_BACK_ID:
                             model_clear_test_outputs(model);
                             view_get_protocol(handle)->clear_test_outputs(handle);
+                            view_get_protocol(handle)->set_test_mode(handle, 0);
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
                             break;
 

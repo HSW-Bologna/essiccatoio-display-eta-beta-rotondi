@@ -1,4 +1,4 @@
-const char *strings[68][2] = {
+const char *strings[84][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -67,5 +67,21 @@ const char *strings[68][2] = {
     {"Inserire gettone", "Insert token", },
     {"Inserire moneta", "Insert coin", },
     {"Pausa lavoro", "Paused", },
+    {"Nessun parametro", "No parameter", },
+    {"Password", "Password", },
+    {"Attesa temp.", "Waiting for temp.", },
+    {"Controllo umidita'", "Dry control", },
+    {"Statistiche", "Statistics", },
+    {"Cicli completi", "Complete cycles", },
+    {"Cicli parziali", "Partial cycles", },
+    {"Tempo di attivita'", "Activity time", },
+    {"Tempo di lavoro", "Work time", },
+    {"Tempo di rotazione", "Rotation time", },
+    {"Tempo di ventilazione", "Ventilation time", },
+    {"Tempo di riscaldamento", "Heating time", },
+    {"Umidita'", "Humidity", },
+    {"Velocita'", "Speed", },
+    {"Durata", "Duration", },
+    {"Azzerare le statistiche dei cicli?", "Clear cycles statistics?", },
 };
 
