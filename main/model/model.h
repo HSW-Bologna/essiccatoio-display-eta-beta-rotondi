@@ -158,7 +158,6 @@ typedef struct {
     uint16_t tipo_pagamento;
     uint16_t access_level;
     uint16_t autostart;
-    uint16_t residual_humidity_check;
     uint16_t max_input_temperature;      // Maximum temperature to be set for the input probe
     uint16_t max_output_temperature;     // Maximum temperature to be set for the output probe
     uint16_t minimum_coins;              // Minimum number of coins to insert to start the drying cycle
@@ -209,6 +208,10 @@ struct model {
                 uint8_t firmware_version_major;
                 uint8_t firmware_version_minor;
                 uint8_t firmware_version_patch;
+
+                uint8_t build_day;
+                uint8_t build_month;
+                uint8_t build_year;
 
                 uint16_t inputs;
                 uint8_t  heating;

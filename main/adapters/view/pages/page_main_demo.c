@@ -709,14 +709,12 @@ static void update_page(model_t *model, struct page_data *pdata) {
     if (model_is_self_service(model)) {
         view_common_set_hidden(pdata->image_language, 0);
         view_common_set_hidden(pdata->image_menu, 1);
+    } else if (model_is_cycle_stopped(model)) {
+        view_common_set_hidden(pdata->image_language, 0);
+        view_common_set_hidden(pdata->image_menu, 1);
     } else {
         view_common_set_hidden(pdata->image_language, 1);
-
-        if (model_is_cycle_stopped(model)) {
-            view_common_set_hidden(pdata->image_menu, 1);
-        } else {
-            view_common_set_hidden(pdata->image_menu, 0);
-        }
+        view_common_set_hidden(pdata->image_menu, 0);
     }
 }
 

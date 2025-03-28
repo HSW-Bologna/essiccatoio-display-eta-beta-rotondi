@@ -365,7 +365,7 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             }
 
             if (!error) {
-                uint16_t values[37] = {0};
+                uint16_t values[39] = {0};
                 if (read_input_registers(network, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
                                          sizeof(values) / sizeof(values[0]))) {
                     error = 1;
@@ -373,36 +373,39 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
                     response.as.sync.firmware_version_major   = (values[1] >> 11) & 0x1F;
                     response.as.sync.firmware_version_minor   = (values[1] >> 6) & 0x1F;
                     response.as.sync.firmware_version_patch   = (values[1] >> 0) & 0x3F;
-                    response.as.sync.heating                  = (values[2] & 0x01) > 0;
-                    response.as.sync.held_by_temperature      = (values[2] & 0x02) > 0;
-                    response.as.sync.held_by_humidity         = (values[2] & 0x04) > 0;
-                    response.as.sync.inputs                   = values[3];
-                    response.as.sync.temperature_1_adc        = values[4];
-                    response.as.sync.temperature_1            = values[5];
-                    response.as.sync.temperature_2_adc        = values[6];
-                    response.as.sync.temperature_2            = values[7];
-                    response.as.sync.temperature_probe        = values[8];
-                    response.as.sync.humidity_probe           = values[9];
-                    response.as.sync.pressure_adc             = values[10];
-                    response.as.sync.pressure                 = values[11];
-                    response.as.sync.payment                  = values[12];
-                    response.as.sync.coins[0]                 = values[13];
-                    response.as.sync.coins[1]                 = values[14];
-                    response.as.sync.coins[2]                 = values[15];
-                    response.as.sync.coins[3]                 = values[16];
-                    response.as.sync.coins[4]                 = values[17];
-                    response.as.sync.cycle_state              = values[18];
-                    response.as.sync.default_temperature      = values[19];
-                    response.as.sync.elapsed_time_seconds     = values[20];
-                    response.as.sync.remaining_time_seconds   = values[21];
-                    response.as.sync.alarms                   = values[22];
-                    response.as.sync.complete_cycles          = ((uint32_t)values[23] << 16) | ((uint32_t)values[24]);
-                    response.as.sync.partial_cycles           = ((uint32_t)values[25] << 16) | ((uint32_t)values[26]);
-                    response.as.sync.active_time_seconds      = ((uint32_t)values[27] << 16) | ((uint32_t)values[28]);
-                    response.as.sync.work_time_seconds        = ((uint32_t)values[29] << 16) | ((uint32_t)values[30]);
-                    response.as.sync.rotation_time_seconds    = ((uint32_t)values[31] << 16) | ((uint32_t)values[32]);
-                    response.as.sync.ventilation_time_seconds = ((uint32_t)values[33] << 16) | ((uint32_t)values[34]);
-                    response.as.sync.heating_time_seconds     = ((uint32_t)values[35] << 16) | ((uint32_t)values[36]);
+                    response.as.sync.build_day                = (values[2] >> 8) & 0xFF;
+                    response.as.sync.build_month              = values[2] & 0xFF;
+                    response.as.sync.build_year               = values[3] & 0xFF;
+                    response.as.sync.heating                  = (values[4] & 0x01) > 0;
+                    response.as.sync.held_by_temperature      = (values[4] & 0x02) > 0;
+                    response.as.sync.held_by_humidity         = (values[4] & 0x04) > 0;
+                    response.as.sync.inputs                   = values[5];
+                    response.as.sync.temperature_1_adc        = values[6];
+                    response.as.sync.temperature_1            = values[7];
+                    response.as.sync.temperature_2_adc        = values[8];
+                    response.as.sync.temperature_2            = values[9];
+                    response.as.sync.temperature_probe        = values[10];
+                    response.as.sync.humidity_probe           = values[11];
+                    response.as.sync.pressure_adc             = values[12];
+                    response.as.sync.pressure                 = values[13];
+                    response.as.sync.payment                  = values[14];
+                    response.as.sync.coins[0]                 = values[15];
+                    response.as.sync.coins[1]                 = values[16];
+                    response.as.sync.coins[2]                 = values[17];
+                    response.as.sync.coins[3]                 = values[18];
+                    response.as.sync.coins[4]                 = values[19];
+                    response.as.sync.cycle_state              = values[20];
+                    response.as.sync.default_temperature      = values[21];
+                    response.as.sync.elapsed_time_seconds     = values[22];
+                    response.as.sync.remaining_time_seconds   = values[23];
+                    response.as.sync.alarms                   = values[24];
+                    response.as.sync.complete_cycles          = ((uint32_t)values[25] << 16) | ((uint32_t)values[26]);
+                    response.as.sync.partial_cycles           = ((uint32_t)values[27] << 16) | ((uint32_t)values[28]);
+                    response.as.sync.active_time_seconds      = ((uint32_t)values[29] << 16) | ((uint32_t)values[30]);
+                    response.as.sync.work_time_seconds        = ((uint32_t)values[31] << 16) | ((uint32_t)values[32]);
+                    response.as.sync.rotation_time_seconds    = ((uint32_t)values[33] << 16) | ((uint32_t)values[34]);
+                    response.as.sync.ventilation_time_seconds = ((uint32_t)values[35] << 16) | ((uint32_t)values[36]);
+                    response.as.sync.heating_time_seconds     = ((uint32_t)values[37] << 16) | ((uint32_t)values[38]);
                 }
             }
 
@@ -598,6 +601,7 @@ static struct task_message init_sync_data(model_t *model) {
                         .test_outputs                    = model->run.minion.write.test_outputs,
                         .test_pwm1                       = model->run.minion.write.test_pwm1,
                         .test_pwm2                       = model->run.minion.write.test_pwm2,
+                        .busy_signal_type                = model->config.parmac.tipo_macchina_occupata,
                         .cycle_delay_time                = model->config.parmac.tempo_attesa_partenza_ciclo,
                         .cycle_reset_time                = model->config.parmac.cycle_reset_time,
                         .output_safety_temperature       = model->config.parmac.safety_output_temperature,

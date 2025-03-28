@@ -9,14 +9,14 @@ DISABILITA_ALLARMI, Disabilita allarmi, Disable alarms
 TEMPO_ALLARME_TEMPERATURA, Tempo allarme temperatura, Temperature alarm delay
 TEMPERATURA_DI_SICUREZZA, Temperatura di sicurezza, Safety temperature
 TIPO_MACCHINA_OCCUPATA, Tipo macchina occupata, Busy signal type
-DIREZIONE_ALLARME_FILTRO, Direzione allarme filtro, Filter alarm direction
-DIREZIONE_ALLARME_INVERTER, Direzione allarme inverter, Inverter alarm direction
+DIREZIONE_ALLARME_FILTRO, Tipo allarme filtro, Filter alarm type
+DIREZIONE_ALLARME_INVERTER, Tipo allarme inverter, Inverter alarm type
 SONDA_TEMPERATURA, Sonda di temperatura, Temperature probe
 TIPO_RISCALDAMENTO, Tipo riscaldamento, Heating mode
 TENTATIVI_ACCENSIONE_GAS, Tentativi accesione gas, Gas ignition attempts
 FERMA_TEMPO_IN_PAUSA, Ferma il tempo in pausa, Stop time in pause
-DIREZIONE_CONTATTO_OBLO, Direzione contatto oblo', Porthole contact direction
-DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, Direzione contatto macchina occupata, Busy signal contact direction
+DIREZIONE_CONTATTO_OBLO, Tipo contatto oblo', Porthole contact type
+DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, Tipo contatto macchina libera, Free signal contact type
 DURATA, Durata, Duration
 TEMPO_DI_ROTAZIONE, Tempo di rotazione, Rotation time
 TEMPO_DI_PAUSA, Tempo di pausa, Pause time
@@ -46,7 +46,7 @@ TEMPO_DI_RITORNO_LINGUA_INIZIALE, Tempo di ritorno alla lingua iniziale, Initial
 TEMPO_DI_RITORNO_PAGINA_INIZIALE, Tempo di ritorno alla pagina iniziale, Initial page reset period
 CONTROLLO_UMIDITA_RESIDUA, Controllo umidita' residua, Residual humidity check
 AUTOAVVIO, Autoavvio, Autostart
-DIREZIONE_ALLARME_EMERGENZA, Direzione allarme emergenza, Emergency alarm direction
+DIREZIONE_ALLARME_EMERGENZA, Tipo allarme emergenza, Emergency alarm type
 TEMPO_AZZERAMENTO_CICLO, Tempo azzeramento ciclo, Reset cycle time
 TEMPO_PER_GETTONE, Tempo per gettone, Time per coin
 NUMERO_MINIMO_DI_GETTONI, Numero minimo di gettoni, Minimum number of coins

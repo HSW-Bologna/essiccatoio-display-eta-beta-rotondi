@@ -9,7 +9,7 @@
 #include "esp_log.h"
 
 
-#define NUM_PARAMETERS 107
+#define NUM_PARAMETERS 106
 
 
 enum {
@@ -43,9 +43,8 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->abilita_tasto_menu,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_TASTO_MENU, pars_nosi),                                                    TECH_BITS);
     ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_LIVELLO_ACCESSO, pars_livello_accesso),                                    TECH_BITS);
     ps[i++] = PARAMETER(&p->autostart,                                0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_AUTOAVVIO, pars_nosi),                                                     TECH_BITS);
-    ps[i++] = PARAMETER(&p->residual_humidity_check,                  0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_CONTROLLO_UMIDITA_RESIDUA, pars_nosi),                                     TECH_BITS);
     ps[i++] = PARAMETER(&p->heating_type,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_RISCALDAMENTO, heating_type_strings),                              TECH_BITS);
-    ps[i++] = PARAMETER(&p->gas_ignition_attempts,                    0,                              9,                          3,                              FFINT(PARS_DESCRIPTIONS_TENTATIVI_ACCENSIONE_GAS, "%i"),                                          TECH_BITS);
+    ps[i++] = PARAMETER(&p->gas_ignition_attempts,                    0,                              9,                          1,                              FFINT(PARS_DESCRIPTIONS_TENTATIVI_ACCENSIONE_GAS, "%i"),                                          TECH_BITS);
     ps[i++] = PARAMETER(&p->reset_page_time,                          10,                             250,                        30,                             FTIME(PARS_DESCRIPTIONS_TEMPO_DI_RITORNO_PAGINA_INIZIALE),                                        TECH_BITS);
     ps[i++] = PARAMETER(&p->reset_language_time,                      1,                              250,                        5,                              FTIME(PARS_DESCRIPTIONS_TEMPO_DI_RITORNO_LINGUA_INIZIALE),                                        TECH_BITS);
     ps[i++] = PARAMETER(&p->pause_button_time,                        1,                              60,                         1,                              FTIME(PARS_DESCRIPTIONS_TEMPO_TASTO_PAUSA),                                                       USER_BITS);
@@ -67,7 +66,7 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->stop_time_in_pause,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_FERMA_TEMPO_IN_PAUSA, pars_nosi),                                          USER_BITS);
     ps[i++] = PARAMETER(&p->cycle_reset_time,                         0,                              3600,                       60,                             FTIME(PARS_DESCRIPTIONS_TEMPO_AZZERAMENTO_CICLO),                                                 USER_BITS);
     ps[i++] = PARAMETER(&p->busy_signal_nc_na,                        0,                              1,                          1,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_CONTATTO_MACCHINA_OCCUPATA, pars_nc_na),                         USER_BITS);
-    ps[i++] = PARAMETER(&p->tipo_macchina_occupata,                   0,                              3,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_MACCHINA_OCCUPATA, pars_tipo_macchina_occupata),                      USER_BITS);
+    ps[i++] = PARAMETER(&p->tipo_macchina_occupata,                   0,                              2,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_MACCHINA_OCCUPATA, pars_tipo_macchina_occupata),                      USER_BITS);
     ps[i++] = PARAMETER(&p->tempo_allarme_temperatura,                60,                             99*60+59,                   45*60,                          FTIME(PARS_DESCRIPTIONS_TEMPO_ALLARME_TEMPERATURA),                                               TECH_BITS);
     ps[i++] = PARAMETER(&p->allarme_inverter_off_on,                  0,                              1,                          1,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_ALLARME_INVERTER, pars_nc_na),                                   TECH_BITS);
     ps[i++] = PARAMETER(&p->allarme_filtro_off_on,                    0,                              1,                          1,                              FOPT(PARS_DESCRIPTIONS_DIREZIONE_ALLARME_FILTRO, pars_nc_na),                                     TECH_BITS);

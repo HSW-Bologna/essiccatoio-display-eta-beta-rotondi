@@ -58,7 +58,6 @@ struct page_data {
 enum {
     BTN_BACK_ID,
     BTN_TEST_ID,
-    BTN_ARCHIVING_ID,
     BTN_PARMAC_ID,
     BTN_ADVANCED_ID,
     BTN_PROGRAMS_ID,
@@ -148,16 +147,6 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_t *btn = lv_btn_create(cont);
         lv_obj_set_width(btn, 140);
         lv_obj_t *lbl = lv_label_create(btn);
-        lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_ARCHIVIAZIONE));
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_obj_center(lbl);
-        view_register_object_default_callback(btn, BTN_ARCHIVING_ID);
-    }
-
-    {
-        lv_obj_t *btn = lv_btn_create(cont);
-        lv_obj_set_width(btn, 140);
-        lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_AVANZATE));
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
@@ -188,18 +177,20 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_obj_set_style_text_font(label_machine_version, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(label_machine_version, lv_color_lighten(VIEW_STYLE_COLOR_GREEN, LV_OPA_50),
                                 LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(label_machine_version, "v%i.%i.%i", model->run.minion.read.firmware_version_major,
-                          model->run.minion.read.firmware_version_minor, model->run.minion.read.firmware_version_patch);
-    lv_obj_align(label_machine_version, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_label_set_text_fmt(label_machine_version, "macchina v%i.%i.%i %02i/%02i/%i",
+                          model->run.minion.read.firmware_version_major, model->run.minion.read.firmware_version_minor,
+                          model->run.minion.read.firmware_version_patch, model->run.minion.read.build_day,
+                          model->run.minion.read.build_month, model->run.minion.read.build_year);
+    lv_obj_align(label_machine_version, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
 
     lv_obj_t *label_display_version = lv_label_create(lv_screen_active());
     lv_obj_set_style_text_font(label_display_version, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(label_display_version, lv_color_lighten(VIEW_STYLE_COLOR_RED, LV_OPA_50),
                                 LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(label_display_version, "v%i.%i.%i %02i/%02i/%i", APP_CONFIG_FIRMWARE_VERSION_MAJOR,
+    lv_label_set_text_fmt(label_display_version, "display v%i.%i.%i %02i/%02i/%i", APP_CONFIG_FIRMWARE_VERSION_MAJOR,
                           APP_CONFIG_FIRMWARE_VERSION_MINOR, APP_CONFIG_FIRMWARE_VERSION_PATCH, COMPUTE_BUILD_DAY,
                           COMPUTE_BUILD_MONTH, COMPUTE_BUILD_YEAR);
-    lv_obj_align(label_display_version, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    lv_obj_align(label_display_version, LV_ALIGN_BOTTOM_LEFT, 0, -18);
 
     update_page(model, pdata);
 }
@@ -251,10 +242,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_TEST_ID:
                             msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_test_inputs);
-                            break;
-
-                        case BTN_ARCHIVING_ID:
-                            // msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_archiving);
                             break;
 
                         case BTN_PROGRAMS_ID:

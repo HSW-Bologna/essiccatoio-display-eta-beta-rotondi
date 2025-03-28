@@ -62,6 +62,9 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.firmware_version_major = response.as.sync.firmware_version_major;
                     model->run.minion.read.firmware_version_minor = response.as.sync.firmware_version_minor;
                     model->run.minion.read.firmware_version_patch = response.as.sync.firmware_version_patch;
+                    model->run.minion.read.build_day              = response.as.sync.build_day;
+                    model->run.minion.read.build_month            = response.as.sync.build_month;
+                    model->run.minion.read.build_year             = response.as.sync.build_year;
                     model->run.minion.read.inputs                 = response.as.sync.inputs;
                     model->run.minion.read.heating                = response.as.sync.heating;
                     model->run.minion.read.held_by_temperature    = response.as.sync.held_by_temperature;

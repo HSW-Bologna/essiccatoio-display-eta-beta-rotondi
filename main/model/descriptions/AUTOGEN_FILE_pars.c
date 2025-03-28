@@ -1,7 +1,7 @@
 const char *pars_tipo_macchina_occupata[3][2] = {
-    {"Segnalazione allarmi e attivita'", "Signal alarms and activity", },
+    {"Segnalazione allarmi e pagamento", "Signal alarms and payment", },
     {"Segnalazione allarmi", "Signal alarms", },
-    {"Segnalazione attivita'", "Signal activity", },
+    {"Segnalazione allarmi e pagamento; oblo' liberante", "Signal alarms and payment; freeing porthole", },
 };
 
 const char *pars_nosi[2][2] = {
@@ -51,14 +51,14 @@ const char *pars_descriptions[56][2] = {
     {"Tempo allarme temperatura", "Temperature alarm delay", },
     {"Temperatura di sicurezza", "Safety temperature", },
     {"Tipo macchina occupata", "Busy signal type", },
-    {"Direzione allarme filtro", "Filter alarm direction", },
-    {"Direzione allarme inverter", "Inverter alarm direction", },
+    {"Tipo allarme filtro", "Filter alarm type", },
+    {"Tipo allarme inverter", "Inverter alarm type", },
     {"Sonda di temperatura", "Temperature probe", },
     {"Tipo riscaldamento", "Heating mode", },
     {"Tentativi accesione gas", "Gas ignition attempts", },
     {"Ferma il tempo in pausa", "Stop time in pause", },
-    {"Direzione contatto oblo'", "Porthole contact direction", },
-    {"Direzione contatto macchina occupata", "Busy signal contact direction", },
+    {"Tipo contatto oblo'", "Porthole contact type", },
+    {"Tipo contatto macchina libera", "Free signal contact type", },
     {"Durata", "Duration", },
     {"Tempo di rotazione", "Rotation time", },
     {"Tempo di pausa", "Pause time", },
@@ -88,7 +88,7 @@ const char *pars_descriptions[56][2] = {
     {"Tempo di ritorno alla pagina iniziale", "Initial page reset period", },
     {"Controllo umidita' residua", "Residual humidity check", },
     {"Autoavvio", "Autostart", },
-    {"Direzione allarme emergenza", "Emergency alarm direction", },
+    {"Tipo allarme emergenza", "Emergency alarm type", },
     {"Tempo azzeramento ciclo", "Reset cycle time", },
     {"Tempo per gettone", "Time per coin", },
     {"Numero minimo di gettoni", "Minimum number of coins", },

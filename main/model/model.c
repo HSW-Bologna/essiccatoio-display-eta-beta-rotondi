@@ -34,6 +34,7 @@ void model_init(mut_model_t *model) {
     }
 
     model->run.minion.communication_enabled = 1;
+    model->run.firmware_update_state = FIRMWARE_UPDATE_STATE_NONE;
 
     model_check_parameters(model);
 }
@@ -275,9 +276,8 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     uint16_t flags = ((p->stop_time_in_pause > 0) << 0) | ((p->disabilita_allarmi > 0) << 1) |
                      ((p->abilita_visualizzazione_temperatura > 0) << 2) | ((p->abilita_tasto_menu > 0) << 3) |
                      ((p->allarme_inverter_off_on > 0) << 4) | ((p->allarme_filtro_off_on > 0) << 5) |
-                     ((p->autostart > 0) << 6) | ((p->residual_humidity_check > 0) << 7) |
-                     ((p->busy_signal_nc_na > 0) << 8) | ((p->porthole_nc_na > 0) << 9) |
-                     ((p->emergency_alarm_nc_na > 0) << 10)     // |
+                     ((p->autostart > 0) << 6) | (0 << 7) | ((p->busy_signal_nc_na > 0) << 8) |
+                     ((p->porthole_nc_na > 0) << 9) | ((p->emergency_alarm_nc_na > 0) << 10)     // |
         ;
 
     i += serialize_uint16_be(&buffer[i], flags);
@@ -330,7 +330,6 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     p->allarme_inverter_off_on             = (flags & (1 << 4)) > 0;
     p->allarme_filtro_off_on               = (flags & (1 << 5)) > 0;
     p->autostart                           = (flags & (1 << 6)) > 0;
-    p->residual_humidity_check             = (flags & (1 << 7)) > 0;
     p->busy_signal_nc_na                   = (flags & (1 << 8)) > 0;
     p->porthole_nc_na                      = (flags & (1 << 9)) > 0;
     p->emergency_alarm_nc_na               = (flags & (1 << 10)) > 0;

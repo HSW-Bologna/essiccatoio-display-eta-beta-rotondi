@@ -268,6 +268,10 @@ static void update_page(model_t *model, struct page_data *pdata) {
 
         case FIRMWARE_UPDATE_STATE_NONE: {
             lv_obj_add_state(pdata->btn_fup, LV_STATE_DISABLED);
+            view_common_set_hidden(pdata->spinner, 1);
+            view_common_set_hidden(pdata->button_ok, 1);
+            view_common_set_hidden(pdata->label_status, 1);
+            view_common_set_hidden(pdata->obj_buttons, 0);
 
             /*
             switch (model->system.storage_status) {
