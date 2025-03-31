@@ -85,7 +85,7 @@ void             view_add_watched_variable(void *ptr, size_t size, int code);
 view_protocol_t *view_get_protocol(pman_handle_t handle);
 
 
-extern const pman_page_t page_main, page_password, page_menu, page_test_inputs, page_test_outputs,
+extern const pman_page_t page_password, page_menu, page_test_inputs, page_test_outputs,
     page_test_temperature, page_parmac, page_test_drum, page_main_demo, page_test_coins_digital, page_programs,
     page_program, page_program_info, page_keyboard, page_step, page_advanced, page_splash, page_commissioning,
     page_drive, page_statistics, page_work_parameters;

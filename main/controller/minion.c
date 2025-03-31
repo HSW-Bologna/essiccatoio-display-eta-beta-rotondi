@@ -365,7 +365,7 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             }
 
             if (!error) {
-                uint16_t values[39] = {0};
+                uint16_t values[42] = {0};
                 if (read_input_registers(network, values, MINION_ADDR, MODBUS_IR_DEVICE_MODEL,
                                          sizeof(values) / sizeof(values[0]))) {
                     error = 1;
@@ -380,32 +380,35 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
                     response.as.sync.held_by_temperature      = (values[4] & 0x02) > 0;
                     response.as.sync.held_by_humidity         = (values[4] & 0x04) > 0;
                     response.as.sync.inputs                   = values[5];
-                    response.as.sync.temperature_1_adc        = values[6];
-                    response.as.sync.temperature_1            = values[7];
-                    response.as.sync.temperature_2_adc        = values[8];
-                    response.as.sync.temperature_2            = values[9];
-                    response.as.sync.temperature_probe        = values[10];
-                    response.as.sync.humidity_probe           = values[11];
-                    response.as.sync.pressure_adc             = values[12];
-                    response.as.sync.pressure                 = values[13];
-                    response.as.sync.payment                  = values[14];
-                    response.as.sync.coins[0]                 = values[15];
-                    response.as.sync.coins[1]                 = values[16];
-                    response.as.sync.coins[2]                 = values[17];
-                    response.as.sync.coins[3]                 = values[18];
-                    response.as.sync.coins[4]                 = values[19];
-                    response.as.sync.cycle_state              = values[20];
-                    response.as.sync.default_temperature      = values[21];
-                    response.as.sync.elapsed_time_seconds     = values[22];
-                    response.as.sync.remaining_time_seconds   = values[23];
-                    response.as.sync.alarms                   = values[24];
-                    response.as.sync.complete_cycles          = ((uint32_t)values[25] << 16) | ((uint32_t)values[26]);
-                    response.as.sync.partial_cycles           = ((uint32_t)values[27] << 16) | ((uint32_t)values[28]);
-                    response.as.sync.active_time_seconds      = ((uint32_t)values[29] << 16) | ((uint32_t)values[30]);
-                    response.as.sync.work_time_seconds        = ((uint32_t)values[31] << 16) | ((uint32_t)values[32]);
-                    response.as.sync.rotation_time_seconds    = ((uint32_t)values[33] << 16) | ((uint32_t)values[34]);
-                    response.as.sync.ventilation_time_seconds = ((uint32_t)values[35] << 16) | ((uint32_t)values[36]);
-                    response.as.sync.heating_time_seconds     = ((uint32_t)values[37] << 16) | ((uint32_t)values[38]);
+                    response.as.sync.outputs                  = values[6];
+                    response.as.sync.fan_speed                = values[7];
+                    response.as.sync.drum_speed               = values[8];
+                    response.as.sync.temperature_1_adc        = values[9];
+                    response.as.sync.temperature_1            = values[10];
+                    response.as.sync.temperature_2_adc        = values[11];
+                    response.as.sync.temperature_2            = values[12];
+                    response.as.sync.temperature_probe        = values[13];
+                    response.as.sync.humidity_probe           = values[14];
+                    response.as.sync.pressure_adc             = values[15];
+                    response.as.sync.pressure                 = values[16];
+                    response.as.sync.payment                  = values[17];
+                    response.as.sync.coins[0]                 = values[18];
+                    response.as.sync.coins[1]                 = values[19];
+                    response.as.sync.coins[2]                 = values[20];
+                    response.as.sync.coins[3]                 = values[21];
+                    response.as.sync.coins[4]                 = values[22];
+                    response.as.sync.cycle_state              = values[23];
+                    response.as.sync.default_temperature      = values[24];
+                    response.as.sync.elapsed_time_seconds     = values[25];
+                    response.as.sync.remaining_time_seconds   = values[26];
+                    response.as.sync.alarms                   = values[27];
+                    response.as.sync.complete_cycles          = ((uint32_t)values[28] << 16) | ((uint32_t)values[29]);
+                    response.as.sync.partial_cycles           = ((uint32_t)values[30] << 16) | ((uint32_t)values[31]);
+                    response.as.sync.active_time_seconds      = ((uint32_t)values[32] << 16) | ((uint32_t)values[33]);
+                    response.as.sync.work_time_seconds        = ((uint32_t)values[34] << 16) | ((uint32_t)values[35]);
+                    response.as.sync.rotation_time_seconds    = ((uint32_t)values[36] << 16) | ((uint32_t)values[37]);
+                    response.as.sync.ventilation_time_seconds = ((uint32_t)values[38] << 16) | ((uint32_t)values[39]);
+                    response.as.sync.heating_time_seconds     = ((uint32_t)values[40] << 16) | ((uint32_t)values[41]);
                 }
             }
 

@@ -214,6 +214,9 @@ struct model {
                 uint8_t build_year;
 
                 uint16_t inputs;
+                uint16_t outputs;
+                uint16_t fan_speed;
+                uint16_t drum_speed;
                 uint8_t  heating;
                 uint8_t  held_by_temperature;
                 uint8_t  held_by_humidity;
@@ -258,6 +261,8 @@ struct model {
         int16_t temperature_delta;
         int16_t humidity_delta;
         int16_t speed_delta;
+
+        uint8_t tech_view;
     } run;
 };
 

@@ -27,6 +27,9 @@ typedef struct {
             uint8_t  held_by_temperature;
             uint8_t  held_by_humidity;
             uint16_t inputs;
+            uint16_t outputs;
+            uint16_t fan_speed;
+            uint16_t drum_speed;
             uint16_t temperature_1_adc;
             uint16_t temperature_1;
             uint16_t temperature_2_adc;

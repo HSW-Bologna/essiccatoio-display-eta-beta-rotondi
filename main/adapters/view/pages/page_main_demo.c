@@ -49,12 +49,17 @@ LV_IMG_DECLARE(img_menu);
 #define MAX_IMAGES 6
 
 
+static void drag_event_handler(lv_event_t *e);
+
+
 enum {
     BTN_PROGRAM_ID,
     BTN_LANGUAGE_ID,
     BTN_MENU_ID,
     BTN_STOP_ID,
     BTN_ALARM_ID,
+    BTN_WINDOW_HIDE_ID,
+    BTN_WINDOW_CLOSE_ID,
     TIMER_CHANGE_PAGE_ID,
     TIMER_RESTORE_LANGUAGE_ID,
     TIMER_BLINK_MESSAGE_ID,
@@ -82,6 +87,7 @@ struct page_data {
     lv_obj_t *obj_drawer;
 
     lv_obj_t *led_heating;
+    lv_obj_t *window;
 
     popup_t alarm_popup;
 
@@ -292,6 +298,32 @@ static void open_page(pman_handle_t handle, void *state) {
     pdata->alarm_popup = view_common_alarm_popup_create(lv_screen_active(), BTN_ALARM_ID);
     lv_obj_set_size(pdata->alarm_popup.blanket, LV_HOR_RES, LV_VER_RES * 3 / 4);
 
+
+    if (model->run.tech_view) {
+        lv_obj_t *win = lv_win_create(lv_screen_active());
+        lv_obj_set_style_text_font(win, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_obj_set_size(win, 200, 200);
+
+        lv_obj_t *header = lv_win_get_header(win);
+        lv_obj_set_style_pad_gap(header, 8, LV_STATE_DEFAULT);
+        lv_obj_set_style_pad_hor(header, 8, LV_STATE_DEFAULT);
+        lv_obj_add_event_cb(header, drag_event_handler, LV_EVENT_PRESSING, win);
+        lv_obj_set_height(header, 36);
+
+        lv_win_add_title(win, "Techview");
+        view_register_object_default_callback(lv_win_add_button(win, LV_SYMBOL_DOWN, 32), BTN_WINDOW_HIDE_ID);
+        view_register_object_default_callback(lv_win_add_button(win, LV_SYMBOL_CLOSE, 32), BTN_WINDOW_CLOSE_ID);
+
+        lv_obj_t *cont = lv_win_get_content(win); /*Content can be added here*/
+        lv_obj_set_style_text_font(cont, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_label_create(cont);
+        lv_obj_set_style_bg_opa(cont, LV_OPA_70, LV_STATE_DEFAULT);
+
+        pdata->window = win;
+    } else {
+        pdata->window = NULL;
+    }
+
     ESP_LOGI(TAG, "Open");
 
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.cycle_state, WATCH_STATE_ID);
@@ -395,6 +427,26 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                     pman_timer_reset(pdata->timer_restore_language);
 
                     switch (obj_data->id) {
+                        case BTN_WINDOW_CLOSE_ID: {
+                            if (pdata->window) {
+                                lv_obj_delete(pdata->window);
+                                pdata->window = NULL;
+                            }
+                            break;
+                        }
+
+                        case BTN_WINDOW_HIDE_ID: {
+                            if (pdata->window) {
+                                lv_obj_t *cont = lv_win_get_content(pdata->window);
+                                if (lv_obj_has_flag(cont, LV_OBJ_FLAG_HIDDEN)) {
+                                    lv_obj_remove_flag(cont, LV_OBJ_FLAG_HIDDEN);
+                                } else {
+                                    lv_obj_add_flag(cont, LV_OBJ_FLAG_HIDDEN);
+                                }
+                            }
+                            break;
+                        }
+
                         case BTN_ALARM_ID: {
                             if (!model_is_any_alarm_active(model)) {
                                 pdata->alarm_pacified = 0;
@@ -550,6 +602,21 @@ static void update_page(model_t *model, struct page_data *pdata) {
     // In self service you can change the main page language separately; in all other scenarios use the system's
     // language
     language_t language = model_is_self_service(model) ? model->run.temporary_language : model->config.parmac.language;
+
+    if (pdata->window) {
+        lv_obj_t *label   = lv_obj_get_child(lv_win_get_content(pdata->window), 0);
+        uint16_t  inputs  = model->run.minion.read.inputs;
+        uint16_t  outputs = model->run.minion.read.outputs;
+
+        lv_label_set_text_fmt(
+            label, "temp: %i/%i\nhum: %i\npress: %i\nfan: %3i\ndrum: %i\nin: %i%i%i%i%i%i%i%i\nout: %i%i%i%i%i%i%i",
+            model_get_current_temperature(model), model_get_temperature_setpoint(model),
+            model->run.minion.read.humidity_probe / 100, model->run.minion.read.pressure,
+            model->run.minion.read.fan_speed, model->run.minion.read.drum_speed, (inputs & 0x01) > 0,
+            (inputs & 0x02) > 0, (inputs & 0x04) > 0, (inputs & 0x08) > 0, (inputs & 0x10) > 0, (inputs & 0x20) > 0,
+            (inputs & 0x40) > 0, (inputs & 0x80) > 0, (outputs & 0x01) > 0, (outputs & 0x02) > 0, (outputs & 0x04) > 0,
+            (outputs & 0x08) > 0, (outputs & 0x10) > 0, (outputs & 0x20) > 0, (outputs & 0x40) > 0);
+    }
 
     if (model_is_cycle_stopped(model)) {
         lv_obj_set_width(pdata->label_status, LV_HOR_RES);
@@ -759,6 +826,22 @@ static void destroy_page(void *state, void *extra) {
     pman_timer_delete(pdata->timer_restore_language);
     pman_timer_delete(pdata->timer_blink_message);
     lv_free(state);
+}
+
+
+static void drag_event_handler(lv_event_t *e) {
+    lv_obj_t *win = lv_event_get_user_data(e);
+
+    lv_indev_t *indev = lv_indev_active();
+    if (indev == NULL)
+        return;
+
+    lv_point_t vect;
+    lv_indev_get_vect(indev, &vect);
+
+    int32_t x = lv_obj_get_x_aligned(win) + vect.x;
+    int32_t y = lv_obj_get_y_aligned(win) + vect.y;
+    lv_obj_set_pos(win, x, y);
 }
 
 

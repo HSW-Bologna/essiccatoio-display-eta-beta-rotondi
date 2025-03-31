@@ -66,6 +66,9 @@ void controller_manage(mut_model_t *model) {
                     model->run.minion.read.build_month            = response.as.sync.build_month;
                     model->run.minion.read.build_year             = response.as.sync.build_year;
                     model->run.minion.read.inputs                 = response.as.sync.inputs;
+                    model->run.minion.read.outputs                = response.as.sync.outputs;
+                    model->run.minion.read.fan_speed              = response.as.sync.fan_speed;
+                    model->run.minion.read.drum_speed             = response.as.sync.drum_speed;
                     model->run.minion.read.heating                = response.as.sync.heating;
                     model->run.minion.read.held_by_temperature    = response.as.sync.held_by_temperature;
                     model->run.minion.read.held_by_humidity       = response.as.sync.held_by_humidity;
