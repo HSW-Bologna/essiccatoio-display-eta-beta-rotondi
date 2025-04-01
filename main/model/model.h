@@ -325,4 +325,6 @@ void             model_modify_humidity_setpoint(mut_model_t *model, int16_t modi
 void             model_modify_speed(mut_model_t *model, int16_t modification);
 
 
+extern const uint16_t coin_values[DIGITAL_COIN_LINES_NUM];
+
 #endif
