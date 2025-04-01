@@ -56,11 +56,12 @@ static void open_page(pman_handle_t handle, void *state) {
     lv_table_set_cell_value(table, 0, 0, view_intl_get_string(model, STRINGS_CASSA));
     lv_table_set_cell_value(table, 1, 0, view_intl_get_string(model, STRINGS_DIGITALE));
     lv_table_add_cell_ctrl(table, 1, 0, LV_TABLE_CELL_CTRL_MERGE_RIGHT);
-    lv_table_set_cell_value_fmt(table, 2, 0, "%s 5 (2.0)", view_intl_get_string(model, STRINGS_LINEA));
-    lv_table_set_cell_value_fmt(table, 3, 0, "%s 1 (1.0)", view_intl_get_string(model, STRINGS_LINEA));
-    lv_table_set_cell_value_fmt(table, 4, 0, "%s 2 (0.5)", view_intl_get_string(model, STRINGS_LINEA));
-    lv_table_set_cell_value_fmt(table, 5, 0, "%s 3 (0.2)", view_intl_get_string(model, STRINGS_LINEA));
-    lv_table_set_cell_value_fmt(table, 6, 0, "%s 4 (0.1)", view_intl_get_string(model, STRINGS_LINEA));
+
+    for (size_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
+        lv_table_set_cell_value_fmt(table, 2 + i, 0, "%s %i (%.1f)", view_intl_get_string(model, STRINGS_LINEA), i + 1,
+                                    (float)coin_values[i] / 100.);
+    }
+
     lv_table_set_cell_value(table, 7, 0, view_intl_get_string(model, STRINGS_TOTALE));
     lv_obj_align(table, LV_ALIGN_TOP_MID, 0, 0);
 
@@ -185,8 +186,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    const uint16_t values[] = {10, 20, 50, 100, 200};
-    uint16_t       total    = 0;
+    uint16_t total = 0;
 
     {
         char string[8] = {0};
@@ -197,7 +197,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
     for (size_t i = DIGITAL_COIN_LINE_1; i <= DIGITAL_COIN_LINE_5; i++) {
         char string[8] = {0};
         snprintf(string, sizeof(string), "%i", model->run.minion.read.coins[i]);
-        total += model->run.minion.read.coins[i] * values[i];
+        total += model->run.minion.read.coins[i] * coin_values[i];
         lv_table_set_cell_value(pdata->table_digital, i + 2, 1, string);
     }
 

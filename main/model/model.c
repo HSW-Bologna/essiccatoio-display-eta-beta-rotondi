@@ -17,8 +17,8 @@
 #define INPUT_PORTHOLE        6
 
 
-static const char    *TAG           = __FILE_NAME__;
-static const uint16_t coin_values[] = {10, 20, 50, 100, 200};
+static const char *TAG           = __FILE_NAME__;
+const uint16_t     coin_values[] = {100, 200, 10, 20, 50};
 
 
 void model_init(mut_model_t *model) {
@@ -34,7 +34,7 @@ void model_init(mut_model_t *model) {
     }
 
     model->run.minion.communication_enabled = 1;
-    model->run.firmware_update_state = FIRMWARE_UPDATE_STATE_NONE;
+    model->run.firmware_update_state        = FIRMWARE_UPDATE_STATE_NONE;
 
     model_check_parameters(model);
 }

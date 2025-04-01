@@ -1,8 +1,16 @@
 # Essiccatoio
 
-## TODO
- - Azzera cicli totali e parziali
- - Aggiungi una modalita' di debug in cui vedere in ciclo le informazioni (temperatura, umidita', velocita', ingressi e uscite
- - `residual_humidity_check`
- - Come funzionano tempo allarme no umidita', tempo allarme temperatura bassa (o tempo allarme antigelo), tempo inibilizione rilevamento temperatura 
- - Cosa succede se ho piu' step di asciugatura in modalita' self?
+## Compilazione
+
+Il firmware dovrebbe essere compilato con i seguenti strumenti:
+ - ESP-IDF v5.3.x (testato con v5.3.2)
+
+## Caricamento Firmware
+
+| binario | indirizzo |
+|---------|-----------|
+| bootloader.bin | 0x1000 |
+| partition_table.bin | 0x8000 |
+| ota_data_initial.bin | 0xd000 |
+| essiccatoio-display-eta-beta-rotondi.bin | 0x10000 |
+
