@@ -374,7 +374,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_MOVE_DOWN_ID:
                             if (pdata->selected_step >= 0) {
-                                uint16_t absolute_index   = absolute_step_index(pdata);
+                                uint16_t absolute_index = absolute_step_index(pdata);
 
                                 if (absolute_index < num_drying_steps &&
                                     program_swap_steps(program, absolute_index, absolute_index + 1)) {
@@ -393,7 +393,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
                         case BTN_MOVE_UP_ID: {
                             if (pdata->selected_step >= 0) {
-                                uint16_t absolute_index   = absolute_step_index(pdata);
+                                uint16_t absolute_index = absolute_step_index(pdata);
 
                                 if (absolute_index < num_drying_steps && absolute_index >= 1) {
                                     if (program_swap_steps(program, absolute_index - 1, absolute_index)) {
@@ -538,12 +538,25 @@ static void update_page(model_t *model, struct page_data *pdata) {
     switch (pdata->page_state) {
         case PAGE_STATE_SELECTION: {
             if (pdata->selected_step >= 0 && pdata->selected_step < (int)num_steps) {
-                lv_obj_remove_state(pdata->button_move_up, LV_STATE_DISABLED);
-                lv_obj_remove_state(pdata->button_move_down, LV_STATE_DISABLED);
-                lv_obj_remove_state(pdata->button_delete, LV_STATE_DISABLED);
+                uint16_t absolute_index = absolute_step_index(pdata);
+                // Only allow step manipulation for multiple drying steps
+                if (num_drying_steps > 1 && absolute_index < num_drying_steps) {
+                    lv_obj_remove_state(pdata->button_delete, LV_STATE_DISABLED);
+                    lv_obj_remove_state(pdata->button_move_up, LV_STATE_DISABLED);
+                    lv_obj_remove_state(pdata->button_move_down, LV_STATE_DISABLED);
+                } else {
+                    lv_obj_add_state(pdata->button_delete, LV_STATE_DISABLED);
+                    lv_obj_add_state(pdata->button_move_up, LV_STATE_DISABLED);
+                    lv_obj_add_state(pdata->button_move_down, LV_STATE_DISABLED);
+                    lv_obj_add_state(pdata->button_copy, LV_STATE_DISABLED);
+                }
 
-                if (!model_is_self_service(model)) {
-                    lv_obj_remove_state(pdata->button_copy, LV_STATE_DISABLED);
+                if (absolute_index < num_drying_steps) {
+                    if (!model_is_self_service(model)) {
+                        lv_obj_remove_state(pdata->button_copy, LV_STATE_DISABLED);
+                    } else {
+                        lv_obj_add_state(pdata->button_copy, LV_STATE_DISABLED);
+                    }
                 } else {
                     lv_obj_add_state(pdata->button_copy, LV_STATE_DISABLED);
                 }

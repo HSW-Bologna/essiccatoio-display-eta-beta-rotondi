@@ -245,9 +245,7 @@ const char *view_common_step2str(model_t *model, program_step_type_t type) {
 const char *view_common_modello_str(model_t *model) {
     const char *strings_modello[] = {
         "TEST MODEL",       "EDS RE SELF C.A.", "EDS RE LAB  C.A.", "EDS RG SELF C.A.", "EDS RG LAB  C.A.",
-        "EDS RV SELF C.A.", "EDS RV LAB  C.A.", "EDS RE SELF C.C.", "EDS RV SELF C.C.", "EDS RE LAB  C.C.",
-        "EDS RV LAB  C.C.", "EDS RP SELF C.A.", "EDS RP LAB  C.A.", "EDS RP SELF C.C.", "EDS RP LAB  C.C.",
-        "EDS RE LAB TH CA", "EDS RG LAB TH CA", "EDS RV LAB TH CA", "EDS RE LAB TH CC", "EDS RV LAB TH CC",
+        "EDS RV SELF C.A.", "EDS RV LAB  C.A.", "EDS RE LAB TH CA", "EDS RG LAB TH CA", "EDS RV LAB TH CA",
     };
 
     return strings_modello[model->config.parmac.machine_model];

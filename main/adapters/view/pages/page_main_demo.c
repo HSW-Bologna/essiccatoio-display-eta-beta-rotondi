@@ -27,6 +27,8 @@ LV_IMG_DECLARE(img_stop_released_demo);
 LV_IMG_DECLARE(img_menu);
 
 
+#define TECHVIEW_HEADER_HEIGHT 36
+#define TECHVIEW_WINDOW_SIZE   200
 #define SETTINGS_DRAG_WIDTH    64
 #define SETTINGS_DRAG_HEIGHT   32
 #define SETTINGS_DRAWER_WIDTH  100
@@ -302,13 +304,13 @@ static void open_page(pman_handle_t handle, void *state) {
     if (model->run.tech_view) {
         lv_obj_t *win = lv_win_create(lv_screen_active());
         lv_obj_set_style_text_font(win, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_obj_set_size(win, 200, 200);
+        lv_obj_set_size(win, TECHVIEW_WINDOW_SIZE, TECHVIEW_WINDOW_SIZE);
 
         lv_obj_t *header = lv_win_get_header(win);
         lv_obj_set_style_pad_gap(header, 8, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_hor(header, 8, LV_STATE_DEFAULT);
         lv_obj_add_event_cb(header, drag_event_handler, LV_EVENT_PRESSING, win);
-        lv_obj_set_height(header, 36);
+        lv_obj_set_height(header, TECHVIEW_HEADER_HEIGHT);
 
         lv_win_add_title(win, "Techview");
         view_register_object_default_callback(lv_win_add_button(win, LV_SYMBOL_DOWN, 32), BTN_WINDOW_HIDE_ID);
@@ -440,8 +442,10 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 lv_obj_t *cont = lv_win_get_content(pdata->window);
                                 if (lv_obj_has_flag(cont, LV_OBJ_FLAG_HIDDEN)) {
                                     lv_obj_remove_flag(cont, LV_OBJ_FLAG_HIDDEN);
+                                    lv_obj_set_height(pdata->window, TECHVIEW_WINDOW_SIZE);
                                 } else {
                                     lv_obj_add_flag(cont, LV_OBJ_FLAG_HIDDEN);
+                                    lv_obj_set_height(pdata->window, TECHVIEW_HEADER_HEIGHT);
                                 }
                             }
                             break;

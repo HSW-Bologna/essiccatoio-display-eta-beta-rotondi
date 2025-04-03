@@ -18,7 +18,7 @@ const char *pars_loghi[5][2] = {
 };
 
 const char *pars_tipo_riscaldamento[2][2] = {
-    {"Elettrico", "Electric", },
+    {"Elettrico/Vapore", "Electric/Steam", },
     {"Gas", "Gas", },
 };
 

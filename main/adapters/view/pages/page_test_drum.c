@@ -271,7 +271,7 @@ static int test_cesto_in_sicurezza(model_t *model, struct page_data *data) {
 static void update_page(model_t *model, struct page_data *pdata) {
     view_common_set_disabled(pdata->button_control, !test_cesto_in_sicurezza(model, pdata));
 
-    lv_label_set_text_fmt(pdata->label_pwm, "PWM=[%04i]", pdata->pwm_percentage);
+    lv_label_set_text_fmt(pdata->label_pwm, "RPM=[%04i]", pdata->pwm_percentage);
     lv_label_set_text_fmt(pdata->label_run, "[marcia] %s %s", pdata->run ? "on " : "off",
                           test_cesto_in_sicurezza(model, pdata) ? "ok" : "no");
 
