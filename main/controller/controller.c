@@ -194,11 +194,21 @@ void controller_manage(mut_model_t *model) {
                 case MSC_RESPONSE_CODE_ARCHIVE_EXTRACTION_COMPLETE:
                     configuration_load_all_data(model);
                     model->run.removable_drive_state = msc_is_device_mounted();
+                    if (msc_response.error) {
+                        model->run.storage_status = STORAGE_STATUS_ERROR;
+                    } else {
+                        model->run.storage_status = STORAGE_STATUS_DONE;
+                    }
                     break;
 
                 case MSC_RESPONSE_CODE_ARCHIVE_SAVING_COMPLETE:
                     ESP_LOGI(TAG, "Configuration saved!");
                     model->run.removable_drive_state = msc_is_device_mounted();
+                    if (msc_response.error) {
+                        model->run.storage_status = STORAGE_STATUS_ERROR;
+                    } else {
+                        model->run.storage_status = STORAGE_STATUS_DONE;
+                    }
                     break;
             }
 
@@ -232,6 +242,7 @@ void controller_manage(mut_model_t *model) {
         }
 
         model->run.removable_drive_state = msc_is_device_mounted();
+        msc_read_archives(model);
     }
 
     {

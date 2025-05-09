@@ -16,6 +16,13 @@
 
 
 typedef enum {
+    STORAGE_STATUS_READY = 0,
+    STORAGE_STATUS_LOADING,
+    STORAGE_STATUS_DONE,
+    STORAGE_STATUS_ERROR,
+} storage_status_t;
+
+typedef enum {
     DIRECTION_NC = 0,
     DIRECTION_NA = 1,
 } direction_t;
@@ -123,7 +130,9 @@ typedef enum {
     ALARM_SAFETY_TEMPERATURE,
     ALARM_TEMPERATURE_NOT_REACHED,
     ALARM_INVERTER,
-#define ALARMS_NUM 8
+    ALARM_SAFETY_PRESSURE,
+    ALARM_TEMPERATURE_HUMIDITY_PROBE,
+#define ALARMS_NUM 10
 } alarm_t;
 
 typedef struct {
@@ -137,7 +146,6 @@ typedef struct {
 } statistics_t;
 
 typedef struct {
-    name_t   nome;
     uint16_t machine_model;
 
     uint16_t language;
@@ -185,12 +193,18 @@ typedef struct {
     uint16_t busy_signal_nc_na;
     uint16_t fan_with_open_porthole_time;
     uint16_t cycle_reset_time;
+    uint16_t air_flow_check_type;
+    uint16_t minimum_pressure;
+    uint16_t maximum_pressure;
+    uint16_t air_flow_maximum_pressure;
+    uint16_t air_flow_safety_pressure;
 } parmac_t;
 
 
 struct model {
     struct {
-        uint8_t commissioned;
+        uint8_t  commissioned;
+        uint16_t pressure_offset;
 
         parmac_t parmac;
         name_t   password;
@@ -254,9 +268,13 @@ struct model {
         program_t               current_program;
         uint16_t                current_step_index;
         uint8_t                 test_enable_coin_reader;
+        uint8_t                 removable_drive_enabled;
         removable_drive_state_t removable_drive_state;
         firmware_update_state_t firmware_update_state;
+        storage_status_t        storage_status;
         int16_t                 starting_temperature;
+        uint16_t                num_archivi;
+        name_t                 *archivi;
 
         int16_t temperature_delta;
         int16_t humidity_delta;

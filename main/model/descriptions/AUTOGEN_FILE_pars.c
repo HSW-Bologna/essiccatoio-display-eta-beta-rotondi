@@ -22,6 +22,11 @@ const char *pars_tipo_riscaldamento[2][2] = {
     {"Gas", "Gas", },
 };
 
+const char *pars_flow_check_type[2][2] = {
+    {"Ingresso", "Input", },
+    {"Pressostato", "Pressostat", },
+};
+
 const char *pars_tipo_richiesta_pagamento[3][2] = {
     {"Inserire gettone", "Insert token", },
     {"Inserire monete", "Insert coin", },
@@ -40,7 +45,7 @@ const char *pars_manuale_automatico[2][2] = {
     {"Automatico", "Automatic", },
 };
 
-const char *pars_descriptions[56][2] = {
+const char *pars_descriptions[61][2] = {
     {"Lingua", "Language", },
     {"Livello di accesso", "Access level", },
     {"Visualizzare temperatura", "Show temperature", },
@@ -97,6 +102,11 @@ const char *pars_descriptions[56][2] = {
     {"Cadenza avviso manutenzione", "Maintenance notice delay", },
     {"Durata avviso manutenzione", "Maintenance notice duration", },
     {"Tipo pagamento", "Payment type", },
+    {"Controllo aria", "Air flow check", },
+    {"Pressione ventilazione minima", "Minimum fan pressure", },
+    {"Pressione ventilazione massima", "Maximum fan pressure", },
+    {"Pressione ventilazione lavoro", "Working fan pressure", },
+    {"Pressione ventilazione sicurezza", "Safety fan pressure", },
 };
 
 const char *pars_sonda_temperatura[3][2] = {

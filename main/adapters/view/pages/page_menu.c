@@ -47,8 +47,6 @@
 
 
 struct page_data {
-    lv_obj_t *btn_drive;
-
     lv_obj_t *led_tech_view;
 
     keyboard_page_options_t keyboard_options;
@@ -124,7 +122,6 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
         lv_obj_center(lbl);
         view_register_object_default_callback(btn, BTN_DRIVE_ID);
-        pdata->btn_drive = btn;
     }
 
     {
@@ -213,6 +210,8 @@ static void open_page(pman_handle_t handle, void *state) {
                           APP_CONFIG_FIRMWARE_VERSION_MINOR, APP_CONFIG_FIRMWARE_VERSION_PATCH, COMPUTE_BUILD_DAY,
                           COMPUTE_BUILD_MONTH, COMPUTE_BUILD_YEAR);
     lv_obj_align(label_display_version, LV_ALIGN_BOTTOM_LEFT, 0, -18);
+
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.removable_drive_state, 0);
 
     update_page(model, pdata);
 }
@@ -327,12 +326,6 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
 
 static void update_page(model_t *model, struct page_data *pdata) {
-    if (model->run.removable_drive_state != REMOVABLE_DRIVE_STATE_MOUNTED) {
-        lv_obj_add_state(pdata->btn_drive, LV_STATE_DISABLED);
-    } else {
-        lv_obj_remove_state(pdata->btn_drive, LV_STATE_DISABLED);
-    }
-
     if (model->run.tech_view) {
         lv_led_on(pdata->led_tech_view);
     } else {

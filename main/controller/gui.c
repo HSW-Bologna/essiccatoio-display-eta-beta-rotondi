@@ -9,6 +9,7 @@
 #include "minion.h"
 #include "services/fup.h"
 #include "bsp/system.h"
+#include "bsp/msc.h"
 
 
 static void retry_communication(pman_handle_t handle);
@@ -35,6 +36,10 @@ static void factory_reset(pman_handle_t handle);
 static void update_firmware(pman_handle_t handle);
 static void clear_alarms(pman_handle_t handle);
 static void clear_cycle_statistics(pman_handle_t handle);
+static void test_fan(pman_handle_t handle, uint8_t onoff);
+static void set_pressure_offset(pman_handle_t handle);
+static void export_configuration(pman_handle_t handle, const char *name);
+static void import_configuration(pman_handle_t handle, const char *name);
 
 
 static const char *TAG = "Gui";
@@ -65,6 +70,10 @@ view_protocol_t controller_gui_protocol = {
     .update_firmware            = update_firmware,
     .clear_alarms               = clear_alarms,
     .clear_cycle_statistics     = clear_cycle_statistics,
+    .test_fan                   = test_fan,
+    .set_pressure_offset        = set_pressure_offset,
+    .import_configuration       = import_configuration,
+    .export_configuration       = export_configuration,
 };
 
 
@@ -134,6 +143,22 @@ static void test_drum(pman_handle_t handle, uint8_t forward, uint8_t run, uint8_
     }
 
     model->run.minion.write.test_pwm2 = percentage;
+
+    controller_sync_minion(model);
+}
+
+
+static void test_fan(pman_handle_t handle, uint8_t onoff) {
+    mut_model_t *model = view_get_model(handle);
+
+    model->run.minion.write.test_pwm1 = onoff ? 100 : 0;
+
+    if (onoff) {
+        model_clear_test_outputs(model);
+        model_set_test_output(model, 2);
+    } else {
+        model_clear_test_outputs(model);
+    }
 
     controller_sync_minion(model);
 }
@@ -308,4 +333,28 @@ static void clear_cycle_statistics(pman_handle_t handle) {
 static void modify_duration(pman_handle_t handle, uint16_t seconds) {
     (void)handle;
     minion_set_duration(seconds);
+}
+
+
+static void set_pressure_offset(pman_handle_t handle) {
+    mut_model_t *model            = view_get_model(handle);
+    model->config.pressure_offset = model->run.minion.read.pressure_adc;
+    configuration_save_pressure_offset(model->config.pressure_offset);
+    controller_sync_minion(model);
+}
+
+
+static void import_configuration(pman_handle_t handle, const char *name) {
+    mut_model_t *model = view_get_model(handle);
+
+    model->run.storage_status = STORAGE_STATUS_LOADING;
+    msc_extract_archive(name);
+}
+
+
+static void export_configuration(pman_handle_t handle, const char *name) {
+    mut_model_t *model = view_get_model(handle);
+
+    model->run.storage_status = STORAGE_STATUS_LOADING;
+    msc_save_archive(name);
 }

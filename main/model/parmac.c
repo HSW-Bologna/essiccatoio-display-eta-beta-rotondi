@@ -30,8 +30,9 @@ void parmac_init(mut_model_t *model, int reset) {
     parmac_t           *p  = &model->config.parmac;
     parameter_handle_t *ps = parameters;
 
-    const char *fmt_c   = "%i °C";
-    const char *fmt_rpm = "%i rpm";
+    const char *fmt_c    = "%i °C";
+    const char *fmt_rpm  = "%i rpm";
+    const char *fmt_mbar = "%3.1f mBar";
     char     ***heating_type_strings =
         (char ***)(model_is_steam_model(model) ? pars_tipo_riscaldamento_vapore : pars_tipo_riscaldamento);
 
@@ -43,18 +44,23 @@ void parmac_init(mut_model_t *model, int reset) {
     ps[i++] = PARAMETER(&p->abilita_tasto_menu,                       0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_TASTO_MENU, pars_nosi),                                                    TECH_BITS);
     ps[i++] = PARAMETER(&p->access_level,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_LIVELLO_ACCESSO, pars_livello_accesso),                                    TECH_BITS);
     ps[i++] = PARAMETER(&p->autostart,                                0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_AUTOAVVIO, pars_nosi),                                                     TECH_BITS);
-    ps[i++] = PARAMETER(&p->heating_type,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_RISCALDAMENTO, heating_type_strings),                              TECH_BITS);
+    ps[i++] = PARAMETER(&p->heating_type,                             0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_TIPO_RISCALDAMENTO, heating_type_strings),                                 TECH_BITS);
     ps[i++] = PARAMETER(&p->gas_ignition_attempts,                    0,                              9,                          1,                              FFINT(PARS_DESCRIPTIONS_TENTATIVI_ACCENSIONE_GAS, "%i"),                                          TECH_BITS);
     ps[i++] = PARAMETER(&p->reset_page_time,                          10,                             250,                        30,                             FTIME(PARS_DESCRIPTIONS_TEMPO_DI_RITORNO_PAGINA_INIZIALE),                                        TECH_BITS);
     ps[i++] = PARAMETER(&p->reset_language_time,                      1,                              250,                        5,                              FTIME(PARS_DESCRIPTIONS_TEMPO_DI_RITORNO_LINGUA_INIZIALE),                                        TECH_BITS);
     ps[i++] = PARAMETER(&p->pause_button_time,                        1,                              60,                         1,                              FTIME(PARS_DESCRIPTIONS_TEMPO_TASTO_PAUSA),                                                       USER_BITS);
     ps[i++] = PARAMETER(&p->stop_button_time,                         1,                              60,                         2,                              FTIME(PARS_DESCRIPTIONS_TEMPO_TASTO_STOP),                                                        USER_BITS);
     ps[i++] = PARAMETER(&p->temperature_probe,                        0,                              2,                          1,                              FOPT(PARS_DESCRIPTIONS_SONDA_TEMPERATURA, pars_sonda_temperatura),                                TECH_BITS);
+    ps[i++] = PARAMETER(&p->air_flow_check_type,                      0,                              1,                          0,                              FOPT(PARS_DESCRIPTIONS_CONTROLLO_ARIA, pars_flow_check_type),                                     TECH_BITS);
     ps[i++] = PARAMETER(&p->max_input_temperature,                    1,                              125,                        115,                            FFINT(PARS_DESCRIPTIONS_TEMPERATURA_MASSIMA_IN_INGRESSO, fmt_c),                                  TECH_BITS);
     ps[i++] = PARAMETER(&p->safety_input_temperature,                 1,                              145,                        135,                            FFINT(PARS_DESCRIPTIONS_TEMPERATURA_DI_SICUREZZA_IN_INGRESSO, fmt_c),                             TECH_BITS);
     ps[i++] = PARAMETER(&p->max_output_temperature,                   1,                              85,                         85,                             FFINT(PARS_DESCRIPTIONS_TEMPERATURA_MASSIMA_IN_USCITA, fmt_c),                                    TECH_BITS);
     ps[i++] = PARAMETER(&p->safety_output_temperature,                1,                              90,                         90,                             FFINT(PARS_DESCRIPTIONS_TEMPERATURA_DI_SICUREZZA_IN_USCITA, fmt_c),                               TECH_BITS);
     ps[i++] = PARAMETER(&p->air_flow_alarm_time,                      1,                              250,                        10,                             FTIME(PARS_DESCRIPTIONS_TEMPO_ALLARME_FLUSSO_ARIA),                                               TECH_BITS);
+    ps[i++] = PARAMETER(&p->minimum_pressure,                         2,                              29,                         2,                              FFDEC(PARS_DESCRIPTIONS_PRESSIONE_VENTILAZIONE_MINIMA, fmt_mbar),                                 TECH_BITS);
+    ps[i++] = PARAMETER(&p->maximum_pressure,                         30,                             80,                         80,                             FFDEC(PARS_DESCRIPTIONS_PRESSIONE_VENTILAZIONE_MASSIMA, fmt_mbar),                                TECH_BITS);
+    ps[i++] = PARAMETER(&p->air_flow_maximum_pressure,                p->minimum_pressure,            p->maximum_pressure,        5,                             FFDEC(PARS_DESCRIPTIONS_PRESSIONE_VENTILAZIONE_LAVORO, fmt_mbar),                                 USER_BITS);
+    ps[i++] = PARAMETER(&p->air_flow_safety_pressure,                 p->air_flow_maximum_pressure,   p->maximum_pressure,        60,                             FFDEC(PARS_DESCRIPTIONS_PRESSIONE_VENTILAZIONE_SICUREZZA, fmt_mbar),                              USER_BITS);
     ps[i++] = PARAMETER(&p->minimum_speed,                            10,                             25,                         15,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MINIMA, fmt_rpm),                                                TECH_BITS);
     ps[i++] = PARAMETER(&p->maximum_speed,                            25,                             70,                         60,                             FFINT(PARS_DESCRIPTIONS_VELOCITA_MASSIMA, fmt_rpm),                                               TECH_BITS);
     if (model_is_self_service(model) || model_is_tech_level(model)) {

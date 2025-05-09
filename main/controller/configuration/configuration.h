@@ -36,5 +36,6 @@ void configuration_clear_orphan_programs(program_t *programs, uint16_t num);
 void configuration_clear_all_programs(void);
 void configuration_commissioned(uint8_t commissioned);
 void configuration_save_password(const char *password);
+void configuration_save_pressure_offset(uint16_t pressure_offset);
 
 #endif

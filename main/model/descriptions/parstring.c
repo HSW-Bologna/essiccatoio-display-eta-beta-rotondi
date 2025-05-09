@@ -15,6 +15,27 @@ void *parameter_user_data_new(parameter_user_data_t udata) {
 }
 
 
+void formatta_dec(char *string, uint16_t language, const void *arg1, const void *arg2) {
+    (void)language;
+    (void)arg1;
+    const parameter_handle_t    *par   = arg2;
+    const parameter_user_data_t *udata = parameter_get_user_data((parameter_handle_t *)par);
+
+    switch (par->type) {
+        case PARAMETER_TYPE_UINT16:
+            if (udata->fmt != NULL) {
+                sprintf(string, udata->fmt, ((float)*(uint16_t *)par->pointer)/10.);
+            } else {
+                sprintf(string, "%.1f", ((float)*(uint16_t *)par->pointer)/10.);
+            }
+            break;
+        default:
+            sprintf(string, "Errore!");
+            break;
+    }
+}
+
+
 void formatta_int(char *string, uint16_t language, const void *arg1, const void *arg2) {
     (void)language;
     (void)arg1;

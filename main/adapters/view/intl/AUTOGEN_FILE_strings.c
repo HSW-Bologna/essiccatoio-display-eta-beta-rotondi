@@ -1,4 +1,4 @@
-const char *strings[84][2] = {
+const char *strings[91][2] = {
     {"Impostazioni", "settings", },
     {"Diagnosi", "Test", },
     {"Archiviazione", "Archiving", },
@@ -8,6 +8,7 @@ const char *strings[84][2] = {
     {"Riprova", "Try again", },
     {"Uscite", "Outputs", },
     {"Temperatura", "Temperature", },
+    {"Pressione", "Pressure", },
     {"Umidita' sonda", "Humidity probe", },
     {"Temperatura sonda", "Temperature probe", },
     {"Motore avanti", "Motor forward", },
@@ -83,5 +84,11 @@ const char *strings[84][2] = {
     {"Velocita'", "Speed", },
     {"Durata", "Duration", },
     {"Azzerare le statistiche dei cicli?", "Clear cycles statistics?", },
+    {"Azzera offset", "Clear offset", },
+    {"Allarme sovrappressione", "Overpressure alarm", },
+    {"Guasto sonda temperatura/umidita'", "Temperature/humidity probe fault", },
+    {"Operazione conclusa con successo", "Operation successful", },
+    {"Operazione fallita", "Operation failed", },
+    {"Nessuna configurazione trovata", "No configuration found", },
 };
 

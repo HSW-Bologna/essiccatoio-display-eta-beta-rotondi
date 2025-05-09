@@ -85,7 +85,6 @@ struct page_data {
 
     lv_obj_t *label_status;
 
-    lv_obj_t *obj_handle;
     lv_obj_t *obj_drawer;
 
     lv_obj_t *led_heating;
@@ -282,7 +281,6 @@ static void open_page(pman_handle_t handle, void *state) {
         lv_obj_add_style(obj, (lv_style_t *)&style_transparent_cont, LV_STATE_DEFAULT);
         lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         view_register_object_default_callback(obj, OBJ_SETTINGS_ID);
-        pdata->obj_handle = obj;
 
         lv_obj_t *drawer = lv_obj_create(cont);
         lv_obj_set_size(drawer, SETTINGS_DRAWER_WIDTH, SETTINGS_DRAWER_HEIGHT);
@@ -605,7 +603,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 static void update_page(model_t *model, struct page_data *pdata) {
     // In self service you can change the main page language separately; in all other scenarios use the system's
     // language
-    language_t language = model_is_self_service(model) ? model->run.temporary_language : model->config.parmac.language;
+    language_t language = model->run.temporary_language;
 
     if (pdata->window) {
         lv_obj_t *label   = lv_obj_get_child(lv_win_get_content(pdata->window), 0);

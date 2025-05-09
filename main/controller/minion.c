@@ -22,10 +22,10 @@
 #define MODBUS_IR_CYCLE_STATE  9
 
 #define MODBUS_HR_TEST_MODE         0
-#define MODBUS_HR_PROGRAM_NUMBER    24
-#define MODBUS_HR_COMMAND           27
-#define MODBUS_HR_INCREASE_DURATION 28
-#define MODBUS_HR_SET_DURATION      29
+#define MODBUS_HR_PROGRAM_NUMBER    27
+#define MODBUS_HR_COMMAND           30
+#define MODBUS_HR_INCREASE_DURATION 31
+#define MODBUS_HR_SET_DURATION      32
 
 #define MINION_ADDR 1
 
@@ -61,8 +61,11 @@ struct __attribute__((packed)) task_message {
             uint8_t  test_pwm2;
             uint16_t test_outputs;
             uint8_t  coin_reader_inhibition;
+            uint16_t pressure_offset;
             uint16_t cycle_delay_time;
             uint16_t cycle_reset_time;
+            uint16_t air_flow_maximum_pressure;
+            uint16_t air_flow_safety_pressure;
             uint16_t output_safety_temperature;
             uint16_t temperature_alarm_delay_seconds;
             uint16_t air_flow_alarm_time;
@@ -280,7 +283,7 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_COMMAND, &command, 1)) {
                 error = 1;
             } else {
-                uint16_t values[28] = {0};
+                uint16_t values[31] = {0};
                 init_sync_holding_register_array(values, &message);
 
                 if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
@@ -355,7 +358,7 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             response.tag = MINION_RESPONSE_TAG_SYNC;
 
             {
-                uint16_t values[28] = {0};
+                uint16_t values[31] = {0};
                 init_sync_holding_register_array(values, &message);
 
                 if (write_holding_registers(network, MINION_ADDR, MODBUS_HR_TEST_MODE, values,
@@ -600,6 +603,7 @@ static struct task_message init_sync_data(model_t *model) {
                 .sync =
                     {
                         .coin_reader_inhibition          = !model_should_enable_coin_reader(model),
+                        .pressure_offset                 = model->config.pressure_offset,
                         .test_mode                       = model->run.minion.write.test_mode,
                         .test_outputs                    = model->run.minion.write.test_outputs,
                         .test_pwm1                       = model->run.minion.write.test_pwm1,
@@ -607,6 +611,8 @@ static struct task_message init_sync_data(model_t *model) {
                         .busy_signal_type                = model->config.parmac.tipo_macchina_occupata,
                         .cycle_delay_time                = model->config.parmac.tempo_attesa_partenza_ciclo,
                         .cycle_reset_time                = model->config.parmac.cycle_reset_time,
+                        .air_flow_maximum_pressure       = model->config.parmac.air_flow_maximum_pressure,
+                        .air_flow_safety_pressure        = model->config.parmac.air_flow_safety_pressure,
                         .output_safety_temperature       = model->config.parmac.safety_output_temperature,
                         .temperature_alarm_delay_seconds = model->config.parmac.tempo_allarme_temperatura,
                         .air_flow_alarm_time             = model->config.parmac.air_flow_alarm_time,
@@ -616,7 +622,8 @@ static struct task_message init_sync_data(model_t *model) {
                                   (model->config.parmac.allarme_inverter_off_on > 0) << 3 |
                                   (model->config.parmac.allarme_filtro_off_on > 0) << 4 |
                                   (model->config.parmac.porthole_nc_na > 0) << 5 |
-                                  (model->config.parmac.busy_signal_nc_na > 0) << 6),
+                                  (model->config.parmac.busy_signal_nc_na > 0) << 6 |
+                                  (model->config.parmac.air_flow_check_type > 0) << 7),
                         .temperature_probe               = model->config.parmac.temperature_probe,
                         .heating_type                    = model->config.parmac.heating_type,
                         .gas_ignition_attempts           = model->config.parmac.gas_ignition_attempts,
@@ -643,7 +650,7 @@ static struct task_message init_sync_data(model_t *model) {
             msg.as.sync.temperature_heating_hysteresis = step.drying.heating_hysteresis;
 
             msg.as.sync.flags |=
-                ((step.drying.enable_reverse > 0) << 7) | ((step.drying.enable_waiting_for_temperature << 8));
+                ((step.drying.enable_reverse > 0) << 8) | ((step.drying.enable_waiting_for_temperature << 9));
             break;
         }
 
@@ -652,7 +659,7 @@ static struct task_message init_sync_data(model_t *model) {
             msg.as.sync.rotation_pause_time   = step.cooling.pause_time;
             msg.as.sync.duration              = step.cooling.duration * 60;
 
-            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 7);
+            msg.as.sync.flags |= ((step.cooling.enable_reverse > 0) << 8);
             break;
         }
 
@@ -660,7 +667,7 @@ static struct task_message init_sync_data(model_t *model) {
             msg.as.sync.duration = step.antifold.max_duration == 0 ? 0xFFFF : step.antifold.max_duration * 60;
             msg.as.sync.rotation_running_time = step.antifold.rotation_time;
             msg.as.sync.rotation_pause_time   = step.antifold.pause_time;
-            msg.as.sync.flags |= (1 << 7);     // Always enable reverse in antifold
+            msg.as.sync.flags |= (1 << 8);     // Always enable reverse in antifold
             break;
         }
     }
@@ -670,32 +677,37 @@ static struct task_message init_sync_data(model_t *model) {
 
 
 void init_sync_holding_register_array(uint16_t *values, struct task_message *msg) {
-    values[0]  = msg->as.sync.test_mode;
-    values[1]  = msg->as.sync.test_outputs;
-    values[2]  = msg->as.sync.test_pwm1 | (msg->as.sync.test_pwm2 << 8);
-    values[3]  = msg->as.sync.coin_reader_inhibition;
-    values[4]  = msg->as.sync.busy_signal_type;
-    values[5]  = msg->as.sync.output_safety_temperature;
-    values[6]  = msg->as.sync.temperature_alarm_delay_seconds;
-    values[7]  = msg->as.sync.air_flow_alarm_time;
-    values[8]  = msg->as.sync.temperature_probe;
-    values[9]  = msg->as.sync.heating_type;
-    values[10] = msg->as.sync.gas_ignition_attempts;
-    values[11] = msg->as.sync.fan_with_open_porthole_time;
-    values[12] = msg->as.sync.cycle_delay_time;
-    values[13] = msg->as.sync.cycle_reset_time;
-    values[14] = msg->as.sync.flags;
-    values[15] = msg->as.sync.duration;
-    values[16] = msg->as.sync.rotation_running_time;
-    values[17] = msg->as.sync.rotation_pause_time;
-    values[18] = msg->as.sync.rotation_speed;
-    values[19] = msg->as.sync.setpoint_temperature;
-    values[20] = msg->as.sync.setpoint_humidity;
-    values[21] = msg->as.sync.temperature_cooling_hysteresis;
-    values[22] = msg->as.sync.temperature_heating_hysteresis;
-    values[23] = msg->as.sync.drying_type;
-    values[24] = msg->as.sync.program_number;
-    values[25] = msg->as.sync.step_number;
-    values[26] = msg->as.sync.step_type;
-    values[27] = msg->as.sync.command;
+    size_t i = 0;
+
+    values[i++] = msg->as.sync.test_mode;
+    values[i++] = msg->as.sync.test_outputs;
+    values[i++] = msg->as.sync.test_pwm1 | (msg->as.sync.test_pwm2 << 8);
+    values[i++] = msg->as.sync.coin_reader_inhibition;
+    values[i++] = msg->as.sync.pressure_offset;
+    values[i++] = msg->as.sync.busy_signal_type;
+    values[i++] = msg->as.sync.output_safety_temperature;
+    values[i++] = msg->as.sync.temperature_alarm_delay_seconds;
+    values[i++] = msg->as.sync.air_flow_alarm_time;
+    values[i++] = msg->as.sync.temperature_probe;
+    values[i++] = msg->as.sync.heating_type;
+    values[i++] = msg->as.sync.gas_ignition_attempts;
+    values[i++] = msg->as.sync.fan_with_open_porthole_time;
+    values[i++] = msg->as.sync.cycle_delay_time;
+    values[i++] = msg->as.sync.cycle_reset_time;
+    values[i++] = msg->as.sync.air_flow_maximum_pressure;
+    values[i++] = msg->as.sync.air_flow_safety_pressure;
+    values[i++] = msg->as.sync.flags;
+    values[i++] = msg->as.sync.duration;
+    values[i++] = msg->as.sync.rotation_running_time;
+    values[i++] = msg->as.sync.rotation_pause_time;
+    values[i++] = msg->as.sync.rotation_speed;
+    values[i++] = msg->as.sync.setpoint_temperature;
+    values[i++] = msg->as.sync.setpoint_humidity;
+    values[i++] = msg->as.sync.temperature_cooling_hysteresis;
+    values[i++] = msg->as.sync.temperature_heating_hysteresis;
+    values[i++] = msg->as.sync.drying_type;
+    values[i++] = msg->as.sync.program_number;
+    values[i++] = msg->as.sync.step_number;
+    values[i++] = msg->as.sync.step_type;
+    values[i++] = msg->as.sync.command;
 }

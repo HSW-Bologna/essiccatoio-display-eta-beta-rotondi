@@ -13,8 +13,9 @@
 
 static int  open_tty(char *portname);
 static void setup_port(int fd);
-int         set_interface_attribs(int fd, int speed);
-void        set_mincount(int fd, int mcount);
+static int  set_interface_attribs(int fd, int speed);
+static void set_mincount(int fd, int mcount);
+static void serial_set_timeout(int fd, int mcount, int decsec);
 
 
 static int port_fd = 0;
@@ -86,7 +87,7 @@ static void setup_port(int fd) {
 }
 
 
-int set_interface_attribs(int fd, int speed) {
+static int set_interface_attribs(int fd, int speed) {
     struct termios tty;
 
     if (tcgetattr(fd, &tty) < 0) {
@@ -121,7 +122,7 @@ int set_interface_attribs(int fd, int speed) {
 }
 
 
-void serial_set_timeout(int fd, int mcount, int decsec) {
+static void serial_set_timeout(int fd, int mcount, int decsec) {
     struct termios tty;
 
     if (tcgetattr(fd, &tty) < 0) {
@@ -137,7 +138,7 @@ void serial_set_timeout(int fd, int mcount, int decsec) {
 }
 
 
-void set_mincount(int fd, int mcount) {
+static void set_mincount(int fd, int mcount) {
     struct termios tty;
 
     if (tcgetattr(fd, &tty) < 0) {

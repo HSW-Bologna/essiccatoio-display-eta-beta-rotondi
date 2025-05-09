@@ -15,7 +15,7 @@
 #include "services/timestamp.h"
 
 
-#define FUP_BIN (MSC_USB_MOUNTPOINT "/lavatrice-display-eta-beta-rotondi.bin")
+#define FUP_BIN (MSC_USB_MOUNTPOINT "/essiccatoio-display-eta-beta-rotondi.bin")
 
 
 typedef enum {

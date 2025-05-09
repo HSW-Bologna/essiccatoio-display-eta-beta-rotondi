@@ -17,6 +17,7 @@ typedef struct {
     void (*set_test_mode)(pman_handle_t handle, uint8_t test_mode);
     void (*test_output)(pman_handle_t handle, uint16_t output_index);
     void (*test_drum)(pman_handle_t handle, uint8_t forward, uint8_t run, uint8_t percentage);
+    void (*test_fan)(pman_handle_t handle, uint8_t onoff);
     void (*clear_test_outputs)(pman_handle_t handle);
     void (*save_parmac)(pman_handle_t handle);
     void (*start_program)(pman_handle_t handle, uint16_t program_index);
@@ -37,6 +38,9 @@ typedef struct {
     void (*reset)(pman_handle_t handle);
     void (*clear_alarms)(pman_handle_t handle);
     void (*clear_cycle_statistics)(pman_handle_t handle);
+    void (*set_pressure_offset)(pman_handle_t handle);
+    void (*import_configuration)(pman_handle_t handle, const char *name);
+    void (*export_configuration)(pman_handle_t handle, const char *name);
 } view_protocol_t;
 
 
@@ -85,10 +89,10 @@ void             view_add_watched_variable(void *ptr, size_t size, int code);
 view_protocol_t *view_get_protocol(pman_handle_t handle);
 
 
-extern const pman_page_t page_password, page_menu, page_test_inputs, page_test_outputs,
-    page_test_temperature, page_parmac, page_test_drum, page_main_demo, page_test_coins_digital, page_programs,
+extern const pman_page_t page_password, page_menu, page_test_inputs, page_test_outputs, page_test_temperature,
+    page_test_pressure, page_parmac, page_test_drum, page_main_demo, page_test_coins_digital, page_programs,
     page_program, page_program_info, page_keyboard, page_step, page_advanced, page_splash, page_commissioning,
-    page_drive, page_statistics, page_work_parameters;
+    page_drive, page_statistics, page_work_parameters, page_import_configuration;
 
 
 #endif

@@ -262,6 +262,8 @@ static const char *get_alarm_description(uint32_t alarms, uint16_t language, ala
         STRINGS_SURRISCALDAMENTO,
         STRINGS_TEMPERATURA_NON_RAGGIUNTA_IN_TEMPO,
         STRINGS_ALLARME_INVERTER,
+        STRINGS_ALLARME_SOVRAPPRESSIONE,
+        STRINGS_ALLARME_GUASTO_SONDA_TEMPERATURA_UMIDITA,
     };
     for (alarm_t code = 0; code < ALARMS_NUM; code++) {
         if (alarms & (1 << code)) {

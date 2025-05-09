@@ -22,6 +22,7 @@ struct page_data {
     uint16_t num_parameters;
     uint8_t  livello_accesso;
     int      par_to_save;
+    uint8_t  change;
 };
 
 
@@ -190,11 +191,21 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             } else {
                                 pdata->parameter = pdata->num_parameters - 1;
                             }
+                            if (pdata->change) {
+                                parmac_init(model, 0);     // Reinit parameters to check for new inter-parameter limits
+                                pdata->change = 0;
+                            }
+
                             update_page(model, pdata);
                             break;
 
                         case BTN_RIGHT_ID:
                             pdata->parameter = (pdata->parameter + 1) % pdata->num_parameters;
+                            if (pdata->change) {
+                                parmac_init(model, 0);     // Reinit parameters to check for new inter-parameter limits
+                                pdata->change = 0;
+                            }
+
                             update_page(model, pdata);
                             break;
 
@@ -202,12 +213,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             parmac_operation(model, pdata->parameter, -1, pdata->livello_accesso);
                             update_page(model, pdata);
                             pdata->par_to_save = 1;
+                            pdata->change      = 1;
                             break;
 
                         case BTN_PLUS_ID:
                             parmac_operation(model, pdata->parameter, +1, pdata->livello_accesso);
                             update_page(model, pdata);
                             pdata->par_to_save = 1;
+                            pdata->change      = 1;
                             break;
                     }
                     break;
@@ -223,11 +236,21 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             } else {
                                 pdata->parameter = pdata->num_parameters - 1;
                             }
+                            if (pdata->change) {
+                                parmac_init(model, 0);     // Reinit parameters to check for new inter-parameter limits
+                                pdata->change = 0;
+                            }
+
                             update_page(model, pdata);
                             break;
 
                         case BTN_RIGHT_ID:
                             pdata->parameter = (pdata->parameter + 1) % pdata->num_parameters;
+                            if (pdata->change) {
+                                parmac_init(model, 0);     // Reinit parameters to check for new inter-parameter limits
+                                pdata->change = 0;
+                            }
+
                             update_page(model, pdata);
                             break;
 
@@ -235,12 +258,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             parmac_operation(model, pdata->parameter, -10, pdata->livello_accesso);
                             update_page(model, pdata);
                             pdata->par_to_save = 1;
+                            pdata->change      = 1;
                             break;
 
                         case BTN_PLUS_ID:
                             parmac_operation(model, pdata->parameter, +10, pdata->livello_accesso);
                             update_page(model, pdata);
                             pdata->par_to_save = 1;
+                            pdata->change      = 1;
                             break;
                     }
                     break;

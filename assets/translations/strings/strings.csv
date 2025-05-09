@@ -8,6 +8,7 @@ ERRORE_DI_COMUNICAZIONE, Errore di comunicazione, Communication error
 RIPROVA, Riprova, Try again
 USCITE, Uscite, Outputs
 TEMPERATURA, Temperatura, Temperature
+PRESSIONE, Pressione, Pressure
 UMIDITA_SONDA, Umidita' sonda, Humidity probe
 TEMPERATURA_SONDA, Temperatura sonda, Temperature probe
 MOTORE_AVANTI, Motore avanti, Motor forward
@@ -85,3 +86,9 @@ UMIDITA, Umidita', Humidity
 VELOCITA, Velocita', Speed
 DURATA, Durata, Duration
 AZZERARE_I_CICLI, Azzerare le statistiche dei cicli?, Clear cycles statistics?
+AZZERA_OFFSET, Azzera offset, Clear offset
+ALLARME_SOVRAPPRESSIONE, Allarme sovrappressione, Overpressure alarm
+ALLARME_GUASTO_SONDA_TEMPERATURA_UMIDITA, Guasto sonda temperatura/umidita', Temperature/humidity probe fault
+OPERAZIONE_CONCLUSA_CON_SUCCESSO, Operazione conclusa con successo, Operation successful
+OPERAZIONE_FALLITA, Operazione fallita, Operation failed
+NESSUNA_CONFIGURAZIONE_TROVATA, Nessuna configurazione trovata, No configuration found

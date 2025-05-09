@@ -20,8 +20,7 @@
 #include "services/timestamp.h"
 
 
-#define BASENAME(x)  (strrchr(x, '/') + 1)
-#define PASSWORD_KEY "PASSWORD"
+#define BASENAME(x) (strrchr(x, '/') + 1)
 
 
 #define DIR_CHECK(x)                                                                                                   \
@@ -35,8 +34,10 @@
 static int load_parmac(parmac_t *parmac);
 
 
-static const char *TAG                            = "Configuration";
-static const char *CONFIGURATION_KEY_COMMISSIONED = "COMMISSIONED";
+static const char *TAG                               = "Configuration";
+static const char *CONFIGURATION_KEY_COMMISSIONED    = "COMMISSIONED";
+static const char *CONFIGURATION_KEY_PASSWORD        = "PASSWORD";
+static const char *CONFIGURATION_KEY_PRESSURE_OFFSET = "POFFSET";
 
 /*
  * Funzioni di utilita'
@@ -148,7 +149,8 @@ void configuration_init(mut_model_t *model) {
     (void)nth_strrchr;
     (void)count_occurrences;
 
-    storage_load_str(model->config.password, MAX_NAME_LENGTH, PASSWORD_KEY);
+    storage_load_str(model->config.password, MAX_NAME_LENGTH, (char *)CONFIGURATION_KEY_PASSWORD);
+    storage_load_uint16(&model->config.pressure_offset, CONFIGURATION_KEY_PRESSURE_OFFSET);
 
     if (!dir_exists(DATA_PATH)) {
         create_dir(DATA_PATH);
@@ -165,9 +167,15 @@ void configuration_init(mut_model_t *model) {
 }
 
 
-void configuration_save_password(const char* password) {
-    storage_save_str(password, PASSWORD_KEY);
+void configuration_save_password(const char *password) {
+    storage_save_str(password, CONFIGURATION_KEY_PASSWORD);
 }
+
+
+void configuration_save_pressure_offset(uint16_t pressure_offset) {
+    storage_save_uint16(&pressure_offset, CONFIGURATION_KEY_PRESSURE_OFFSET);
+}
+
 
 /*
  *  Programmi
@@ -480,7 +488,7 @@ int configuration_load_all_data(mut_model_t *model) {
     int err = load_parmac(&model->config.parmac);
 
     if (err) {
-        strcpy(model->config.parmac.nome, "");
+        //strcpy(model->config.parmac.nome, "");
         configuration_save_parmac(&model->config.parmac);
     }
 

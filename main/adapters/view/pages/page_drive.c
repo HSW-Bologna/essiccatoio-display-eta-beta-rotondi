@@ -70,7 +70,7 @@ static void open_page(pman_handle_t handle, void *state) {
     pdata->obj_buttons = cont;
 
     {
-        lv_obj_t *btn = lv_btn_create(cont);
+        lv_obj_t *btn = lv_button_create(cont);
         lv_obj_t *lbl = lv_label_create(btn);
         lv_label_set_text(lbl, view_intl_get_string(model, STRINGS_IMPORTA_UNA_CONFIGURAZIONE));
         lv_obj_set_style_text_font(lbl, STYLE_FONT_MEDIUM, LV_STATE_DEFAULT);
@@ -135,7 +135,7 @@ static void open_page(pman_handle_t handle, void *state) {
     pdata->spinner = spinner;
 
     VIEW_ADD_WATCHED_VARIABLE(&model->run.removable_drive_state, 0);
-    // VIEW_ADD_WATCHED_VARIABLE(&model->run.storage_status, 0);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.storage_status, 0);
     VIEW_ADD_WATCHED_VARIABLE(&model->run.firmware_update_state, 0);
 
     update_page(model, pdata);
@@ -151,6 +151,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
 
     switch (event.tag) {
         case PMAN_EVENT_TAG_OPEN:
+            model->run.removable_drive_enabled = 1;
             break;
 
         case PMAN_EVENT_TAG_USER: {
@@ -176,15 +177,16 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_CLICKED: {
                     switch (obj_data->id) {
                         case BTN_BACK_ID:
-                            msg.stack_msg = PMAN_STACK_MSG_BACK();
+                            model->run.removable_drive_enabled = 0;
+                            msg.stack_msg                      = PMAN_STACK_MSG_BACK();
                             break;
 
                         case BTN_IMPORT_CONFIGURATION_ID:
-                            // msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_import_configuration);
+                            msg.stack_msg = PMAN_STACK_MSG_PUSH_PAGE(&page_import_configuration);
                             break;
 
                         case BTN_EXPORT_CONFIGURATION_ID:
-                            // view_get_protocol(handle)->export_configuration(handle, model->prog.parmac.nome);
+                            view_get_protocol(handle)->export_configuration(handle, view_common_modello_str(model));
                             update_page(model, pdata);
                             break;
 
@@ -196,7 +198,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                             if (model->run.firmware_update_state == FIRMWARE_UPDATE_STATE_SUCCESS) {
                                 view_get_protocol(handle)->reset(handle);
                             } else {
-                                // model_reset_storage_operation(model);
+                                model->run.storage_status = STORAGE_STATUS_READY;
                                 update_page(model, pdata);
                             }
                             break;
@@ -273,8 +275,7 @@ static void update_page(model_t *model, struct page_data *pdata) {
             view_common_set_hidden(pdata->label_status, 1);
             view_common_set_hidden(pdata->obj_buttons, 0);
 
-            /*
-            switch (model->system.storage_status) {
+            switch (model->run.storage_status) {
                 case STORAGE_STATUS_READY: {
                     view_common_set_hidden(pdata->spinner, 1);
                     view_common_set_hidden(pdata->button_ok, 1);
@@ -310,7 +311,6 @@ static void update_page(model_t *model, struct page_data *pdata) {
                     break;
                 }
             }
-            */
             break;
         }
     }

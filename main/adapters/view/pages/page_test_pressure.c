@@ -13,26 +13,23 @@
 
 
 struct page_data {
-    lv_obj_t *label_pwm;
-    lv_obj_t *label_run;
     lv_obj_t *label_control;
+    lv_obj_t *label_pressure;
 
+    lv_obj_t *button_offset;
     lv_obj_t *button_control;
 
     lv_obj_t *led_emergency;
 
-    uint8_t pwm_percentage;
     uint8_t run;
-    uint8_t forward;
 };
 
 
 enum {
     BTN_BACK_ID,
     BTN_NEXT_ID,
-    BTN_MINUS_ID,
-    BTN_PLUS_ID,
     BTN_CONTROL_ID,
+    BTN_CLEAR_OFFSET_ID,
 };
 
 
@@ -51,9 +48,7 @@ static void *create_page(pman_handle_t handle, void *extra) {
     struct page_data *pdata = lv_malloc(sizeof(struct page_data));
     assert(pdata != NULL);
 
-    pdata->pwm_percentage = 0;
-    pdata->run            = 0;
-    pdata->forward        = (uint8_t)(uintptr_t)extra;
+    pdata->run = 0;
 
     return pdata;
 }
@@ -64,34 +59,12 @@ static void open_page(pman_handle_t handle, void *state) {
 
     model_t *model = view_get_model(handle);
 
-    view_common_create_title(
-        lv_scr_act(), view_intl_get_string(model, pdata->forward ? STRINGS_MOTORE_AVANTI : STRINGS_MOTORE_INDIETRO),
-        BTN_BACK_ID, BTN_NEXT_ID);
+    view_common_create_title(lv_scr_act(), view_intl_get_string(model, STRINGS_PRESSIONE), BTN_BACK_ID, BTN_NEXT_ID);
 
     lv_obj_t *cont = lv_obj_create(lv_scr_act());
     lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(cont, LV_HOR_RES, LV_VER_RES - 56);
     lv_obj_align(cont, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-    {
-        lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 80, 56);
-        lv_obj_t *lbl = lv_label_create(btn);
-        lv_label_set_text(lbl, LV_SYMBOL_MINUS);
-        lv_obj_center(lbl);
-        view_register_object_default_callback(btn, BTN_MINUS_ID);
-        lv_obj_align(btn, LV_ALIGN_TOP_LEFT, 0, 0);
-    }
-
-    {
-        lv_obj_t *btn = lv_button_create(cont);
-        lv_obj_set_size(btn, 80, 56);
-        lv_obj_t *lbl = lv_label_create(btn);
-        lv_label_set_text(lbl, LV_SYMBOL_PLUS);
-        lv_obj_center(lbl);
-        view_register_object_default_callback(btn, BTN_PLUS_ID);
-        lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, 0, 0);
-    }
 
     {
         lv_obj_t *btn = lv_button_create(cont);
@@ -108,32 +81,36 @@ static void open_page(pman_handle_t handle, void *state) {
     {
         lv_obj_t *lbl = lv_label_create(cont);
         lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_obj_align(lbl, LV_ALIGN_TOP_LEFT, 0, 64);
-        pdata->label_pwm = lbl;
-    }
-
-    {
-        lv_obj_t *lbl = lv_label_create(cont);
-        lv_obj_set_style_text_font(lbl, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
-        lv_obj_align(lbl, LV_ALIGN_TOP_LEFT, 0, 64 + 48);
-        pdata->label_run = lbl;
+        lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
+        pdata->label_pressure = lbl;
     }
 
     {
         lv_obj_t *bottom = lv_obj_create(cont);
-        lv_obj_clear_flag(bottom, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_remove_flag(bottom, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_style(bottom, &style_transparent_cont, LV_STATE_DEFAULT);
         lv_obj_set_style_pad_column(bottom, 16, LV_STATE_DEFAULT);
+        lv_obj_set_style_pad_hor(bottom, 16, LV_STATE_DEFAULT);
         lv_obj_set_size(bottom, LV_HOR_RES, 56);
         lv_obj_set_layout(bottom, LV_LAYOUT_FLEX);
         lv_obj_set_flex_flow(bottom, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(bottom, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+        lv_obj_set_flex_align(bottom, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
         lv_obj_align(bottom, LV_ALIGN_BOTTOM_MID, 0, 0);
+
+        lv_obj_t *button = lv_button_create(bottom);
+        lv_obj_set_size(button, 160, 56);
+        lv_obj_t *label_button = lv_label_create(button);
+        lv_obj_set_style_text_font(label_button, STYLE_FONT_SMALL, LV_STATE_DEFAULT);
+        lv_label_set_text(label_button, view_intl_get_string(model, STRINGS_AZZERA_OFFSET));
+        lv_obj_center(label_button);
+        view_register_object_default_callback(button, BTN_CLEAR_OFFSET_ID);
 
         alarm_led_create(bottom, &pdata->led_emergency, "EMER.");
     }
 
     VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.alarms, 0);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.pressure_adc, 0);
+    VIEW_ADD_WATCHED_VARIABLE(&model->run.minion.read.pressure, 0);
 
     update_page(model, pdata);
 }
@@ -149,6 +126,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
     switch (event.tag) {
         case PMAN_EVENT_TAG_OPEN:
             view_get_protocol(handle)->set_test_mode(handle, 1);
+            view_get_protocol(handle)->test_fan(handle, pdata->run);
             break;
 
         case PMAN_EVENT_TAG_USER: {
@@ -157,7 +135,7 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case VIEW_EVENT_TAG_PAGE_WATCHER: {
                     if (pdata->run && !test_cesto_in_sicurezza(model, pdata)) {
                         pdata->run = 0;
-                        view_get_protocol(handle)->test_drum(handle, pdata->forward, pdata->run, pdata->pwm_percentage);
+                        view_get_protocol(handle)->test_fan(handle, pdata->run);
                     }
                     update_page(model, pdata);
                     break;
@@ -176,45 +154,14 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
             switch (lv_event_get_code(event.as.lvgl)) {
                 case LV_EVENT_CLICKED: {
                     switch (obj_data->id) {
-                        case BTN_MINUS_ID: {
-                            if (pdata->pwm_percentage > 0) {
-                                if (pdata->pwm_percentage > 5) {
-                                    pdata->pwm_percentage -= 5;
-                                } else {
-                                    pdata->pwm_percentage = 0;
-                                }
-                            } else {
-                                pdata->pwm_percentage = 100;
-                            }
-                            pdata->pwm_percentage -= pdata->pwm_percentage % 5;
-
-                            view_get_protocol(handle)->test_drum(handle, pdata->forward, pdata->run,
-                                                                 pdata->pwm_percentage);
-                            update_page(model, pdata);
-                            break;
-                        }
-
-                        case BTN_PLUS_ID: {
-                            pdata->pwm_percentage = (pdata->pwm_percentage + 5) % 101;
-                            pdata->pwm_percentage -= pdata->pwm_percentage % 5;
-
-                            view_get_protocol(handle)->test_drum(handle, pdata->forward, pdata->run,
-                                                                 pdata->pwm_percentage);
-                            update_page(model, pdata);
-                            break;
-                        }
-
                         case BTN_BACK_ID:
                             view_get_protocol(handle)->set_test_mode(handle, 0);
                             msg.stack_msg = PMAN_STACK_MSG_BACK();
                             break;
 
                         case BTN_NEXT_ID:
-                            if (pdata->forward) {
-                                msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_pressure);
-                            } else {
-                                msg.stack_msg = PMAN_STACK_MSG_SWAP_EXTRA(&page_test_drum, (void *)(uintptr_t)1);
-                            }
+                            view_get_protocol(handle)->test_fan(handle, 0);
+                            msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_coins_digital);
                             break;
 
                         case BTN_CONTROL_ID: {
@@ -223,8 +170,13 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                                 break;
                             }
                             pdata->run = !pdata->run;
-                            view_get_protocol(handle)->test_drum(handle, pdata->forward, pdata->run,
-                                                                 pdata->pwm_percentage);
+                            view_get_protocol(handle)->test_fan(handle, pdata->run);
+                            update_page(model, pdata);
+                            break;
+                        }
+
+                        case BTN_CLEAR_OFFSET_ID: {
+                            view_get_protocol(handle)->set_pressure_offset(handle);
                             update_page(model, pdata);
                             break;
                         }
@@ -238,11 +190,8 @@ static pman_msg_t page_event(pman_handle_t handle, void *state, pman_event_t eve
                 case LV_EVENT_LONG_PRESSED: {
                     switch (obj_data->id) {
                         case BTN_NEXT_ID:
-                            if (pdata->forward) {
-                                msg.stack_msg = PMAN_STACK_MSG_SWAP_EXTRA(&page_test_drum, (void *)(uintptr_t)0);
-                            } else {
-                                msg.stack_msg = PMAN_STACK_MSG_SWAP(&page_test_temperature);
-                            }
+                            view_get_protocol(handle)->test_fan(handle, 0);
+                            msg.stack_msg = PMAN_STACK_MSG_SWAP_EXTRA(&page_test_drum, (void *)(uintptr_t)1);
                             break;
                     }
                     break;
@@ -271,11 +220,6 @@ static int test_cesto_in_sicurezza(model_t *model, struct page_data *data) {
 static void update_page(model_t *model, struct page_data *pdata) {
     view_common_set_disabled(pdata->button_control, !test_cesto_in_sicurezza(model, pdata));
 
-    lv_label_set_text_fmt(pdata->label_pwm, "RPM=[%04i]", pdata->pwm_percentage);
-    lv_label_set_text_fmt(pdata->label_run, "[marcia] %s %s", pdata->run ? "on " : "off",
-                          test_cesto_in_sicurezza(model, pdata) ? "ok" : "no");
-
-    ESP_LOGI(TAG, "Alarms %X", model->run.minion.read.alarms);
     if (model_is_alarm_active(model, ALARM_EMERGENCY)) {
         lv_led_on(pdata->led_emergency);
     } else {
@@ -287,6 +231,11 @@ static void update_page(model_t *model, struct page_data *pdata) {
     } else {
         lv_label_set_text(pdata->label_control, "START");
     }
+
+    lv_label_set_text_fmt(pdata->label_pressure, "%s: %3.1f mBar [%04i - %04i]",
+                          view_intl_get_string(model, STRINGS_PRESSIONE),
+                          ((float)model->run.minion.read.pressure) / 10., model->run.minion.read.pressure_adc,
+                          model->config.pressure_offset);
 }
 
 
@@ -310,7 +259,7 @@ static lv_obj_t *alarm_led_create(lv_obj_t *parent, lv_obj_t **led, const char *
 }
 
 
-const pman_page_t page_test_drum = {
+const pman_page_t page_test_pressure = {
     .create        = create_page,
     .destroy       = pman_destroy_all,
     .open          = open_page,

@@ -50,6 +50,7 @@ static bool    wait_for_event(EventBits_t event, TickType_t timeout);
 static void    handle_usb_events(void *args);
 static void    msc_event_cb(const msc_host_event_t *event, void *arg);
 static void    utils_free_string_list(char **strings, size_t len);
+static void    update_archive_names(void);
 
 
 static const char        *TAG = "MSC";
@@ -62,12 +63,13 @@ static char            **listed_archives     = NULL;
 
 
 void msc_init(void) {
-    const gpio_config_t input_pin = {
+    const gpio_config_t output_pin = {
         .pin_bit_mask = BIT64(BSP_HAP_USB_INT),
-        .mode         = GPIO_MODE_INPUT,
+        .mode         = GPIO_MODE_OUTPUT,
         .pull_up_en   = GPIO_PULLUP_DISABLE,
     };
-    ESP_ERROR_CHECK(gpio_config(&input_pin));
+    ESP_ERROR_CHECK(gpio_config(&output_pin));
+    gpio_set_level(BSP_HAP_USB_INT, 0);
 
     assert(sem == NULL);
     static StaticSemaphore_t static_semaphore;
@@ -109,6 +111,12 @@ void msc_init(void) {
 }
 
 
+void msc_enable_usb(uint8_t enabled) {
+    ESP_LOGI(TAG, "USB INT level: %i", enabled > 0);
+    gpio_set_level(BSP_HAP_USB_INT, enabled > 0);
+}
+
+
 uint8_t msc_is_usb_mounted(void) {
     return (xEventGroupGetBits(usb_flags) & EVENT_DRIVE_READY) > 0;
 }
@@ -140,17 +148,17 @@ void msc_extract_archive(const name_t archive) {
 }
 
 
-size_t msc_read_archives(model_t *pmodel) {
+size_t msc_read_archives(mut_model_t *pmodel) {
     if (msc_is_device_mounted() == REMOVABLE_DRIVE_STATE_MOUNTED) {
         xSemaphoreTake(sem, portMAX_DELAY);
-        //pmodel->system.num_archivi = archive_management_copy_archive_names(listed_archives, &pmodel->system.archivi, listed_archives_num);
+        pmodel->run.num_archivi =
+            archive_management_copy_archive_names(listed_archives, &pmodel->run.archivi, listed_archives_num);
         xSemaphoreGive(sem);
-        //return pmodel->system.num_archivi;
-        return 0;
+        return pmodel->run.num_archivi;
     } else {
-        //pmodel->system.num_archivi = 0;
-        //free(pmodel->system.archivi);
-        //pmodel->system.archivi = NULL;
+        pmodel->run.num_archivi = 0;
+        free(pmodel->run.archivi);
+        pmodel->run.archivi = NULL;
         return 0;
     }
 }
@@ -159,6 +167,7 @@ size_t msc_read_archives(model_t *pmodel) {
 void msc_save_archive(const name_t archive) {
     msc_response_t response = {.code = MSC_RESPONSE_CODE_ARCHIVE_SAVING_COMPLETE};
     response.error          = archive_management_save_configuration(MSC_USB_MOUNTPOINT, archive);
+    update_archive_names();
     xQueueSend(response_queue, &response, portMAX_DELAY);
 
     /*
@@ -241,23 +250,8 @@ static void msc_task(void *args) {
         .allocation_unit_size   = 1024,
     };
 
-    uint8_t old_id = -1;
-
     for (;;) {
         uint8_t device_address = 0;
-
-        uint8_t current_id = gpio_get_level(BSP_HAP_USB_INT);
-        if (old_id != current_id) {
-            if (current_id == 0) {
-                // A usb drive has been connected, turn on
-                ESP_LOGI(TAG, "Chiavetta connessa");
-            } else {
-                // No drive connected, turn off
-                ESP_LOGI(TAG, "Chiavetta rimossa");
-            }
-            old_id = current_id;
-            vTaskDelay(pdMS_TO_TICKS(500));
-        }
 
         if (usb_connected && wait_for_event(EVENT_DEVICE_DISCONNECTED, 100)) {
             ESP_LOGI(TAG, "Device disconnected");
@@ -275,23 +269,7 @@ static void msc_task(void *args) {
 
                 esp_err_t err = msc_host_vfs_register(msc_device, MSC_USB_MOUNTPOINT, &mount_config, &vfs_handle);
                 if (err == ESP_OK) {
-                    char **strings = NULL;
-                    int    res     = archive_management_list_archives(MSC_USB_MOUNTPOINT, &strings);
-
-                    xSemaphoreTake(sem, portMAX_DELAY);
-                    utils_free_string_list(listed_archives, listed_archives_num);
-                    listed_archives = strings;
-                    if (res > 0) {
-                        listed_archives_num = res;
-                    } else {
-                        listed_archives_num = 0;
-                    }
-
-                    for (size_t i = 0; i < listed_archives_num; i++) {
-                        ESP_LOGI(TAG, "Archive %zu: %s", i, strings[i]);
-                    }
-                    xSemaphoreGive(sem);
-
+                    update_archive_names();
                     xEventGroupSetBits(usb_flags, EVENT_DRIVE_READY);
                 } else {
                     xEventGroupSetBits(usb_flags, EVENT_DRIVE_FAILED);
@@ -358,4 +336,24 @@ static void utils_free_string_list(char **strings, size_t len) {
         free(strings[i]);
     }
     free(strings);
+}
+
+
+static void update_archive_names(void) {
+    char **strings = NULL;
+    int    res     = archive_management_list_archives(MSC_USB_MOUNTPOINT, &strings);
+
+    xSemaphoreTake(sem, portMAX_DELAY);
+    utils_free_string_list(listed_archives, listed_archives_num);
+    listed_archives = strings;
+    if (res > 0) {
+        listed_archives_num = res;
+    } else {
+        listed_archives_num = 0;
+    }
+
+    for (size_t i = 0; i < listed_archives_num; i++) {
+        ESP_LOGI(TAG, "Archive %zu: %s", i, strings[i]);
+    }
+    xSemaphoreGive(sem);
 }

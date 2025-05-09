@@ -77,10 +77,9 @@ int archive_management_save_configuration(const char *path, const char *name) {
     mtar_t tar;
 
     char archive[64] = {0};
-    snprintf(archive, sizeof(archive), "%s/%s.WS2020.tar", path, name);
+    snprintf(archive, sizeof(archive), "%s/%s" ARCHIVE_SUFFIX, path, name);
 
     /* Open archive for reading */
-    // int res = mtar_open(&tar, archive, "w");
     int res = mtar_open(&tar, archive, "w");
     if (res != MTAR_ESUCCESS) {
         ESP_LOGW(TAG, "Could not open archive %s: %s (%i)", archive, mtar_strerror(res), res);
@@ -130,8 +129,6 @@ int archive_management_save_configuration(const char *path, const char *name) {
 
     ESP_LOGI(TAG, "writing %s successful!", archive);
 
-    char tar_archive_path[64] = {0};
-    snprintf(tar_archive_path, sizeof(tar_archive_path), "%s/%s-dryer-config.tar", path, name);
 
 #if 0
     // Compression
@@ -148,10 +145,6 @@ int archive_management_save_configuration(const char *path, const char *name) {
     fclose(source);
     fclose(comp);
 #endif
-
-    remove(archive);
-
-    ESP_LOGI(TAG, "writing %s successful (%i)!", tar_archive_path, res);
 
     return 0;
 }
@@ -193,8 +186,10 @@ int archive_management_list_archives(const char *path, char ***strings) {
 
     while ((dir = readdir(d)) != NULL) {
         if (is_archive(dir)) {
-            // ESP_LOGI(TAG, "Found archive %s", dir->d_name);
+            ESP_LOGI(TAG, "Found archive %s", dir->d_name);
             count++;
+        } else {
+            ESP_LOGW(TAG, "%s isn't an archive", dir->d_name);
         }
     }
 

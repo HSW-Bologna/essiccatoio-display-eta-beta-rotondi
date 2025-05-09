@@ -37,6 +37,8 @@ void model_init(mut_model_t *model) {
     model->run.firmware_update_state        = FIRMWARE_UPDATE_STATE_NONE;
 
     model_check_parameters(model);
+
+    ESP_LOGI(TAG, "Initialized");
 }
 
 
@@ -270,7 +272,6 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     assert(p != NULL);
     size_t i = 0;
 
-    memcpy(&buffer[i], p->nome, sizeof(name_t));
     i += sizeof(name_t);
 
     uint16_t flags = ((p->stop_time_in_pause > 0) << 0) | ((p->disabilita_allarmi > 0) << 1) |
@@ -292,11 +293,16 @@ size_t model_serialize_parmac(uint8_t *buffer, parmac_t *p) {
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->pause_button_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->stop_button_time);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->temperature_probe);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_check_type);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_input_temperature);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->safety_input_temperature);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->max_output_temperature);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->safety_output_temperature);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_alarm_time);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_pressure);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->maximum_pressure);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_maximum_pressure);
+    i += serialize_uint16_be(&buffer[i], (uint16_t)p->air_flow_safety_pressure);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->minimum_speed);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->maximum_speed);
     i += serialize_uint16_be(&buffer[i], (uint16_t)p->payment_type);
@@ -318,7 +324,7 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     assert(p != NULL);
     size_t i = 0;
 
-    memcpy(p->nome, &buffer[i], sizeof(name_t));
+    //memcpy(p->nome, &buffer[i], sizeof(name_t));
     i += sizeof(name_t);
 
     uint16_t flags = 0;
@@ -345,11 +351,16 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     i += UNPACK_UINT16_BE(p->pause_button_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->stop_button_time, &buffer[i]);
     i += UNPACK_UINT16_BE(p->temperature_probe, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->air_flow_check_type, &buffer[i]);
     i += UNPACK_UINT16_BE(p->max_input_temperature, &buffer[i]);
     i += UNPACK_UINT16_BE(p->safety_input_temperature, &buffer[i]);
     i += UNPACK_UINT16_BE(p->max_output_temperature, &buffer[i]);
     i += UNPACK_UINT16_BE(p->safety_output_temperature, &buffer[i]);
     i += UNPACK_UINT16_BE(p->air_flow_alarm_time, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->minimum_pressure, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->maximum_pressure, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->air_flow_maximum_pressure, &buffer[i]);
+    i += UNPACK_UINT16_BE(p->air_flow_safety_pressure, &buffer[i]);
     i += UNPACK_UINT16_BE(p->minimum_speed, &buffer[i]);
     i += UNPACK_UINT16_BE(p->maximum_speed, &buffer[i]);
     i += UNPACK_UINT16_BE(p->payment_type, &buffer[i]);
