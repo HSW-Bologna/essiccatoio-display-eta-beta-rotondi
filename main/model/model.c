@@ -324,7 +324,7 @@ size_t model_deserialize_parmac(parmac_t *p, uint8_t *buffer) {
     assert(p != NULL);
     size_t i = 0;
 
-    //memcpy(p->nome, &buffer[i], sizeof(name_t));
+    // memcpy(p->nome, &buffer[i], sizeof(name_t));
     i += sizeof(name_t);
 
     uint16_t flags = 0;
@@ -465,6 +465,9 @@ void model_move_to_next_step(mut_model_t *model) {
 void model_reset_program(mut_model_t *model) {
     assert(model);
     model->run.current_step_index = 0;
+    model->run.temperature_delta  = 0;
+    model->run.humidity_delta     = 0;
+    model->run.speed_delta        = 0;
 }
 
 
@@ -671,16 +674,29 @@ uint16_t model_get_speed(model_t *model) {
         return 0;
     }
 
-    program_step_t step = model_get_current_step(model);
+    program_step_t step  = model_get_current_step(model);
+    uint16_t       speed = 0;
+
     switch (step.type) {
         case PROGRAM_STEP_TYPE_DRYING:
-            return step.drying.speed + model->run.speed_delta;
+            speed = step.drying.speed + model->run.speed_delta;
+            break;
         case PROGRAM_STEP_TYPE_COOLING:
-            return model_get_last_drying_speed(model) + model->run.speed_delta;
+            speed = model_get_last_drying_speed(model) + model->run.speed_delta;
+            break;
         case PROGRAM_STEP_TYPE_ANTIFOLD:
-            return step.antifold.speed + model->run.speed_delta;
+            speed = step.antifold.speed + model->run.speed_delta;
+            break;
         default:
-            return model->run.speed_delta;
+            speed = model->run.speed_delta;
+            break;
+    }
+
+    if (model->config.parmac.maximum_speed > model->config.parmac.minimum_speed) {
+        return ((speed - model->config.parmac.minimum_speed) * 100) /
+               (model->config.parmac.maximum_speed - model->config.parmac.minimum_speed);
+    } else {
+        return 100;
     }
 }
 

@@ -275,7 +275,6 @@ static void update_page(model_t *model, struct page_data *pdata) {
     lv_label_set_text_fmt(pdata->label_run, "[marcia] %s %s", pdata->run ? "on " : "off",
                           test_cesto_in_sicurezza(model, pdata) ? "ok" : "no");
 
-    ESP_LOGI(TAG, "Alarms %X", model->run.minion.read.alarms);
     if (model_is_alarm_active(model, ALARM_EMERGENCY)) {
         lv_led_on(pdata->led_emergency);
     } else {
