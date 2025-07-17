@@ -62,6 +62,9 @@ typedef struct {
             cycle_state_t cycle_state;
             uint16_t      program_index;
             uint16_t      step_index;
+            uint16_t      temperature_setpoint;
+            uint16_t      humidity_setpoint;
+            uint16_t      speed_setpoint;
         } handshake;
     } as;
 } minion_response_t;

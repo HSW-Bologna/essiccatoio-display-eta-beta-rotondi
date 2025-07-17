@@ -167,9 +167,9 @@ void controller_manage(mut_model_t *model) {
                     ESP_LOGI(TAG, "Handshake: %i %i %i", response.as.handshake.cycle_state,
                              response.as.handshake.program_index, response.as.handshake.step_index);
                     if (response.as.handshake.cycle_state != CYCLE_STATE_STOPPED) {
-                        model_select_program(model, response.as.handshake.program_index);
-                        model_select_step(model, response.as.handshake.step_index);
-                        model->run.minion.read.cycle_state = response.as.handshake.cycle_state;
+                        model_cold_start(model, response.as.handshake.program_index, response.as.handshake.step_index,
+                                         response.as.handshake.cycle_state, response.as.handshake.temperature_setpoint,
+                                         response.as.handshake.humidity_setpoint, response.as.handshake.speed_setpoint);
 
                         // If configured so start immediately
                         if (model->config.parmac.autostart) {

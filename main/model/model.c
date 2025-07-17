@@ -454,9 +454,9 @@ uint16_t model_get_program_num_steps(model_t *model, uint16_t program_index) {
 void model_move_to_next_step(mut_model_t *model) {
     assert(model);
     if (model->run.current_step_index < model_get_program_num_steps(model, model->run.current_program_index)) {
-        model->run.temperature_delta = 0;
-        model->run.humidity_delta    = 0;
-        model->run.speed_delta       = 0;
+        memset(model->run.temperature_deltas, 0, sizeof(model->run.temperature_deltas));
+        memset(model->run.humidity_deltas, 0, sizeof(model->run.humidity_deltas));
+        memset(model->run.speed_deltas, 0, sizeof(model->run.speed_deltas));
         model->run.current_step_index++;
     }
 }
@@ -465,9 +465,9 @@ void model_move_to_next_step(mut_model_t *model) {
 void model_reset_program(mut_model_t *model) {
     assert(model);
     model->run.current_step_index = 0;
-    model->run.temperature_delta  = 0;
-    model->run.humidity_delta     = 0;
-    model->run.speed_delta        = 0;
+    memset(model->run.temperature_deltas, 0, sizeof(model->run.temperature_deltas));
+    memset(model->run.humidity_deltas, 0, sizeof(model->run.humidity_deltas));
+    memset(model->run.speed_deltas, 0, sizeof(model->run.speed_deltas));
 }
 
 
@@ -667,6 +667,21 @@ uint8_t model_is_steam_model(model_t *model) {
 }
 
 
+uint16_t model_get_speed_pwm(model_t *model) {
+    assert(model != NULL);
+
+    uint16_t speed = model_get_speed(model);
+
+    // Speed is a percentage proportional to the maximum speed
+    if (model->config.parmac.maximum_speed > model->config.parmac.minimum_speed) {
+        return ((speed - model->config.parmac.minimum_speed) * 100) /
+               (model->config.parmac.maximum_speed - model->config.parmac.minimum_speed);
+    } else {
+        return 100;
+    }
+}
+
+
 uint16_t model_get_speed(model_t *model) {
     assert(model != NULL);
 
@@ -674,30 +689,26 @@ uint16_t model_get_speed(model_t *model) {
         return 0;
     }
 
-    program_step_t step  = model_get_current_step(model);
-    uint16_t       speed = 0;
+    program_step_t step          = model_get_current_step(model);
+    size_t         program_index = model->run.current_program_index;
+    uint16_t       speed         = 0;
 
     switch (step.type) {
         case PROGRAM_STEP_TYPE_DRYING:
-            speed = step.drying.speed + model->run.speed_delta;
+            speed = step.drying.speed + model->run.speed_deltas[program_index];
             break;
         case PROGRAM_STEP_TYPE_COOLING:
-            speed = model_get_last_drying_speed(model) + model->run.speed_delta;
+            speed = model_get_last_drying_speed(model) + model->run.speed_deltas[program_index];
             break;
         case PROGRAM_STEP_TYPE_ANTIFOLD:
-            speed = step.antifold.speed + model->run.speed_delta;
+            speed = step.antifold.speed + model->run.speed_deltas[program_index];
             break;
         default:
-            speed = model->run.speed_delta;
+            speed = model->run.speed_deltas[program_index];
             break;
     }
 
-    if (model->config.parmac.maximum_speed > model->config.parmac.minimum_speed) {
-        return ((speed - model->config.parmac.minimum_speed) * 100) /
-               (model->config.parmac.maximum_speed - model->config.parmac.minimum_speed);
-    } else {
-        return 100;
-    }
+    return speed;
 }
 
 
@@ -708,7 +719,9 @@ int16_t model_get_temperature_setpoint(model_t *model) {
         return 0;
     }
 
-    program_step_t step = model_get_current_step(model);
+    program_step_t step          = model_get_current_step(model);
+    size_t         program_index = model->run.current_program_index;
+
     switch (step.type) {
         case PROGRAM_STEP_TYPE_DRYING: {
             if (step.drying.progressive_heating_time > 0) {
@@ -716,26 +729,26 @@ int16_t model_get_temperature_setpoint(model_t *model) {
 
                 // If the time is fully elapsed just aim for the required temperature
                 if (elapsed_time_seconds > step.drying.progressive_heating_time) {
-                    return step.drying.temperature + model->run.temperature_delta;
+                    return step.drying.temperature + model->run.temperature_deltas[program_index];
                 }
                 // Reaching temperature as smoothly as possible
                 else if (model->run.starting_temperature < step.drying.temperature) {
                     int16_t temperature_delta = step.drying.temperature - model->run.starting_temperature;
                     return model->run.starting_temperature +
                            ((temperature_delta * elapsed_time_seconds) / step.drying.progressive_heating_time) +
-                           model->run.temperature_delta;
+                           model->run.temperature_deltas[program_index];
                 }
                 // The starting temperature was lower than the setpoint; just return the setpoint
                 else {
-                    return step.drying.temperature + model->run.temperature_delta;
+                    return step.drying.temperature + model->run.temperature_deltas[program_index];
                 }
             } else {
-                return step.drying.temperature + model->run.temperature_delta;
+                return step.drying.temperature + model->run.temperature_deltas[program_index];
             }
         }
 
         default:
-            return model->run.temperature_delta;
+            return model->run.temperature_deltas[program_index];
     }
 }
 
@@ -747,14 +760,16 @@ uint16_t model_get_humidity_setpoint(model_t *model) {
         return 0;
     }
 
-    program_step_t step = model_get_current_step(model);
+    program_step_t step          = model_get_current_step(model);
+    size_t         program_index = model->run.current_program_index;
+
     switch (step.type) {
         case PROGRAM_STEP_TYPE_DRYING: {
-            return step.drying.humidity + model->run.humidity_delta;
+            return step.drying.humidity + model->run.humidity_deltas[program_index];
         }
 
         default:
-            return model->run.humidity_delta;
+            return model->run.humidity_deltas[program_index];
     }
 }
 
@@ -789,13 +804,15 @@ uint8_t model_is_tech_level(model_t *model) {
 void model_modify_temperature_setpoint(mut_model_t *model, int16_t modification) {
     assert(model != NULL);
 
-    model->run.temperature_delta += modification;
+    size_t program_index = model->run.current_program_index;
+
+    model->run.temperature_deltas[program_index] += modification;
     int16_t setpoint = model_get_temperature_setpoint(model);
 
     if (setpoint < 0) {
-        model->run.temperature_delta += -setpoint;
+        model->run.temperature_deltas[program_index] += -setpoint;
     } else if (setpoint > model_get_maximum_temperature(model)) {
-        model->run.temperature_delta -= (setpoint - model_get_maximum_temperature(model));
+        model->run.temperature_deltas[program_index] -= (setpoint - model_get_maximum_temperature(model));
     }
 }
 
@@ -803,13 +820,15 @@ void model_modify_temperature_setpoint(mut_model_t *model, int16_t modification)
 void model_modify_humidity_setpoint(mut_model_t *model, int16_t modification) {
     assert(model != NULL);
 
-    model->run.humidity_delta += modification;
+    size_t program_index = model->run.current_program_index;
+
+    model->run.humidity_deltas[program_index] += modification;
     int16_t setpoint = model_get_humidity_setpoint(model);
 
     if (setpoint < 20) {
-        model->run.humidity_delta += 20 - setpoint;
+        model->run.humidity_deltas[program_index] += 20 - setpoint;
     } else if (setpoint > 60) {
-        model->run.humidity_delta -= (setpoint - 60);
+        model->run.humidity_deltas[program_index] -= (setpoint - 60);
     }
 }
 
@@ -817,13 +836,15 @@ void model_modify_humidity_setpoint(mut_model_t *model, int16_t modification) {
 void model_modify_speed(mut_model_t *model, int16_t modification) {
     assert(model != NULL);
 
-    model->run.speed_delta += modification;
+    size_t program_index = model->run.current_program_index;
+
+    model->run.speed_deltas[program_index] += modification;
     int16_t setpoint = model_get_speed(model);
 
     if (setpoint < model->config.parmac.minimum_speed) {
-        model->run.speed_delta += model->config.parmac.minimum_speed - setpoint;
+        model->run.speed_deltas[program_index] += model->config.parmac.minimum_speed - setpoint;
     } else if (setpoint > model->config.parmac.maximum_speed) {
-        model->run.speed_delta -= (setpoint - model->config.parmac.maximum_speed);
+        model->run.speed_deltas[program_index] -= (setpoint - model->config.parmac.maximum_speed);
     }
 }
 
@@ -945,21 +966,14 @@ void model_init_parameters(mut_model_t *model) {
         {0, 45, 0, 1, 95, 6, 55, 0, 1, 1, 20, 0, 2, 1, 35, 6},
     };
 
-    if (model->config.parmac.temperature_probe == TEMPERATURE_PROBE_OUTPUT) {
-        valori[BASE_PROGRAM_HOT][7]      = 75;
-        valori[BASE_PROGRAM_WARM][7]     = 65;
-        valori[BASE_PROGRAM_LUKEWARM][7] = 55;
+    valori[BASE_PROGRAM_HOT][7]      = 75;
+    valori[BASE_PROGRAM_WARM][7]     = 65;
+    valori[BASE_PROGRAM_LUKEWARM][7] = 55;
 
-        if (tipo == 0) {
-            valori[BASE_PROGRAM_WOOL][7] = 35;
-        } else {
-            valori[BASE_PROGRAM_WOOL][7] = 50;
-        }
+    if (tipo == 0) {
+        valori[BASE_PROGRAM_WOOL][7] = 35;
     } else {
-        valori[BASE_PROGRAM_HOT][7]      = 110;
-        valori[BASE_PROGRAM_WARM][7]     = 95;
-        valori[BASE_PROGRAM_LUKEWARM][7] = 85;
-        valori[BASE_PROGRAM_WOOL][7]     = 70;
+        valori[BASE_PROGRAM_WOOL][7] = 50;
     }
 
     if (model->config.parmac.machine_model >= MACHINE_MODEL_EDS_RE_SELF_CA) {
@@ -1007,4 +1021,46 @@ void model_init_parameters(mut_model_t *model) {
 
         program->antifold_enabled = 1;
     }
+}
+
+
+void model_cold_start(mut_model_t *model, uint16_t program_index, uint16_t step_index, uint16_t cycle_state,
+                      uint16_t temperature_setpoint, uint16_t humidity_setpoint, uint16_t speed_setpoint) {
+    model_select_program(model, program_index);
+    model_select_step(model, step_index);
+    model->run.minion.read.cycle_state = cycle_state;
+
+    // Calculate deltas
+    const program_t *program          = model_get_program(model, model->run.current_program_index);
+    uint16_t         num_drying_steps = model_is_self_service(model) ? 1 : program->num_drying_steps;
+
+
+    program_step_t step = model_get_current_step(model);
+
+    switch (step.type) {
+        case PROGRAM_STEP_TYPE_DRYING: {
+            if (temperature_setpoint > 0) {
+                model->run.temperature_deltas[program_index] = temperature_setpoint - step.drying.temperature;
+            }
+            if (humidity_setpoint > 0) {
+                model->run.humidity_deltas[program_index] = humidity_setpoint - step.drying.humidity;
+            }
+            if (speed_setpoint > 0) {
+                model->run.speed_deltas[program_index] = humidity_setpoint - step.drying.speed;
+            }
+            break;
+        }
+
+        case PROGRAM_STEP_TYPE_ANTIFOLD: {
+            if (speed_setpoint > 0) {
+                model->run.speed_deltas[program_index] = humidity_setpoint - step.antifold.speed;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    if (step_index < num_drying_steps) {}
 }

@@ -22,7 +22,7 @@
 #define MODBUS_IR_CYCLE_STATE  23
 
 #define MODBUS_HR_TEST_MODE         0
-#define MODBUS_HR_PROGRAM_NUMBER    27
+#define MODBUS_HR_ROTATION_SPEED    21
 #define MODBUS_HR_COMMAND           30
 #define MODBUS_HR_INCREASE_DURATION 31
 #define MODBUS_HR_SET_DURATION      32
@@ -335,14 +335,17 @@ uint8_t handle_message(ModbusMaster *network, struct task_message message) {
             } else {
                 response.as.handshake.cycle_state = cycle_state;
 
-                uint16_t values[2] = {0};
+                uint16_t values[8] = {0};
 
-                if (read_holding_registers(network, values, MINION_ADDR, MODBUS_HR_PROGRAM_NUMBER,
+                if (read_holding_registers(network, values, MINION_ADDR, MODBUS_HR_ROTATION_SPEED,
                                            sizeof(values) / sizeof(values[0]))) {
                     error = 1;
                 } else {
-                    response.as.handshake.program_index = values[0];
-                    response.as.handshake.step_index    = values[1];
+                    response.as.handshake.speed_setpoint       = values[0];
+                    response.as.handshake.temperature_setpoint = values[1];
+                    response.as.handshake.humidity_setpoint    = values[2];
+                    response.as.handshake.program_index        = values[6];
+                    response.as.handshake.step_index           = values[7];
                 }
             }
 
@@ -631,7 +634,7 @@ static struct task_message init_sync_data(model_t *model) {
                         .program_number                  = model->run.current_program_index,
                         .setpoint_temperature            = model_get_temperature_setpoint(model),
                         .setpoint_humidity               = model_get_humidity_setpoint(model),
-                        .rotation_speed                  = model_get_speed(model),
+                        .rotation_speed                  = model_get_speed_pwm(model),
                         .step_number                     = model->run.current_step_index,
                         .step_type                       = step.type,
                     },

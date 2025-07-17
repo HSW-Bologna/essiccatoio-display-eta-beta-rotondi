@@ -61,6 +61,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *cont_param = lv_obj_create(cont);
+        lv_obj_remove_flag(cont_param, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_size(cont_param, LV_PCT(100), 64);
         lv_obj_add_style(cont_param, &style_transparent_cont, LV_STATE_DEFAULT);
         lv_obj_set_layout(cont_param, LV_LAYOUT_FLEX);
@@ -89,6 +90,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *cont_param = lv_obj_create(cont);
+        lv_obj_remove_flag(cont_param, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_size(cont_param, LV_PCT(100), 64);
         lv_obj_add_style(cont_param, &style_transparent_cont, LV_STATE_DEFAULT);
         lv_obj_set_layout(cont_param, LV_LAYOUT_FLEX);
@@ -117,6 +119,7 @@ static void open_page(pman_handle_t handle, void *state) {
 
     {
         lv_obj_t *cont_param = lv_obj_create(cont);
+        lv_obj_remove_flag(cont_param, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_size(cont_param, LV_PCT(100), 64);
         lv_obj_add_style(cont_param, &style_transparent_cont, LV_STATE_DEFAULT);
         lv_obj_set_layout(cont_param, LV_LAYOUT_FLEX);

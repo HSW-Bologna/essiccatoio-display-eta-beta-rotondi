@@ -276,9 +276,9 @@ struct model {
         uint16_t                num_archivi;
         name_t                 *archivi;
 
-        int16_t temperature_delta;
-        int16_t humidity_delta;
-        int16_t speed_delta;
+        int16_t temperature_deltas[MAX_PROGRAMMI];
+        int16_t humidity_deltas[MAX_PROGRAMMI];
+        int16_t speed_deltas[MAX_PROGRAMMI];
 
         uint8_t tech_view;
     } run;
@@ -341,8 +341,12 @@ uint16_t         model_get_speed(model_t *model);
 void             model_modify_temperature_setpoint(mut_model_t *model, int16_t modification);
 void             model_modify_humidity_setpoint(mut_model_t *model, int16_t modification);
 void             model_modify_speed(mut_model_t *model, int16_t modification);
+void             model_cold_start(mut_model_t *model, uint16_t program_index, uint16_t step_index, uint16_t cycle_state,
+                                  uint16_t temperature_setpoint, uint16_t humidity_setpoint, uint16_t speed_setpoint);
+uint16_t         model_get_speed_pwm(model_t *model);
 
 
 extern const uint16_t coin_values[DIGITAL_COIN_LINES_NUM];
+
 
 #endif
