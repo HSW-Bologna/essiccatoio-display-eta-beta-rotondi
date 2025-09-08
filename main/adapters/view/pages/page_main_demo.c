@@ -298,7 +298,6 @@ static void open_page(pman_handle_t handle, void *state) {
     pdata->alarm_popup = view_common_alarm_popup_create(lv_screen_active(), BTN_ALARM_ID);
     lv_obj_set_size(pdata->alarm_popup.blanket, LV_HOR_RES, LV_VER_RES * 3 / 4);
 
-
     if (model->run.tech_view) {
         lv_obj_t *win = lv_win_create(lv_screen_active());
         lv_obj_set_style_text_font(win, STYLE_FONT_SMALL, LV_STATE_DEFAULT);

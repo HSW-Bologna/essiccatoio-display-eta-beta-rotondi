@@ -122,7 +122,7 @@ const char *pars_nc_na[2][2] = {
 
 const char *pars_livello_accesso[2][2] = {
     {"Utente", "User", },
-    {"Tecnico", "Technician", },
+    {"Costruttore", "Manufacturer", },
 };
 
 const char *pars_tipo_riscaldamento_vapore[2][2] = {

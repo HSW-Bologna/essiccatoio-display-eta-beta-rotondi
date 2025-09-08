@@ -15,6 +15,7 @@
 #include "bsp/storage.h"
 #include "bsp/fs_storage.h"
 #include "bsp/msc.h"
+#include "bsp/heartbit.h"
 
 
 static const char *TAG = "Main";
@@ -28,6 +29,7 @@ void app_main(void) {
     assert(model);
 
     bsp_system_init();
+    bsp_heartbit_init(2000);
     storage_init();
     fs_storage_mount_littlefs();
     bsp_tft_display_init(view_display_flush_ready, VIEW_LVGL_BUFFER_SIZE);
